@@ -217,11 +217,11 @@ struct AST_NODE {
       ASTNode *comp_stmt;
     } func_def;
     struct {
-      TokenList *expression;
-    } return_stmt;
-    struct {
       ASTNodeList *stmt_list;
     } comp_stmt;
+    struct {
+      TokenList *expression;
+    } return_stmt;
   } data;
 };
 
@@ -231,23 +231,64 @@ ASTNode *AllocateASTNode(ASTType type) {
   return node;
 }
 
-void PrintASTNodeList(ASTNodeList *list);
-void PrintASTNode(const ASTNode *node) {
+void PrintASTNodePadding(int depth)
+{
+  putchar('\n');
+  for(int i = 0; i < depth; i++) putchar(' ');
+}
+
+void PrintASTNodeList(ASTNodeList *list, int depth);
+void PrintASTNode(const ASTNode *node, int depth) {
   if (node->type == kInclude) {
-    printf("(Include: ");
+    printf("(Include:");
+    PrintASTNodePadding(depth);
     PrintTokenList(node->data.directive_include.file_name_tokens);
+    PrintASTNodePadding(depth);
     printf(")");
   } else if (node->type == kVarDef) {
-    printf("(VarDef: type=");
+    printf("(VarDef:");
+    PrintASTNodePadding(depth);
+    printf("type=");
     PrintTokenList(node->data.var_def.type_tokens);
-    printf(" name=%s", node->data.var_def.name->str);
+    PrintASTNodePadding(depth);
+    printf("name=%s", node->data.var_def.name->str);
+    PrintASTNodePadding(depth);
     printf(")");
   } else if (node->type == kFuncDecl) {
-    printf("(FuncDecl: type_and_name=");
-    PrintASTNode(node->data.func_decl.type_and_name);
-    printf(" arg_list=");
-    PrintASTNodeList(node->data.func_decl.arg_list);
+    printf("(FuncDecl:");
+    PrintASTNodePadding(depth);
+    printf("type_and_name=");
+    PrintASTNode(node->data.func_decl.type_and_name, depth + 1);
+    PrintASTNodePadding(depth);
+    printf("arg_list=");
+    PrintASTNodeList(node->data.func_decl.arg_list, depth + 1);
+    PrintASTNodePadding(depth);
     printf(")");
+  } else if (node->type == kFuncDef) {
+    printf("(FuncDef:");
+    PrintASTNodePadding(depth);
+    printf("func_decl=");
+    PrintASTNode(node->data.func_def.func_decl, depth + 1);
+    PrintASTNodePadding(depth);
+    printf("comp_stmt=");
+    PrintASTNode(node->data.func_def.comp_stmt, depth + 1);
+    PrintASTNodePadding(depth);
+    printf(")");
+  } else if (node->type == kCompStatement) {
+    printf("(CompStatement:");
+    PrintASTNodePadding(depth);
+    printf("(body=");
+    PrintASTNodeList(node->data.comp_stmt.stmt_list, depth + 1);
+    PrintASTNodePadding(depth);
+    printf(")");
+  } else if (node->type == kReturnStatement) {
+    printf("(ReturnStatement:");
+    PrintASTNodePadding(depth);
+    printf("expression=");
+    PrintTokenList(node->data.return_stmt.expression);
+    PrintASTNodePadding(depth);
+    printf(")");
+
   } else {
     Error("PrintASTNode not implemented for type %d", node->type);
   }
@@ -266,11 +307,14 @@ void AppendASTNodeToList(ASTNodeList *list, ASTNode *node) {
   list->nodes[list->used++] = node;
 }
 
-void PrintASTNodeList(ASTNodeList *list) {
+void PrintASTNodeList(ASTNodeList *list, int depth) {
+  putchar('[');
+  PrintASTNodePadding(depth);
   for (int i = 0; i < list->used; i++) {
-    PrintASTNode(list->nodes[i]);
-    putchar('\n');
+    PrintASTNode(list->nodes[i], depth + 1);
+    PrintASTNodePadding(depth);
   }
+  putchar(']');
 }
 
 int IsTypeToken(const Token *token) {
@@ -320,7 +364,6 @@ ASTNode *TryReadStatement(int index, int *after_index) {
   return NULL;
 }
 ASTNode *TryReadCompoundStatement(int index, int *after_index) {
-  printf("Comp stmt\n");
   ASTNode *comp_stmt = AllocateASTNode(kCompStatement);
   const Token *token = GetTokenAt(index++);
   if (!IsEqualToken(token, "{")) {
@@ -342,7 +385,7 @@ ASTNode *TryReadCompoundStatement(int index, int *after_index) {
   return comp_stmt;
 }
 
-const ASTNodeList *Parse() {
+ASTNodeList *Parse() {
   ASTNodeList *root = AllocateASTNodeList();
   int index = 0;
   const Token *token;
@@ -372,8 +415,6 @@ const ASTNodeList *Parse() {
         } else {
           Error("Expected < but got %s", token->str);
         }
-        PrintASTNode(node);
-        putchar('\n');
         AppendASTNodeToList(root, node);
       } else if (IsEqualToken(token, "define")) {
         ASTNode *node = AllocateASTNode(kInclude);
@@ -387,7 +428,6 @@ const ASTNodeList *Parse() {
           Error("Expected > but got EOF");
         }
       } else {
-        PrintASTNodeList(root);
         Error("Unknown preprocessor directive: %s", token->str);
       }
     } else if ((tmp_node = TryReadAsVarDef(index, &index))) {
@@ -434,8 +474,6 @@ const ASTNodeList *Parse() {
         Error("Expected ; or { but got %s", token->str);
       }
     } else {
-
-      PrintASTNodeList(root);
       Error("Unexpected token: %s", token->str);
     }
   }
@@ -452,9 +490,12 @@ int main(int argc, char *argv[]) {
 
   Tokenize();
 
-  const ASTNodeList *ast;
+  ASTNodeList *ast;
   ast = Parse();
-      PrintASTNodeList(ast);
+
+  printf("ASTRoot: ");
+  PrintASTNodeList(ast, 0);
+  putchar('\n');
 
   return 0;
 }
