@@ -232,6 +232,7 @@ struct AST_NODE {
       TokenList *init_expression;
       TokenList *cond_expression;
       TokenList *updt_expression;
+      ASTNode *body_comp_stmt;
     } for_stmt;
   } data;
 };
@@ -317,6 +318,9 @@ void PrintASTNode(const ASTNode *node, int depth) {
     printf("updt_expression=");
     PrintTokenList(node->data.for_stmt.updt_expression);
     PrintASTNodePadding(depth);
+    printf("body_comp_stmt=");
+    PrintASTNode(node->data.for_stmt.body_comp_stmt, depth + 1);
+    PrintASTNodePadding(depth);
     printf(")");
   } else {
     Error("PrintASTNode not implemented for type %d", node->type);
@@ -384,6 +388,7 @@ TokenList *ReadExpression(int index, int *after_index) {
   TokenList *expression = AllocateTokenList();
   int paren_count = 0;
   while ((token = GetTokenAt(index))) {
+    if (IsEqualToken(token, "{") || IsEqualToken(token, "}")) return NULL;
     if (IsEqualToken(token, ";")) {
       break;
     } else {
@@ -403,6 +408,8 @@ TokenList *ReadExpression(int index, int *after_index) {
   *after_index = index;
   return expression;
 }
+
+ASTNode *TryReadCompoundStatement(int index, int *after_index);
 
 ASTNode *TryReadExpressionStatement(int index, int *after_index) {
   // expression-statement:
@@ -427,10 +434,12 @@ ASTNode *TryReadForStatement(int index, int *after_index) {
   if (!IsEqualToken(GetTokenAt(index++), ";")) return NULL;
   TokenList *updt_expression = ReadExpression(index, &index);
   if (!IsEqualToken(GetTokenAt(index++), ")")) return NULL;
+  ASTNode *body_comp_stmt = TryReadCompoundStatement(index, &index);
   ASTNode *for_stmt = AllocateASTNode(kForStatement);
   for_stmt->data.for_stmt.init_expression = init_expression;
   for_stmt->data.for_stmt.cond_expression = cond_expression;
   for_stmt->data.for_stmt.updt_expression = updt_expression;
+  for_stmt->data.for_stmt.body_comp_stmt = body_comp_stmt;
   *after_index = index;
   return for_stmt;
 }
