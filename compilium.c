@@ -1,241 +1,162 @@
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "compilium.h"
 
-#define MAX_TOKEN_LEN 64
-#define MAX_TOKENS 2048
-#define MAX_INPUT_SIZE 8192
-
-void Error(const char *fmt, ...) {
-  fprintf(stderr, "Error: ");
-  va_list ap;
-  va_start(ap, fmt);
-  vfprintf(stderr, fmt, ap);
-  va_end(ap);
-  fputc('\n', stderr);
-  exit(EXIT_FAILURE);
-}
-
-typedef struct {
-  char str[MAX_TOKEN_LEN];
-} Token;
-
-Token tokens[MAX_TOKENS];
-int tokens_count;
-
-void AddToken(const char *begin, const char *end) {
-  if (end <= begin || (end - begin) >= MAX_TOKEN_LEN) {
-    Error("Too long token");
+const char *ReadFile(const char *file_name) {
+  // file_buf is allocated here.
+  FILE *fp = fopen(file_name, "rb");
+  if(!fp){
+    Error("Failed to open: %s", file_name);
   }
-  if (tokens_count >= MAX_TOKENS) {
-    Error("Too many token");
-  }
-  strncpy(tokens[tokens_count].str, begin, end - begin);
-  printf("[%s]", tokens[tokens_count].str);
-  tokens_count++;
-}
-
-int IsEqualToken(const Token *token, const char *s) {
-  if (!token) return 0;
-  return strcmp(token->str, s) == 0;
-}
-
-const Token *GetTokenAt(int index) {
-  if (index < 0 || tokens_count <= index) return NULL;
-  return &tokens[index];
-}
-
-#define TOKEN_LIST_SIZE 32
-typedef struct {
-  const Token *tokens[TOKEN_LIST_SIZE];
-  int used;
-} TokenList;
-
-TokenList *AllocateTokenList() {
-  TokenList *list = malloc(sizeof(TokenList));
-  list->used = 0;
-  return list;
-}
-
-void AppendTokenToList(TokenList *list, const Token *token) {
-  if (list->used >= TOKEN_LIST_SIZE) {
-    Error("No more space in TokenList");
-  }
-  list->tokens[list->used++] = token;
-}
-
-void PrintTokenList(const TokenList *list) {
-  for (int i = 0; i < list->used; i++) {
-    printf("%s ", list->tokens[i]->str);
-  }
-}
-
-char file_buf[MAX_INPUT_SIZE];
-int file_buf_size;
-
-void ReadFile(FILE *fp) {
+  char *file_buf = malloc(MAX_INPUT_SIZE);
   int file_buf_size = fread(file_buf, 1, MAX_INPUT_SIZE, fp);
   if (file_buf_size >= MAX_INPUT_SIZE) {
     Error("Too large input");
   }
   file_buf[file_buf_size] = 0;
-  printf("Input size: %d\n", file_buf_size);
+  printf("Input(path: %s, size: %d)\n", file_name, file_buf_size);
+  fclose(fp);
+  return file_buf;
 }
 
+const char *Preprocess(const char *p);
 #define IS_IDENT_NODIGIT(c) \
   ((c) == '_' || ('a' <= (c) && (c) <= 'z') || ('A' <= (c) && (c) <= 'Z'))
 #define IS_IDENT_DIGIT(c) (('0' <= (c) && (c) <= '9'))
-void Tokenize() {
-  const char *p = file_buf;
+const char *CommonTokenizer(const char *p)
+{
+  static const char *single_char_punctuators = "[](){}~?:;,\\";
   const char *begin = NULL;
-  const char *single_char_punctuators = "[](){}~?:;,\\";
+  if (IS_IDENT_NODIGIT(*p)) {
+    begin = p++;
+    while (IS_IDENT_NODIGIT(*p) || IS_IDENT_DIGIT(*p)) {
+      p++;
+    }
+    AddToken(begin, p, kIdentifier);
+  } else if (IS_IDENT_DIGIT(*p)) {
+    begin = p++;
+    while (IS_IDENT_DIGIT(*p)) {
+      p++;
+    }
+    AddToken(begin, p, kInteger);
+  } else if (*p == '"' || *p == '\'') {
+    begin = p++;
+    while (*p && *p != *begin) {
+      if (*p == '\\') p++;
+      p++;
+    }
+    if (*(p++) != *begin) {
+      Error("Expected %c but got char 0x%02X", *begin, *p);
+    }
+    TokenType type = (*begin == '"' ? kStringLiteral : kCharacterLiteral);
+    AddToken(begin + 1, p - 1, type);
+  } else if (strchr(single_char_punctuators, *p)) {
+    // single character punctuator
+    begin = p++;
+    AddToken(begin, p, kPunctuator);
+  } else if (*p == '#') {
+    p++;
+    p = Preprocess(p);
+  } else if (*p == '|' || *p == '&' || *p == '+' || *p == '/') {
+    // | || |=
+    // & && &=
+    // + ++ +=
+    // / // /=
+    begin = p++;
+    if (*p == *begin || *p == '=') {
+      p++;
+    }
+    AddToken(begin, p, kPunctuator);
+  } else if (*p == '-') {
+    // - -- -= ->
+    begin = p++;
+    if (*p == *begin || *p == '-' || *p == '>') {
+      p++;
+    }
+    AddToken(begin, p, kPunctuator);
+  } else if (*p == '=' || *p == '!' || *p == '*') {
+    // = ==
+    // ! !=
+    // * *=
+    begin = p++;
+    if (*p == '=') {
+      p++;
+    }
+    AddToken(begin, p, kPunctuator);
+  } else if (*p == '<' || *p == '>') {
+    // < << <= <<=
+    // > >> >= >>=
+    begin = p++;
+    if (*p == *begin) {
+      p++;
+      if (*p == '=') {
+        p++;
+      }
+    } else if (*p == '=') {
+      p++;
+    }
+    AddToken(begin, p, kPunctuator);
+  } else if (*p == '.') {
+    // .
+    // ...
+    begin = p++;
+    if (p[0] == '.' && p[1] == '.') {
+      p += 2;
+    }
+    AddToken(begin, p, kPunctuator);
+  } else {
+    Error("Unexpected char '%c'\n", *p);
+  }
+  return p;
+}
+
+void Tokenize(const char *file_name);
+const char *Preprocess(const char *p)
+{
+  int org_num_of_token = GetNumOfTokens();
+  do {
+    if (*p == ' ') {
+      p++;
+    } else if (*p == '\n') {
+      p++;
+      break;
+    } else if(*p == '\\') {
+      // if "\\\n", continue parsing beyond the lines.
+      // otherwise, raise Error.
+      p++;
+      if(*p != '\n'){
+        Error("Unexpected char '%c'\n", *p);
+      }
+      p++;
+    } else {
+      p = CommonTokenizer(p);
+    }
+  } while(*p);
+  const Token *directive = GetTokenAt(org_num_of_token);
+  if(IsEqualToken(directive, "include")){
+    const Token *file_name = GetTokenAt(org_num_of_token + 1);
+    if(!file_name || file_name->type != kStringLiteral){
+      Error("Expected string literal but got %s", file_name ? file_name->str : "(null)");
+    }
+    SetNumOfTokens(org_num_of_token);
+    Tokenize(file_name->str);
+  } else{
+    Error("Unknown preprocessor directive '%s'", directive ? directive->str : "(null)");
+  }
+  return p;
+}
+
+void Tokenize(const char *file_name) {
+  const char *p = ReadFile(file_name);
   do {
     if (*p == ' ') {
       p++;
     } else if (*p == '\n') {
       p++;
       putchar('\n');
-    } else if (IS_IDENT_NODIGIT(*p)) {
-      begin = p++;
-      while (IS_IDENT_NODIGIT(*p) || IS_IDENT_DIGIT(*p)) {
-        p++;
-      }
-      AddToken(begin, p);
-    } else if (IS_IDENT_DIGIT(*p)) {
-      begin = p++;
-      while (IS_IDENT_DIGIT(*p)) {
-        p++;
-      }
-      AddToken(begin, p);
-    } else if (*p == '"' || *p == '\'') {
-      begin = p++;
-      while (*p && *p != *begin) {
-        if (*p == '\\') p++;
-        p++;
-      }
-      if (*(p++) != *begin) {
-        Error("Expected %c but got char 0x%02X", *begin, *p);
-      }
-      AddToken(begin, p);
-    } else if (strchr(single_char_punctuators, *p)) {
-      // single character punctuator
-      begin = p++;
-      AddToken(begin, p);
-    } else if (*p == '#') {
-      begin = p++;
-      if (*p == '#') {
-        p++;
-      }
-      AddToken(begin, p);
-    } else if (*p == '|' || *p == '&' || *p == '+' || *p == '/') {
-      // | || |=
-      // & && &=
-      // + ++ +=
-      // / // /=
-      begin = p++;
-      if (*p == *begin || *p == '=') {
-        p++;
-      }
-      AddToken(begin, p);
-    } else if (*p == '-') {
-      // - -- -= ->
-      begin = p++;
-      if (*p == *begin || *p == '-' || *p == '>') {
-        p++;
-      }
-      AddToken(begin, p);
-    } else if (*p == '=' || *p == '!' || *p == '*') {
-      // = ==
-      // ! !=
-      // * *=
-      begin = p++;
-      if (*p == '=') {
-        p++;
-      }
-      AddToken(begin, p);
-    } else if (*p == '<' || *p == '>') {
-      // < << <= <<=
-      // > >> >= >>=
-      begin = p++;
-      if (*p == *begin) {
-        p++;
-        if (*p == '=') {
-          p++;
-        }
-      } else if (*p == '=') {
-        p++;
-      }
-      AddToken(begin, p);
-    } else if (*p == '.') {
-      // .
-      // ...
-      begin = p++;
-      if (p[0] == '.' && p[1] == '.') {
-        p += 2;
-      }
-      AddToken(begin, p);
     } else {
-      Error("Unexpected char '%c'\n", *p);
+      p = CommonTokenizer(p);
     }
   } while (*p);
 }
-
-typedef enum {
-  kNone,
-  kInclude,
-  kVarDef,
-  kFuncDecl,
-  kFuncDef,
-  kCompStatement,
-  kExpressionStatement,
-  kReturnStatement,
-  kForStatement,
-} ASTType;
-
-typedef struct AST_NODE ASTNode;
-
-#define AST_NODE_LIST_SIZE 64
-typedef struct {
-  ASTNode *nodes[AST_NODE_LIST_SIZE];
-  int used;
-} ASTNodeList;
-
-struct AST_NODE {
-  ASTType type;
-  union {
-    struct {
-      TokenList *file_name_tokens;
-    } directive_include;
-    struct {
-      TokenList *type_tokens;
-      const Token *name;
-    } var_def;
-    struct {
-      ASTNode *type_and_name;
-      ASTNodeList *arg_list;
-    } func_decl;
-    struct {
-      ASTNode *func_decl;
-      ASTNode *comp_stmt;
-    } func_def;
-    struct {
-      ASTNodeList *stmt_list;
-    } comp_stmt;
-    struct {
-      TokenList *expression;
-    } expression_stmt;
-    struct {
-      ASTNode *expression_stmt;
-    } return_stmt;
-    struct {
-      TokenList *init_expression;
-      TokenList *cond_expression;
-      TokenList *updt_expression;
-      ASTNode *body_comp_stmt;
-    } for_stmt;
-  } data;
-};
 
 ASTNode *AllocateASTNode(ASTType type) {
   ASTNode *node = malloc(sizeof(ASTNode));
@@ -597,15 +518,8 @@ ASTNodeList *Parse() {
 int main(int argc, char *argv[]) {
   if (argc < 2) return 1;
 
-  FILE *fp = fopen(argv[1], "rb");
-  if (!fp) return 1;
-  ReadFile(fp);
-  fclose(fp);
-
-  Tokenize();
-
-  ASTNodeList *ast;
-  ast = Parse();
+  Tokenize(argv[1]);
+  ASTNodeList *ast = Parse();
 
   printf("ASTRoot: ");
   PrintASTNodeList(ast, 0);

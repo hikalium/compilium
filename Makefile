@@ -1,5 +1,5 @@
 CFLAGS=-Wall -Wpedantic
-SRCS=compilium.c
+SRCS=compilium.c error.c token.c
 
 default: compilium
 
@@ -10,7 +10,10 @@ compilium_dbg: $(SRCS) Makefile
 	$(CC) $(CFLAGS) -g -o $@ $(SRCS)
 
 run: compilium
-	./compilium test.c
+	make -C Tests test.compilium.S
 
 debug: compilium_dbg
-	lldb ./compilium_dbg test.c
+	lldb ./compilium_dbg Tests/test.c
+
+clean:
+	-rm compilium
