@@ -54,3 +54,4 @@ dkms.conf
 *.swp
 compilium
 compilium_dbg
+compilium_unittest

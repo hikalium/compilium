@@ -82,16 +82,31 @@ struct AST_NODE {
   } data;
 };
 
+// @ast.c
+ASTNode *AllocateASTNode(ASTType type);
+void PrintASTNode(const ASTNode *node, int depth);
+ASTNodeList *AllocateASTNodeList();
+void AppendASTNodeToList(ASTNodeList *list, ASTNode *node);
+void PrintASTNodeList(ASTNodeList *list, int depth);
+
 // @error.c
 void Error(const char *fmt, ...);
+
+// @parser.c
+ASTNodeList *Parse();
 
 // @token.c
 void AddToken(const char *begin, const char *end, TokenType type);
 int IsEqualToken(const Token *token, const char *s);
+int IsKeyword(const Token *token);
 const Token *GetTokenAt(int index);
 int GetNumOfTokens();
 void SetNumOfTokens(int num_of_tokens);
 TokenList *AllocateTokenList();
 void AppendTokenToList(TokenList *list, const Token *token);
 void PrintTokenList(const TokenList *list);
+
+// @tokenizer.c
+char *ReadFile(const char *file_name);
+void Tokenize(const char *p);
 

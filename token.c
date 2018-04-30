@@ -22,6 +22,55 @@ int IsEqualToken(const Token *token, const char *s) {
   return strcmp(token->str, s) == 0;
 }
 
+static const char *keyword_list[] = {
+  "auto",
+  "break",
+  "case",
+  "char",
+  "const",
+  "continue",
+  "default",
+  "do",
+  "double",
+  "else",
+  "enum",
+  "extern",
+  "float",
+  "for",
+  "goto",
+  "if",
+  "inline",
+  "int",
+  "long",
+  "register",
+  "restrict",
+  "return",
+  "short",
+  "signed",
+  "sizeof",
+  "static",
+  "struct",
+  "switch",
+  "typedef",
+  "union",
+  "unsigned",
+  "void",
+  "volatile",
+  "while",
+  "_Bool",
+  "_Complex",
+  "_Imaginary",
+  NULL
+};
+
+int IsKeyword(const Token *token) 
+{
+  for(int i = 0; keyword_list[i]; i++){
+    if(IsEqualToken(token, keyword_list[i])) return 1;
+  }
+  return 0;
+}
+
 const Token *GetTokenAt(int index) {
   if (index < 0 || tokens_count <= index) return NULL;
   return &tokens[index];

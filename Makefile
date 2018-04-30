@@ -1,19 +1,27 @@
 CFLAGS=-Wall -Wpedantic
-SRCS=compilium.c error.c token.c
+SRCS=ast.c error.c parser.c token.c tokenizer.c
+MAIN_SRCS=compilium.c
+HEADERS=compilium.h
 
 default: compilium
 
-compilium: $(SRCS) Makefile
-	$(CC) $(CFLAGS) -o $@ $(SRCS)
+compilium: $(MAIN_SRCS) $(SRCS) $(HEADERS) Makefile
+	$(CC) $(CFLAGS) -o $@ $(MAIN_SRCS) $(SRCS)
 
-compilium_dbg: $(SRCS) Makefile
-	$(CC) $(CFLAGS) -g -o $@ $(SRCS)
+compilium_dbg: $(MAIN_SRCS) $(SRCS) $(HEADERS) Makefile
+	$(CC) $(CFLAGS) -g -o $@ $(MAIN_SRCS) $(SRCS)
+
+compilium_unittest: unittest.c $(SRCS) $(HEADERS) Makefile
+	$(CC) $(CFLAGS) -o $@ unittest.c $(SRCS)
 
 run: compilium
 	make -C Tests test.compilium.S
 
 debug: compilium_dbg
 	lldb ./compilium_dbg Tests/test.c
+
+unittest: compilium_unittest
+	./compilium_unittest
 
 clean:
 	-rm compilium
