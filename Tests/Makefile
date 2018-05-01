@@ -1,4 +1,4 @@
-default: simple_return.test
+default: simple_return.test hello_world.test
 
 .FORCE :
 
@@ -16,4 +16,7 @@ default: simple_return.test
 	clang -o $@ $*.S
 
 %.test : %.clang.bin %.compilium.bin Makefile
+	-./$*.clang.bin > $*.clang.bin.stdout
+	-./$*.compilium.bin > $*.compilium.bin.stdout
+	diff -u $*.clang.bin.stdout $*.compilium.bin.stdout
 	@ ./$*.clang.bin; ./test.sh ./$*.compilium.bin $$?
