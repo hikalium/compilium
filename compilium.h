@@ -27,14 +27,13 @@ typedef struct {
 } TokenList;
 
 typedef enum {
-  kNone,
-  kInclude,
+  kRoot,
   kVarDef,
   kFuncDecl,
   kFuncDef,
-  kCompStatement,
-  kExpressionStatement,
-  kReturnStatement,
+  kCompStmt,
+  kExprStmt,
+  kReturnStmt,
   kForStatement,
 } ASTType;
 
@@ -46,39 +45,55 @@ typedef struct {
   int used;
 } ASTNodeList;
 
+typedef struct {
+  ASTNodeList *root_list;
+} ASTDataRoot;
+
+typedef struct {
+  TokenList *type_tokens;
+  const Token *name;
+} ASTDataVarDef;
+
+typedef struct {
+  ASTNode *type_and_name;
+  ASTNodeList *arg_list;
+} ASTDataFuncDecl;
+
+typedef struct {
+  ASTNode *func_decl;
+  ASTNode *comp_stmt;
+} ASTDataFuncDef;
+
+typedef struct {
+  ASTNodeList *stmt_list;
+} ASTDataCompStmt;
+
+typedef struct {
+  TokenList *expr;
+} ASTDataExprStmt;
+
+typedef struct {
+  ASTNode *expr_stmt;
+} ASTDataReturnStmt;
+
+typedef struct {
+  TokenList *init_expression;
+  TokenList *cond_expression;
+  TokenList *updt_expression;
+  ASTNode *body_comp_stmt;
+} ASTDataStatementFor;
+
 struct AST_NODE {
   ASTType type;
   union {
-    struct {
-      TokenList *file_name_tokens;
-    } directive_include;
-    struct {
-      TokenList *type_tokens;
-      const Token *name;
-    } var_def;
-    struct {
-      ASTNode *type_and_name;
-      ASTNodeList *arg_list;
-    } func_decl;
-    struct {
-      ASTNode *func_decl;
-      ASTNode *comp_stmt;
-    } func_def;
-    struct {
-      ASTNodeList *stmt_list;
-    } comp_stmt;
-    struct {
-      TokenList *expression;
-    } expression_stmt;
-    struct {
-      ASTNode *expression_stmt;
-    } return_stmt;
-    struct {
-      TokenList *init_expression;
-      TokenList *cond_expression;
-      TokenList *updt_expression;
-      ASTNode *body_comp_stmt;
-    } for_stmt;
+    ASTDataRoot root;
+    ASTDataStatementFor for_stmt;
+    ASTDataReturnStmt return_stmt;
+    ASTDataCompStmt comp_stmt;
+    ASTDataFuncDecl func_decl;
+    ASTDataFuncDef func_def;
+    ASTDataExprStmt expr_stmt;
+    ASTDataVarDef var_def;
   } data;
 };
 
@@ -92,8 +107,11 @@ void PrintASTNodeList(ASTNodeList *list, int depth);
 // @error.c
 void Error(const char *fmt, ...);
 
+// @generate.c
+void Generate(FILE *fp, const ASTNode *node);
+
 // @parser.c
-ASTNodeList *Parse();
+ASTNode *Parse();
 
 // @token.c
 void AddToken(const char *begin, const char *end, TokenType type);
@@ -109,4 +127,3 @@ void PrintTokenList(const TokenList *list);
 // @tokenizer.c
 char *ReadFile(const char *file_name);
 void Tokenize(const char *p);
-

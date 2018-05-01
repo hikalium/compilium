@@ -67,10 +67,10 @@ ASTNode *TryReadExpressionStatement(int index, int *after_index) {
   //   expression ;
   TokenList *expression = ReadExpression(index, &index);
   if (!expression || !IsEqualToken(GetTokenAt(index++), ";")) return NULL;
-  ASTNode *expression_stmt = AllocateASTNode(kExpressionStatement);
-  expression_stmt->data.expression_stmt.expression = expression;
+  ASTNode *expr_stmt = AllocateASTNode(kExprStmt);
+  expr_stmt->data.expr_stmt.expr = expression;
   *after_index = index;
-  return expression_stmt;
+  return expr_stmt;
 }
 
 ASTNode *TryReadForStatement(int index, int *after_index) {
@@ -98,14 +98,14 @@ ASTNode *TryReadForStatement(int index, int *after_index) {
   return for_stmt;
 }
 
-ASTNode *TryReadReturnStatement(int index, int *after_index) {
+ASTNode *TryReadReturnStmt(int index, int *after_index) {
   const Token *token;
   token = GetTokenAt(index++);
   if (IsEqualToken(token, "return")) {
     // jump-statement(return)
-    ASTNode *return_stmt = AllocateASTNode(kReturnStatement);
-    ASTNode *expression_stmt = TryReadExpressionStatement(index, &index);
-    return_stmt->data.return_stmt.expression_stmt = expression_stmt;
+    ASTNode *return_stmt = AllocateASTNode(kReturnStmt);
+    ASTNode *expr_stmt = TryReadExpressionStatement(index, &index);
+    return_stmt->data.return_stmt.expr_stmt = expr_stmt;
     *after_index = index;
     return return_stmt;
   }
@@ -122,7 +122,7 @@ ASTNode *TryReadStatement(int index, int *after_index) {
   //   iteration-statement
   //   jump-statement
   ASTNode *statement;
-  if ((statement = TryReadReturnStatement(index, after_index)) ||
+  if ((statement = TryReadReturnStmt(index, after_index)) ||
       (statement = TryReadForStatement(index, after_index)) ||
       (statement = TryReadExpressionStatement(index, after_index)))
     return statement;
@@ -137,7 +137,7 @@ ASTNode *TryReadCompoundStatement(int index, int *after_index) {
   // block-item:
   //   declaration
   //   statement
-  ASTNode *comp_stmt = AllocateASTNode(kCompStatement);
+  ASTNode *comp_stmt = AllocateASTNode(kCompStmt);
   if (!IsEqualToken(GetTokenAt(index++), "{")) return NULL;
   //
   ASTNodeList *stmt_list = AllocateASTNodeList();
@@ -157,52 +157,20 @@ ASTNode *TryReadCompoundStatement(int index, int *after_index) {
   return comp_stmt;
 }
 
-ASTNodeList *Parse() {
-  ASTNodeList *root = AllocateASTNodeList();
+ASTNode *Parse() {
+  ASTNode *root = AllocateASTNode(kRoot);
+  ASTNodeList *root_list = AllocateASTNodeList();
+  root->data.root.root_list = root_list;
   int index = 0;
   const Token *token;
   ASTNode *tmp_node;
   for (;;) {
     token = GetTokenAt(index);
     if (!token) break;
-    if (IsEqualToken(token, "\n")) {
-      // skip
-      index++;
-    } else if (IsEqualToken(token, "#")) {
-      index++;
-      token = GetTokenAt(index++);
-      if (IsEqualToken(token, "include")) {
-        token = GetTokenAt(index++);
-        ASTNode *node = AllocateASTNode(kInclude);
-        if (IsEqualToken(token, "<")) {
-          TokenList *tlist = AllocateTokenList();
-          node->data.directive_include.file_name_tokens = tlist;
-          while ((token = GetTokenAt(index++))) {
-            if (IsEqualToken(token, ">")) break;
-            AppendTokenToList(tlist, token);
-          }
-          if (!token) {
-            Error("Expected > but got EOF");
-          }
-        } else {
-          Error("Expected < but got %s", token->str);
-        }
-        AppendASTNodeToList(root, node);
-      } else if (IsEqualToken(token, "define")) {
-        ASTNode *node = AllocateASTNode(kInclude);
-        TokenList *tlist = AllocateTokenList();
-        node->data.directive_include.file_name_tokens = tlist;
-        while ((token = GetTokenAt(index++))) {
-          if (IsEqualToken(token, ">")) break;
-          AppendTokenToList(tlist, token);
-        }
-        if (!token) {
-          Error("Expected > but got EOF");
-        }
-      } else {
-        Error("Unknown preprocessor directive: %s", token->str);
-      }
-    } else if ((tmp_node = TryReadAsVarDef(index, &index))) {
+    if ((tmp_node = TryReadAsVarDef(index, &index))) {
+      // 6.7.6.3
+      // T D( parameter-type-list )
+      // T D( identifier-list_opt )
       // func decl / def
       ASTNode *type_and_name = tmp_node;
       //
@@ -233,7 +201,7 @@ ASTNodeList *Parse() {
       if (IsEqualToken(token, ";")) {
         // decl
         index++;
-        AppendASTNodeToList(root, func_decl);
+        AppendASTNodeToList(root_list, func_decl);
       } else if (IsEqualToken(token, "{")) {
         // def
         ASTNode *func_def = AllocateASTNode(kFuncDef);
@@ -243,13 +211,12 @@ ASTNodeList *Parse() {
         }
         func_def->data.func_def.func_decl = func_decl;
         func_def->data.func_def.comp_stmt = comp_stmt;
-        AppendASTNodeToList(root, func_def);
+        AppendASTNodeToList(root_list, func_def);
 
       } else {
         Error("Expected ; or { but got %s", token->str);
       }
     } else {
-      //PrintASTNodeList(root, 0);
       Error("Unexpected token: %s", token->str);
     }
   }

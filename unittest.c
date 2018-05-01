@@ -26,7 +26,7 @@ void TestParsingExpression(){
 
   SetNumOfTokens(0);
   Tokenize("3 + 4 + 2;"); putchar('\n');
-  ExpectASTType("An expression statement is parsed as ExpressionStatement", TryReadExpressionStatement(0, &after_index), kExpressionStatement);
+  ExpectASTType("An expression statement is parsed as ExpressionStatement", TryReadExpressionStatement(0, &after_index), kExprStmt);
 }
 
 int main(int argc, char *argv[])

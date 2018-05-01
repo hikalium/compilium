@@ -20,6 +20,9 @@ run: compilium
 debug: compilium_dbg
 	lldb ./compilium_dbg Tests/test.c
 
+test: compilium
+	make -C Tests/
+
 unittest: compilium_unittest
 	./compilium_unittest
 

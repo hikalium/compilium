@@ -18,10 +18,11 @@ void PrintASTNode(const ASTNode *node, int depth) {
     printf("(Null)");
     return;
   }
-  if (node->type == kInclude) {
-    printf("(Include:");
+  if (node->type == kRoot) {
+    printf("(Root:");
     PrintASTNodePadding(depth);
-    PrintTokenList(node->data.directive_include.file_name_tokens);
+    printf("root_list=");
+    PrintASTNodeList(node->data.root.root_list, depth + 1);
     PrintASTNodePadding(depth);
     printf(")");
   } else if (node->type == kVarDef) {
@@ -53,25 +54,25 @@ void PrintASTNode(const ASTNode *node, int depth) {
     PrintASTNode(node->data.func_def.comp_stmt, depth + 1);
     PrintASTNodePadding(depth);
     printf(")");
-  } else if (node->type == kCompStatement) {
+  } else if (node->type == kCompStmt) {
     printf("(CompStatement:");
     PrintASTNodePadding(depth);
     printf("(body=");
     PrintASTNodeList(node->data.comp_stmt.stmt_list, depth + 1);
     PrintASTNodePadding(depth);
     printf(")");
-  } else if (node->type == kExpressionStatement) {
-    printf("(ExpressionStatement:");
+  } else if (node->type == kExprStmt) {
+    printf("(ExprStmt:");
     PrintASTNodePadding(depth);
     printf("expression=");
-    PrintTokenList(node->data.expression_stmt.expression);
+    PrintTokenList(node->data.expr_stmt.expr);
     PrintASTNodePadding(depth);
     printf(")");
-  } else if (node->type == kReturnStatement) {
-    printf("(ReturnStatement:");
+  } else if (node->type == kReturnStmt) {
+    printf("(ReturnStmt:");
     PrintASTNodePadding(depth);
-    printf("expression_stmt=");
-    PrintASTNode(node->data.return_stmt.expression_stmt, depth + 1);
+    printf("expr_stmt=");
+    PrintASTNode(node->data.return_stmt.expr_stmt, depth + 1);
     PrintASTNodePadding(depth);
     printf(")");
   } else if (node->type == kForStatement) {
