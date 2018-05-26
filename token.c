@@ -1,30 +1,29 @@
 #include "compilium.h"
 
-Token tokens[MAX_TOKENS];
-int tokens_count;
+void InternalCopyTokenStr(Token *token, const char *s, size_t len)
+{
+    if (len >= MAX_TOKEN_LEN) {
+      Error("Too long token");
+    }
+    strncpy(token->str, s, len);
+    token->str[len] = 0;
+}
 
 Token *AllocateToken(const char *s, TokenType type) {
-  Token *token = malloc(sizeof(Token));
-  if (strlen(s) >= MAX_TOKEN_LEN) {
-    Error("Too long token");
+  if(!s){
+    Error("Trying to allocate a token with a null string");
   }
-  strcpy(token->str, s);
+  Token *token = malloc(sizeof(Token));
+  InternalCopyTokenStr(token, s, strlen(s));
   token->type = type;
   return token;
 }
 
-void AddToken(const char *begin, const char *end, TokenType type) {
-  if (end <= begin || (end - begin) >= MAX_TOKEN_LEN) {
-    Error("Too long token");
-  }
-  if (tokens_count >= MAX_TOKENS) {
-    Error("Too many token");
-  }
-  strncpy(tokens[tokens_count].str, begin, end - begin);
-  tokens[tokens_count].str[end - begin] = 0;
-  tokens[tokens_count].type = type;
-  printf("[%s](%d)", tokens[tokens_count].str, tokens[tokens_count].type);
-  tokens_count++;
+Token *AllocateTokenWithSubstring(const char *begin, const char *end, TokenType type) {
+  Token *token = malloc(sizeof(Token));
+  InternalCopyTokenStr(token, begin, end - begin);
+  token->type = type;
+  return token;
 }
 
 int IsEqualToken(const Token *token, const char *s) {
@@ -48,32 +47,47 @@ int IsKeyword(const Token *token) {
   return 0;
 }
 
-const Token *GetTokenAt(int index) {
-  if (index < 0 || tokens_count <= index) return NULL;
-  return &tokens[index];
+int IsTypeToken(const Token *token) {
+  return IsEqualToken(token, "int") || IsEqualToken(token, "char");
 }
 
-int GetNumOfTokens() { return tokens_count; }
+struct TOKEN_LIST{
+  int capacity;
+  int size;
+  const Token *tokens[];
+};
 
-void SetNumOfTokens(int num_of_tokens) { tokens_count = num_of_tokens; }
-
-TokenList *AllocateTokenList() {
-  TokenList *list = malloc(sizeof(TokenList));
-  list->used = 0;
+TokenList *AllocateTokenList(int capacity) {
+  TokenList *list = malloc(sizeof(TokenList) + sizeof(const Token *) * capacity);
+  list->capacity = capacity;
+  list->size = 0;
   return list;
 }
 
+int IsTokenListFull(TokenList *list)
+{
+  return (list->size >= list->capacity);
+}
+
 void AppendTokenToList(TokenList *list, const Token *token) {
-  if (list->used >= TOKEN_LIST_SIZE) {
+  if (IsTokenListFull(list)) {
     Error("No more space in TokenList");
   }
-  list->tokens[list->used++] = token;
+  list->tokens[list->size++] = token;
 }
+
+const Token *GetTokenAt(TokenList *list, int index) {
+  if (index < 0 || list->size <= index) return NULL;
+  return list->tokens[index];
+}
+
+int GetSizeOfTokenList(const TokenList *list) { return list->size; }
+void SetSizeOfTokenList(TokenList *list, int size) { list->size = size; }
 
 void PrintToken(const Token *token) { printf("%s ", token->str); }
 
 void PrintTokenList(const TokenList *list) {
-  for (int i = 0; i < list->used; i++) {
+  for (int i = 0; i < list->size; i++) {
     if (i) putchar(' ');
     PrintToken(list->tokens[i]);
   }

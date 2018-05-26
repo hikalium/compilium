@@ -1,15 +1,18 @@
 #include "compilium.h"
 
+#define MAX_TOKENS 2048
+
 int main(int argc, char *argv[]) {
   if (argc < 3) {
     Error("Usage: %s <src_c_file> <dst_S_file>", argv[0]);
   }
 
   char *input = ReadFile(argv[1]);
-  Tokenize(input);
+  TokenList *tokens = AllocateTokenList(MAX_TOKENS);
+  Tokenize(tokens, input);
   free(input);
 
-  ASTNode *ast = Parse();
+  ASTNode *ast = Parse(tokens);
 
   PrintASTNode(ast, 1); putchar('\n');
 

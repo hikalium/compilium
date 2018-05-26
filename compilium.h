@@ -4,7 +4,6 @@
 #include <string.h>
 
 #define MAX_TOKEN_LEN 64
-#define MAX_TOKENS 2048
 #define MAX_INPUT_SIZE 8192
 
 typedef enum {
@@ -16,15 +15,11 @@ typedef enum {
 } TokenType;
 
 typedef struct {
-  char str[MAX_TOKEN_LEN];
+  char str[MAX_TOKEN_LEN + 1];
   TokenType type;
 } Token;
 
-#define TOKEN_LIST_SIZE 32
-typedef struct {
-  const Token *tokens[TOKEN_LIST_SIZE];
-  int used;  // TODO: rename used -> size
-} TokenList;
+typedef struct TOKEN_LIST TokenList;
 
 typedef enum {
   kRoot,
@@ -144,21 +139,23 @@ void Error(const char *fmt, ...);
 void Generate(FILE *fp, const ASTNode *node);
 
 // @parser.c
-ASTNode *Parse();
+ASTNode *Parse(TokenList *tokens);
 
 // @token.c
 Token *AllocateToken(const char *s, TokenType type);
-void AddToken(const char *begin, const char *end, TokenType type);
+Token *AllocateTokenWithSubstring(const char *begin, const char *end, TokenType type);
 int IsEqualToken(const Token *token, const char *s);
 int IsKeyword(const Token *token);
-const Token *GetTokenAt(int index);
-int GetNumOfTokens();
+int IsTypeToken(const Token *token);
 void SetNumOfTokens(int num_of_tokens);
 TokenList *AllocateTokenList();
 void AppendTokenToList(TokenList *list, const Token *token);
+const Token *GetTokenAt(TokenList *list, int index);
+int GetSizeOfTokenList(const TokenList *list);
+void SetSizeOfTokenList(TokenList *list, int size);
 void PrintToken(const Token *token);
 void PrintTokenList(const TokenList *list);
 
 // @tokenizer.c
 char *ReadFile(const char *file_name);
-void Tokenize(const char *p);
+void Tokenize(TokenList *tokens, const char *p);

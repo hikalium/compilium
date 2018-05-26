@@ -1,31 +1,27 @@
 #include "compilium.h"
 
-int IsTypeToken(const Token *token) {
-  return IsEqualToken(token, "int") || IsEqualToken(token, "char");
-}
-
-ASTNode *TryReadAsVarDef(int index, int *after_index) {
+ASTNode *TryReadAsVarDef(TokenList *tokens, int index, int *after_index) {
   ASTNode *var_def = AllocateASTNode(kVarDef);
   const Token *token;
   TokenList *token_list = AllocateTokenList();
   var_def->data.var_def.type_tokens = token_list;
 
-  token = GetTokenAt(index);
+  token = GetTokenAt(tokens, index);
   if (IsEqualToken(token, "const")) {
     AppendTokenToList(token_list, token);
-    token = GetTokenAt(++index);
+    token = GetTokenAt(tokens, ++index);
   }
   if (IsTypeToken(token)) {
     AppendTokenToList(token_list, token);
-    token = GetTokenAt(++index);
+    token = GetTokenAt(tokens, ++index);
   } else {
     return NULL;
   }
   while (IsEqualToken(token, "*")) {
     AppendTokenToList(token_list, token);
-    token = GetTokenAt(++index);
+    token = GetTokenAt(tokens, ++index);
   }
-  var_def->data.var_def.name = GetTokenAt(index++);
+  var_def->data.var_def.name = GetTokenAt(tokens, index++);
   *after_index = index;
   return var_def;
 }
@@ -42,14 +38,14 @@ void ReduceExprOp(ASTNodeList *expr_stack, ASTNodeList *op_stack)
   PushASTNodeToList(expr_stack, last_op);
 }
 
-ASTNode *ReadExpression(int index, int *after_index) {
+ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
   // 6.5
   // a sequence of operators and operands
   // ... or that designates an object or a function
   ASTNodeList *expr_stack = AllocateASTNodeList();
   ASTNodeList *op_stack = AllocateASTNodeList();
   const Token *token;
-  while ((token = GetTokenAt(index))) {
+  while ((token = GetTokenAt(tokens, index))) {
     if (token->type == kInteger) {
       ASTNode *vnode = AllocateASTNodeAsExprVal(token);
       PushASTNodeToList(expr_stack, vnode);
@@ -87,32 +83,32 @@ ASTNode *ReadExpression(int index, int *after_index) {
   return expr_stack->nodes[0];
 }
 
-ASTNode *TryReadCompoundStatement(int index, int *after_index);
+ASTNode *TryReadCompoundStatement(TokenList *tokens, int index, int *after_index);
 
-ASTNode *TryReadExpressionStatement(int index, int *after_index) {
+ASTNode *TryReadExpressionStatement(TokenList *tokens, int index, int *after_index) {
   // expression-statement:
   //   expression ;
-  ASTNode *expr = ReadExpression(index, &index);
-  if (!expr || !IsEqualToken(GetTokenAt(index++), ";")) return NULL;
+  ASTNode *expr = ReadExpression(tokens, index, &index);
+  if (!expr || !IsEqualToken(GetTokenAt(tokens, index++), ";")) return NULL;
   ASTNode *expr_stmt = AllocateASTNode(kExprStmt);
   expr_stmt->data.expr_stmt.expr = expr;
   *after_index = index;
   return expr_stmt;
 }
 
-ASTNode *TryReadForStatement(int index, int *after_index) {
+ASTNode *TryReadForStatement(TokenList *tokens, int index, int *after_index) {
   // 6.8.5.3
   // for ( expression(opt) ; expression(opt) ; expression(opt) ) statement:
 
-  if (!IsEqualToken(GetTokenAt(index++), "for")) return NULL;
-  if (!IsEqualToken(GetTokenAt(index++), "(")) return NULL;
-  ASTNode *init_expr = ReadExpression(index, &index);
-  if (!IsEqualToken(GetTokenAt(index++), ";")) return NULL;
-  ASTNode *cond_expr = ReadExpression(index, &index);
-  if (!IsEqualToken(GetTokenAt(index++), ";")) return NULL;
-  ASTNode *updt_expr = ReadExpression(index, &index);
-  if (!IsEqualToken(GetTokenAt(index++), ")")) return NULL;
-  ASTNode *body_comp_stmt = TryReadCompoundStatement(index, &index);
+  if (!IsEqualToken(GetTokenAt(tokens, index++), "for")) return NULL;
+  if (!IsEqualToken(GetTokenAt(tokens, index++), "(")) return NULL;
+  ASTNode *init_expr = ReadExpression(tokens, index, &index);
+  if (!IsEqualToken(GetTokenAt(tokens, index++), ";")) return NULL;
+  ASTNode *cond_expr = ReadExpression(tokens, index, &index);
+  if (!IsEqualToken(GetTokenAt(tokens, index++), ";")) return NULL;
+  ASTNode *updt_expr = ReadExpression(tokens, index, &index);
+  if (!IsEqualToken(GetTokenAt(tokens, index++), ")")) return NULL;
+  ASTNode *body_comp_stmt = TryReadCompoundStatement(tokens, index, &index);
   if (!body_comp_stmt) {
     Error("TryReadForStatement: body_comp_stmt is null");
   }
@@ -125,13 +121,13 @@ ASTNode *TryReadForStatement(int index, int *after_index) {
   return for_stmt;
 }
 
-ASTNode *TryReadReturnStmt(int index, int *after_index) {
+ASTNode *TryReadReturnStmt(TokenList *tokens, int index, int *after_index) {
   const Token *token;
-  token = GetTokenAt(index++);
+  token = GetTokenAt(tokens, index++);
   if (IsEqualToken(token, "return")) {
     // jump-statement(return)
     ASTNode *return_stmt = AllocateASTNode(kReturnStmt);
-    ASTNode *expr_stmt = TryReadExpressionStatement(index, &index);
+    ASTNode *expr_stmt = TryReadExpressionStatement(tokens, index, &index);
     return_stmt->data.return_stmt.expr_stmt = expr_stmt;
     *after_index = index;
     return return_stmt;
@@ -139,7 +135,7 @@ ASTNode *TryReadReturnStmt(int index, int *after_index) {
   return NULL;
 }
 
-ASTNode *TryReadStatement(int index, int *after_index) {
+ASTNode *TryReadStatement(TokenList *tokens, int index, int *after_index) {
   // 6.8
   // statement:
   //   labeled-statement
@@ -149,14 +145,14 @@ ASTNode *TryReadStatement(int index, int *after_index) {
   //   iteration-statement
   //   jump-statement
   ASTNode *statement;
-  if ((statement = TryReadReturnStmt(index, after_index)) ||
-      (statement = TryReadForStatement(index, after_index)) ||
-      (statement = TryReadExpressionStatement(index, after_index)))
+  if ((statement = TryReadReturnStmt(tokens, index, after_index)) ||
+      (statement = TryReadForStatement(tokens, index, after_index)) ||
+      (statement = TryReadExpressionStatement(tokens, index, after_index)))
     return statement;
   return NULL;
 }
 
-ASTNode *TryReadCompoundStatement(int index, int *after_index) {
+ASTNode *TryReadCompoundStatement(TokenList *tokens, int index, int *after_index) {
   // 6.8.2
   // compound-statement:
   //   { block-item-list(opt) }
@@ -165,19 +161,19 @@ ASTNode *TryReadCompoundStatement(int index, int *after_index) {
   //   declaration
   //   statement
   ASTNode *comp_stmt = AllocateASTNode(kCompStmt);
-  if (!IsEqualToken(GetTokenAt(index++), "{")) return NULL;
+  if (!IsEqualToken(GetTokenAt(tokens, index++), "{")) return NULL;
   //
   ASTNodeList *stmt_list = AllocateASTNodeList();
   ASTNode *stmt;
-  while ((stmt = TryReadStatement(index, &index))) {
+  while ((stmt = TryReadStatement(tokens, index, &index))) {
     PushASTNodeToList(stmt_list, stmt);
     PrintASTNode(stmt, 0);
     putchar('\n');
   }
   comp_stmt->data.comp_stmt.stmt_list = stmt_list;
   //
-  if (!IsEqualToken(GetTokenAt(index), "}")) {
-    Error("Expected } but got %s", GetTokenAt(index)->str);
+  if (!IsEqualToken(GetTokenAt(tokens, index), "}")) {
+    Error("Expected } but got %s", GetTokenAt(tokens, index)->str);
   }
   index++;
   //
@@ -185,7 +181,7 @@ ASTNode *TryReadCompoundStatement(int index, int *after_index) {
   return comp_stmt;
 }
 
-ASTNode *Parse() {
+ASTNode *Parse(TokenList *tokens) {
   ASTNode *root = AllocateASTNode(kRoot);
   ASTNodeList *root_list = AllocateASTNodeList();
   root->data.root.root_list = root_list;
@@ -193,30 +189,30 @@ ASTNode *Parse() {
   const Token *token;
   ASTNode *tmp_node;
   for (;;) {
-    token = GetTokenAt(index);
+    token = GetTokenAt(tokens, index);
     if (!token) break;
-    if ((tmp_node = TryReadAsVarDef(index, &index))) {
+    if ((tmp_node = TryReadAsVarDef(tokens, index, &index))) {
       // 6.7.6.3
       // T D( parameter-type-list )
       // T D( identifier-list_opt )
       // func decl / def
       ASTNode *type_and_name = tmp_node;
       //
-      token = GetTokenAt(index++);
+      token = GetTokenAt(tokens, index++);
       if (!IsEqualToken(token, "(")) {
         Error("Expected ( but got %s", token->str);
       }
       // args
       ASTNodeList *arg_list = AllocateASTNodeList();
-      while ((tmp_node = TryReadAsVarDef(index, &index))) {
+      while ((tmp_node = TryReadAsVarDef(tokens, index, &index))) {
         PushASTNodeToList(arg_list, tmp_node);
-        if (!IsEqualToken(GetTokenAt(index), ",")) {
+        if (!IsEqualToken(GetTokenAt(tokens, index), ",")) {
           break;
         }
         index++;
       }
       //
-      token = GetTokenAt(index++);
+      token = GetTokenAt(tokens, index++);
       if (!IsEqualToken(token, ")")) {
         Error("Expected ) but got %s", token->str);
       }
@@ -225,7 +221,7 @@ ASTNode *Parse() {
       func_decl->data.func_decl.type_and_name = type_and_name;
       func_decl->data.func_decl.arg_list = arg_list;
       // ; if decl, { if def
-      token = GetTokenAt(index);
+      token = GetTokenAt(tokens, index);
       if (IsEqualToken(token, ";")) {
         // decl
         index++;
@@ -233,7 +229,7 @@ ASTNode *Parse() {
       } else if (IsEqualToken(token, "{")) {
         // def
         ASTNode *func_def = AllocateASTNode(kFuncDef);
-        ASTNode *comp_stmt = TryReadCompoundStatement(index, &index);
+        ASTNode *comp_stmt = TryReadCompoundStatement(tokens, index, &index);
         if (!comp_stmt) {
           Error("comp_stmt is null");
         }
