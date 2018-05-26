@@ -23,7 +23,7 @@ typedef struct {
 #define TOKEN_LIST_SIZE 32
 typedef struct {
   const Token *tokens[TOKEN_LIST_SIZE];
-  int used;
+  int used;  // TODO: rename used -> size
 } TokenList;
 
 typedef enum {
@@ -32,6 +32,8 @@ typedef enum {
   kFuncDecl,
   kFuncDef,
   kCompStmt,
+  kExprBinOp,
+  kExprVal,
   kExprStmt,
   kReturnStmt,
   kForStatement,
@@ -68,8 +70,22 @@ typedef struct {
   ASTNodeList *stmt_list;
 } ASTDataCompStmt;
 
+typedef enum {
+  kOpAdd,
+} ASTExprBinOpType;
+
 typedef struct {
-  TokenList *expr;
+  ASTExprBinOpType op_type;
+  ASTNode *left;
+  ASTNode *right;
+} ASTDataExprBinOp;
+
+typedef struct {
+  const Token *token;
+} ASTDataExprVal;
+
+typedef struct {
+  ASTNode *expr;
 } ASTDataExprStmt;
 
 typedef struct {
@@ -77,9 +93,9 @@ typedef struct {
 } ASTDataReturnStmt;
 
 typedef struct {
-  TokenList *init_expression;
-  TokenList *cond_expression;
-  TokenList *updt_expression;
+  ASTNode *init_expr;
+  ASTNode *cond_expr;
+  ASTNode *updt_expr;
   ASTNode *body_comp_stmt;
 } ASTDataStatementFor;
 
@@ -92,28 +108,68 @@ struct AST_NODE {
     ASTDataCompStmt comp_stmt;
     ASTDataFuncDecl func_decl;
     ASTDataFuncDef func_def;
+    ASTDataExprBinOp expr_bin_op;
+    ASTDataExprVal expr_val;
     ASTDataExprStmt expr_stmt;
     ASTDataVarDef var_def;
   } data;
 };
 
+typedef enum {
+  kOperand,
+  kOperator,
+  kFuncCallOperator,
+  kFuncIdentifier,
+} RPNTermType;
+
+typedef struct {
+  const Token *token;
+  RPNTermType type;
+} RPNTerm;
+
+#define RPN_TERM_LIST_SIZE 64
+typedef struct {
+  RPNTerm terms[RPN_TERM_LIST_SIZE];
+  int used;
+} RPNStack;
+
 // @ast.c
+const ASTDataRoot *GetDataAsRoot(const ASTNode *node);
+const ASTDataVarDef *GetDataAsVarDef(const ASTNode *node);
+const ASTDataFuncDecl *GetDataAsFuncDecl(const ASTNode *node);
+const ASTDataFuncDef *GetDataAsFuncDef(const ASTNode *node);
+const ASTDataCompStmt *GetDataAsCompStmt(const ASTNode *node);
+const ASTDataExprBinOp *GetDataAsExprBinOp(const ASTNode *node);
+const ASTDataExprVal *GetDataAsExprVal(const ASTNode *node);
+const ASTDataExprStmt *GetDataAsExprStmt(const ASTNode *node);
+const ASTDataReturnStmt *GetDataAsReturnStmt(const ASTNode *node);
+
 ASTNode *AllocateASTNode(ASTType type);
+ASTNode *AllocateASTNodeAsExprVal(const Token *token);
+
 void PrintASTNode(const ASTNode *node, int depth);
 ASTNodeList *AllocateASTNodeList();
-void AppendASTNodeToList(ASTNodeList *list, ASTNode *node);
+void PushASTNodeToList(ASTNodeList *list, ASTNode *node);
 void PrintASTNodeList(ASTNodeList *list, int depth);
 
 // @error.c
 void Error(const char *fmt, ...);
 
 // @generate.c
+RPNStack *ParseExpressionStatementToRPN(ASTNode *expr_stmt);
 void Generate(FILE *fp, const ASTNode *node);
 
 // @parser.c
 ASTNode *Parse();
 
+// @rpn.c
+RPNStack *AllocateRPNStack();
+void PushToRPNStack(RPNStack *stack, const Token *token, RPNTermType type);
+void PopFromRPNStack(RPNStack *stack);
+void PrintRPNStack(RPNStack *stack);
+
 // @token.c
+Token *AllocateToken(const char *s, TokenType type);
 void AddToken(const char *begin, const char *end, TokenType type);
 int IsEqualToken(const Token *token, const char *s);
 int IsKeyword(const Token *token);
@@ -122,6 +178,7 @@ int GetNumOfTokens();
 void SetNumOfTokens(int num_of_tokens);
 TokenList *AllocateTokenList();
 void AppendTokenToList(TokenList *list, const Token *token);
+void PrintToken(const Token *token);
 void PrintTokenList(const TokenList *list);
 
 // @tokenizer.c

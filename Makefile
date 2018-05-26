@@ -15,7 +15,7 @@ compilium_unittest: unittest.c $(SRCS) $(HEADERS) Makefile
 	$(CC) $(CFLAGS) -o $@ unittest.c $(SRCS)
 
 run: compilium
-	make -C Tests test.compilium.S
+	make -C Tests sample.compilium.bin
 
 debug: compilium_dbg
 	lldb ./compilium_dbg Tests/test.c

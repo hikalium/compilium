@@ -1,4 +1,4 @@
-default: simple_return.test hello_world.test
+default: simple_return.test # hello_world.test
 
 .FORCE :
 

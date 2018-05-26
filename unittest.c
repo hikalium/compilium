@@ -21,12 +21,14 @@ void ExpectNullAST(const char *description, const ASTNode *ast)
 }
 
 ASTNode *TryReadExpressionStatement(int index, int *after_index);
+
 void TestParsingExpression(){
   int after_index;
 
   SetNumOfTokens(0);
-  Tokenize("3 + 4 + 2;"); putchar('\n');
-  ExpectASTType("An expression statement is parsed as ExpressionStatement", TryReadExpressionStatement(0, &after_index), kExprStmt);
+  Tokenize("3;"); putchar('\n');
+  ASTNode *expr_stmt = TryReadExpressionStatement(0, &after_index);
+  ExpectASTType("A statement contains a number is parsed as ExpressionStatement", expr_stmt, kExprStmt);
 }
 
 int main(int argc, char *argv[])

@@ -3,6 +3,16 @@
 Token tokens[MAX_TOKENS];
 int tokens_count;
 
+Token *AllocateToken(const char *s, TokenType type) {
+  Token *token = malloc(sizeof(Token));
+  if (strlen(s) >= MAX_TOKEN_LEN) {
+    Error("Too long token");
+  }
+  strcpy(token->str, s);
+  token->type = type;
+  return token;
+}
+
 void AddToken(const char *begin, const char *end, TokenType type) {
   if (end <= begin || (end - begin) >= MAX_TOKEN_LEN) {
     Error("Too long token");
@@ -23,50 +33,17 @@ int IsEqualToken(const Token *token, const char *s) {
 }
 
 static const char *keyword_list[] = {
-  "auto",
-  "break",
-  "case",
-  "char",
-  "const",
-  "continue",
-  "default",
-  "do",
-  "double",
-  "else",
-  "enum",
-  "extern",
-  "float",
-  "for",
-  "goto",
-  "if",
-  "inline",
-  "int",
-  "long",
-  "register",
-  "restrict",
-  "return",
-  "short",
-  "signed",
-  "sizeof",
-  "static",
-  "struct",
-  "switch",
-  "typedef",
-  "union",
-  "unsigned",
-  "void",
-  "volatile",
-  "while",
-  "_Bool",
-  "_Complex",
-  "_Imaginary",
-  NULL
-};
+    "auto",       "break",    "case",     "char",   "const",   "continue",
+    "default",    "do",       "double",   "else",   "enum",    "extern",
+    "float",      "for",      "goto",     "if",     "inline",  "int",
+    "long",       "register", "restrict", "return", "short",   "signed",
+    "sizeof",     "static",   "struct",   "switch", "typedef", "union",
+    "unsigned",   "void",     "volatile", "while",  "_Bool",   "_Complex",
+    "_Imaginary", NULL};
 
-int IsKeyword(const Token *token) 
-{
-  for(int i = 0; keyword_list[i]; i++){
-    if(IsEqualToken(token, keyword_list[i])) return 1;
+int IsKeyword(const Token *token) {
+  for (int i = 0; keyword_list[i]; i++) {
+    if (IsEqualToken(token, keyword_list[i])) return 1;
   }
   return 0;
 }
@@ -76,13 +53,9 @@ const Token *GetTokenAt(int index) {
   return &tokens[index];
 }
 
-int GetNumOfTokens() {
-  return tokens_count;
-}
+int GetNumOfTokens() { return tokens_count; }
 
-void SetNumOfTokens(int num_of_tokens){
-  tokens_count = num_of_tokens;
-}
+void SetNumOfTokens(int num_of_tokens) { tokens_count = num_of_tokens; }
 
 TokenList *AllocateTokenList() {
   TokenList *list = malloc(sizeof(TokenList));
@@ -97,9 +70,11 @@ void AppendTokenToList(TokenList *list, const Token *token) {
   list->tokens[list->used++] = token;
 }
 
+void PrintToken(const Token *token) { printf("%s ", token->str); }
+
 void PrintTokenList(const TokenList *list) {
   for (int i = 0; i < list->used; i++) {
-    printf("%s ", list->tokens[i]->str);
+    if (i) putchar(' ');
+    PrintToken(list->tokens[i]);
   }
 }
-

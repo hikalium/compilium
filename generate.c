@@ -1,39 +1,14 @@
 #include "compilium.h"
 
-const ASTDataRoot *GetDataAsRoot(const ASTNode *node) {
-  if (node->type != kRoot) return NULL;
-  return &node->data.root;
-}
+/*
+RPNStack *ParseExpressionStatementToRPN(ASTNode *expr_stmt_node)
+{
+  RPNStack *rpn = AllocateRPNStack();
+  const ASTDataExprStmt *expr_stmt = GetDataAsExprStmt(expr_stmt_node);
 
-const ASTDataVarDef *GetDataAsVarDef(const ASTNode *node) {
-  if (node->type != kVarDef) return NULL;
-  return &node->data.var_def;
+  return rpn;
 }
-
-const ASTDataFuncDecl *GetDataAsFuncDecl(const ASTNode *node) {
-  if (node->type != kFuncDecl) return NULL;
-  return &node->data.func_decl;
-}
-
-const ASTDataFuncDef *GetDataAsFuncDef(const ASTNode *node) {
-  if (node->type != kFuncDef) return NULL;
-  return &node->data.func_def;
-}
-
-const ASTDataCompStmt *GetDataAsCompStmt(const ASTNode *node) {
-  if (node->type != kCompStmt) return NULL;
-  return &node->data.comp_stmt;
-}
-
-const ASTDataExprStmt *GetDataAsExprStmt(const ASTNode *node) {
-  if (node->type != kExprStmt) return NULL;
-  return &node->data.expr_stmt;
-}
-
-const ASTDataReturnStmt *GetDataAsReturnStmt(const ASTNode *node) {
-  if (node->type != kReturnStmt) return NULL;
-  return &node->data.return_stmt;
-}
+*/
 
 void GenerateSymbolForFuncDef(FILE *fp, const ASTNode *node) {
   const ASTDataFuncDef *def = GetDataAsFuncDef(node);
@@ -66,48 +41,16 @@ void GenerateCodeForFuncDef(FILE *fp, const ASTNode *node) {
   fprintf(fp, "ret\n");
 }
 
-typedef enum {
-  kOperand,
-  kOperator,
-  kFuncCallOperator,
-  kFuncIdentifier,
-} RPNTermType;
-
-typedef struct {
-  const Token *token;
-  RPNTermType type;
-} RPNTerm;
-
-#define RPN_TERM_LIST_SIZE 64
-typedef struct {
-  RPNTerm terms[RPN_TERM_LIST_SIZE];
-  int used;
-} RPNTermStack;
-
-RPNTermStack *AllocateRPNTermStack() { return malloc(sizeof(RPNTermStack)); }
-
-void PushToRPNTermStack(RPNTermStack *stack, const Token *token,
-                        RPNTermType type) {
-  if (!stack) Error("Stack is NULL");
-  if (stack->used >= RPN_TERM_LIST_SIZE) Error("No more space left in stack");
-  stack->terms[stack->used].token = token;
-  stack->terms[stack->used].type = type;
-  stack->used++;
-}
-
-void PopFromRPNTermStack(RPNTermStack *stack) {
-  if (!stack) Error("Stack is NULL");
-  if (stack->used == 0) return;
-  stack->used--;
-}
-
 int GetLabelNumber() {
   static int num = 0;
   return num++;
 }
 
 void GenerateCodeForExprStmt(FILE *fp, const ASTNode *node) {
+  // https://wiki.osdev.org/System_V_ABI
   const ASTDataExprStmt *expr_stmt = GetDataAsExprStmt(node);
+  Generate(fp, expr_stmt->expr);
+  /*
   const TokenList *token_list = expr_stmt->expr;
   if (token_list->used == 1 && token_list->tokens[0]->type == kInteger) {
     char *p;
@@ -138,7 +81,21 @@ void GenerateCodeForExprStmt(FILE *fp, const ASTNode *node) {
   } else {
     Error("GenerateCodeForExprStmt: Not implemented ");
   }
+  */
 }
+
+void GenerateCodeForExprVal(FILE *fp, const ASTNode *node) {
+  // https://wiki.osdev.org/System_V_ABI
+  const ASTDataExprVal *expr_val = GetDataAsExprVal(node);
+  char *p;
+  const char *s = expr_val->token->str;
+  int var = strtol(s, &p, 0);
+  if (!(s[0] != 0 && *p == 0)) {
+    Error("%s is not valid as integer.", s);
+  }
+  fprintf(fp, "mov     rax, %d\n", var);
+}
+
 
 void Generate(FILE *fp, const ASTNode *node) {
   if (node->type == kRoot) {
@@ -161,6 +118,8 @@ void Generate(FILE *fp, const ASTNode *node) {
   } else if (node->type == kReturnStmt) {
     const ASTDataReturnStmt *ret = GetDataAsReturnStmt(node);
     GenerateCodeForExprStmt(fp, ret->expr_stmt);
+  } else if (node->type == kExprVal) {
+    GenerateCodeForExprVal(fp, node);
   } else if (node->type == kExprStmt) {
     GenerateCodeForExprStmt(fp, node);
   } else {
