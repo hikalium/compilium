@@ -115,24 +115,6 @@ struct AST_NODE {
   } data;
 };
 
-typedef enum {
-  kOperand,
-  kOperator,
-  kFuncCallOperator,
-  kFuncIdentifier,
-} RPNTermType;
-
-typedef struct {
-  const Token *token;
-  RPNTermType type;
-} RPNTerm;
-
-#define RPN_TERM_LIST_SIZE 64
-typedef struct {
-  RPNTerm terms[RPN_TERM_LIST_SIZE];
-  int used;
-} RPNStack;
-
 // @ast.c
 const ASTDataRoot *GetDataAsRoot(const ASTNode *node);
 const ASTDataVarDef *GetDataAsVarDef(const ASTNode *node);
@@ -159,7 +141,6 @@ void PrintASTNodeList(ASTNodeList *list, int depth);
 void Error(const char *fmt, ...);
 
 // @generate.c
-RPNStack *ParseExpressionStatementToRPN(ASTNode *expr_stmt);
 void Generate(FILE *fp, const ASTNode *node);
 
 // @parser.c
