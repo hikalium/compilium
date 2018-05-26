@@ -1,15 +1,5 @@
 #include "compilium.h"
 
-/*
-RPNStack *ParseExpressionStatementToRPN(ASTNode *expr_stmt_node)
-{
-  RPNStack *rpn = AllocateRPNStack();
-  const ASTDataExprStmt *expr_stmt = GetDataAsExprStmt(expr_stmt_node);
-
-  return rpn;
-}
-*/
-
 void GenerateSymbolForFuncDef(FILE *fp, const ASTNode *node) {
   const ASTDataFuncDef *def = GetDataAsFuncDef(node);
   const ASTDataFuncDecl *decl = GetDataAsFuncDecl(def->func_decl);
