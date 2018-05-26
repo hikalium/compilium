@@ -146,10 +146,13 @@ const ASTDataReturnStmt *GetDataAsReturnStmt(const ASTNode *node);
 
 ASTNode *AllocateASTNode(ASTType type);
 ASTNode *AllocateASTNodeAsExprVal(const Token *token);
+ASTNode *AllocateASTNodeAsExprBinOp(ASTExprBinOpType op_type);
+void SetOperandOfExprBinOp(ASTNode *node, ASTNode *left, ASTNode *right);
 
 void PrintASTNode(const ASTNode *node, int depth);
 ASTNodeList *AllocateASTNodeList();
 void PushASTNodeToList(ASTNodeList *list, ASTNode *node);
+ASTNode *PopASTNodeFromList(ASTNodeList *list);
 void PrintASTNodeList(ASTNodeList *list, int depth);
 
 // @error.c
@@ -161,12 +164,6 @@ void Generate(FILE *fp, const ASTNode *node);
 
 // @parser.c
 ASTNode *Parse();
-
-// @rpn.c
-RPNStack *AllocateRPNStack();
-void PushToRPNStack(RPNStack *stack, const Token *token, RPNTermType type);
-void PopFromRPNStack(RPNStack *stack);
-void PrintRPNStack(RPNStack *stack);
 
 // @token.c
 Token *AllocateToken(const char *s, TokenType type);

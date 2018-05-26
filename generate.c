@@ -46,6 +46,22 @@ int GetLabelNumber() {
   return num++;
 }
 
+void GenerateCodeForExprBinOp(FILE *fp, const ASTNode *node) {
+  Error("Not implemented GenerateCodeForExprBinOp");
+}
+
+void GenerateCodeForExprVal(FILE *fp, const ASTNode *node) {
+  // https://wiki.osdev.org/System_V_ABI
+  const ASTDataExprVal *expr_val = GetDataAsExprVal(node);
+  char *p;
+  const char *s = expr_val->token->str;
+  int var = strtol(s, &p, 0);
+  if (!(s[0] != 0 && *p == 0)) {
+    Error("%s is not valid as integer.", s);
+  }
+  fprintf(fp, "mov     rax, %d\n", var);
+}
+
 void GenerateCodeForExprStmt(FILE *fp, const ASTNode *node) {
   // https://wiki.osdev.org/System_V_ABI
   const ASTDataExprStmt *expr_stmt = GetDataAsExprStmt(node);
@@ -84,19 +100,6 @@ void GenerateCodeForExprStmt(FILE *fp, const ASTNode *node) {
   */
 }
 
-void GenerateCodeForExprVal(FILE *fp, const ASTNode *node) {
-  // https://wiki.osdev.org/System_V_ABI
-  const ASTDataExprVal *expr_val = GetDataAsExprVal(node);
-  char *p;
-  const char *s = expr_val->token->str;
-  int var = strtol(s, &p, 0);
-  if (!(s[0] != 0 && *p == 0)) {
-    Error("%s is not valid as integer.", s);
-  }
-  fprintf(fp, "mov     rax, %d\n", var);
-}
-
-
 void Generate(FILE *fp, const ASTNode *node) {
   if (node->type == kRoot) {
     fputs(".intel_syntax noprefix\n", fp);
@@ -118,6 +121,8 @@ void Generate(FILE *fp, const ASTNode *node) {
   } else if (node->type == kReturnStmt) {
     const ASTDataReturnStmt *ret = GetDataAsReturnStmt(node);
     GenerateCodeForExprStmt(fp, ret->expr_stmt);
+  } else if (node->type == kExprBinOp) {
+    GenerateCodeForExprBinOp(fp, node);
   } else if (node->type == kExprVal) {
     GenerateCodeForExprVal(fp, node);
   } else if (node->type == kExprStmt) {

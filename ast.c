@@ -57,6 +57,18 @@ ASTNode *AllocateASTNodeAsExprVal(const Token *token) {
   return node;
 }
 
+ASTNode *AllocateASTNodeAsExprBinOp(ASTExprBinOpType op_type) {
+  ASTNode *node = AllocateASTNode(kExprBinOp);
+  node->data.expr_bin_op.op_type = op_type;
+  node->data.expr_bin_op.left = NULL;
+  node->data.expr_bin_op.right = NULL;
+  return node;
+}
+void SetOperandOfExprBinOp(ASTNode *node, ASTNode *left, ASTNode *right) {
+  node->data.expr_bin_op.left = left;
+  node->data.expr_bin_op.right = right;
+}
+
 void PrintASTNodePadding(int depth) {
   putchar('\n');
   for (int i = 0; i < depth; i++) putchar(' ');
@@ -96,19 +108,40 @@ void PrintASTNode(const ASTNode *node, int depth) {
     printf(")");
   } else if (node->type == kFuncDef) {
     printf("(FuncDef:");
+    //
     PrintASTNodePadding(depth);
     printf("func_decl=");
     PrintASTNode(node->data.func_def.func_decl, depth + 1);
+    //
     PrintASTNodePadding(depth);
     printf("comp_stmt=");
     PrintASTNode(node->data.func_def.comp_stmt, depth + 1);
+    //
     PrintASTNodePadding(depth);
     printf(")");
   } else if (node->type == kCompStmt) {
     printf("(CompStatement:");
+    //
     PrintASTNodePadding(depth);
     printf("(body=");
     PrintASTNodeList(node->data.comp_stmt.stmt_list, depth + 1);
+    //
+    PrintASTNodePadding(depth);
+    printf(")");
+  } else if (node->type == kExprBinOp) {
+    printf("(ExprBinOp:");
+    //
+    PrintASTNodePadding(depth);
+    printf("op_type=%d", GetDataAsExprBinOp(node)->op_type);
+    //
+    PrintASTNodePadding(depth);
+    printf("left=");
+    PrintASTNode(GetDataAsExprBinOp(node)->left, depth + 1);
+    //
+    PrintASTNodePadding(depth);
+    printf("right=");
+    PrintASTNode(GetDataAsExprBinOp(node)->right, depth + 1);
+    //
     PrintASTNodePadding(depth);
     printf(")");
   } else if (node->type == kExprVal) {
@@ -164,6 +197,13 @@ void PushASTNodeToList(ASTNodeList *list, ASTNode *node) {
     Error("No more space in ASTNodeList");
   }
   list->nodes[list->used++] = node;
+}
+
+ASTNode *PopASTNodeFromList(ASTNodeList *list) {
+  if (list->used <= 0) {
+    Error("Trying to pop empty ASTNodeList");
+  }
+  return list->nodes[--list->used];
 }
 
 void PrintASTNodeList(ASTNodeList *list, int depth) {

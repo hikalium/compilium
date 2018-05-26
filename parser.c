@@ -30,20 +30,48 @@ ASTNode *TryReadAsVarDef(int index, int *after_index) {
   return var_def;
 }
 
+void ReduceExprOp(ASTNodeList *expr_stack, ASTNodeList *op_stack)
+{
+  ASTNode *last_op = PopASTNodeFromList(op_stack);
+  if(expr_stack->used < 2){
+    Error("expr_stack too short (%d < 2)", expr_stack->used);
+  }
+  ASTNode *right = PopASTNodeFromList(expr_stack);
+  ASTNode *left = PopASTNodeFromList(expr_stack);
+  SetOperandOfExprBinOp(last_op, left, right);
+  PushASTNodeToList(expr_stack, last_op);
+}
+
 ASTNode *ReadExpression(int index, int *after_index) {
   // 6.5
   // a sequence of operators and operands
   // ... or that designates an object or a function
   ASTNodeList *expr_stack = AllocateASTNodeList();
+  ASTNodeList *op_stack = AllocateASTNodeList();
   const Token *token;
   while ((token = GetTokenAt(index))) {
     if (token->type == kInteger) {
       ASTNode *vnode = AllocateASTNodeAsExprVal(token);
       PushASTNodeToList(expr_stack, vnode);
       index++;
+    } else if (token->type == kPunctuator) {
+      if (IsEqualToken(token, "+")) {
+        ASTNode *opnode = AllocateASTNodeAsExprBinOp(kOpAdd);
+        if(op_stack->used > 0){
+          ReduceExprOp(expr_stack, op_stack);
+        }
+        PushASTNodeToList(op_stack, opnode);
+        index++;
+      } else {
+        break;
+      }
     } else {
       break;
     }
+  }
+
+  while(op_stack->used){
+    ReduceExprOp(expr_stack, op_stack);
   }
 
   if (expr_stack->used == 0) {
