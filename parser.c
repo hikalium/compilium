@@ -26,10 +26,9 @@ ASTNode *TryReadAsVarDef(TokenList *tokens, int index, int *after_index) {
   return var_def;
 }
 
-void ReduceExprOp(ASTNodeList *expr_stack, ASTNodeList *op_stack)
-{
+void ReduceExprOp(ASTNodeList *expr_stack, ASTNodeList *op_stack) {
   ASTNode *last_op = PopASTNodeFromList(op_stack);
-  if(expr_stack->used < 2){
+  if (expr_stack->used < 2) {
     Error("expr_stack too short (%d < 2)", expr_stack->used);
   }
   ASTNode *right = PopASTNodeFromList(expr_stack);
@@ -53,7 +52,7 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
     } else if (token->type == kPunctuator) {
       if (IsEqualToken(token, "+")) {
         ASTNode *opnode = AllocateASTNodeAsExprBinOp(kOpAdd);
-        if(op_stack->used > 0){
+        if (op_stack->used > 0) {
           ReduceExprOp(expr_stack, op_stack);
         }
         PushASTNodeToList(op_stack, opnode);
@@ -66,7 +65,7 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
     }
   }
 
-  while(op_stack->used){
+  while (op_stack->used) {
     ReduceExprOp(expr_stack, op_stack);
   }
 
@@ -83,9 +82,11 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
   return expr_stack->nodes[0];
 }
 
-ASTNode *TryReadCompoundStatement(TokenList *tokens, int index, int *after_index);
+ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
+                                  int *after_index);
 
-ASTNode *TryReadExpressionStatement(TokenList *tokens, int index, int *after_index) {
+ASTNode *TryReadExpressionStatement(TokenList *tokens, int index,
+                                    int *after_index) {
   // expression-statement:
   //   expression ;
   ASTNode *expr = ReadExpression(tokens, index, &index);
@@ -152,7 +153,8 @@ ASTNode *TryReadStatement(TokenList *tokens, int index, int *after_index) {
   return NULL;
 }
 
-ASTNode *TryReadCompoundStatement(TokenList *tokens, int index, int *after_index) {
+ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
+                                  int *after_index) {
   // 6.8.2
   // compound-statement:
   //   { block-item-list(opt) }

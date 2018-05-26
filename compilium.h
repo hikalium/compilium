@@ -143,7 +143,8 @@ ASTNode *Parse(TokenList *tokens);
 
 // @token.c
 Token *AllocateToken(const char *s, TokenType type);
-Token *AllocateTokenWithSubstring(const char *begin, const char *end, TokenType type);
+Token *AllocateTokenWithSubstring(const char *begin, const char *end,
+                                  TokenType type);
 int IsEqualToken(const Token *token, const char *s);
 int IsKeyword(const Token *token);
 int IsTypeToken(const Token *token);

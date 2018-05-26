@@ -28,3 +28,6 @@ unittest: compilium_unittest
 
 clean:
 	-rm compilium
+
+format:
+	clang-format -i *.c *.h

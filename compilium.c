@@ -14,10 +14,11 @@ int main(int argc, char *argv[]) {
 
   ASTNode *ast = Parse(tokens);
 
-  PrintASTNode(ast, 1); putchar('\n');
+  PrintASTNode(ast, 1);
+  putchar('\n');
 
   FILE *dst_fp = fopen(argv[2], "wb");
-  if(!dst_fp){
+  if (!dst_fp) {
     Error("Failed to open %s", argv[2]);
   }
   Generate(dst_fp, ast);

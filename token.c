@@ -1,16 +1,15 @@
 #include "compilium.h"
 
-void InternalCopyTokenStr(Token *token, const char *s, size_t len)
-{
-    if (len >= MAX_TOKEN_LEN) {
-      Error("Too long token");
-    }
-    strncpy(token->str, s, len);
-    token->str[len] = 0;
+void InternalCopyTokenStr(Token *token, const char *s, size_t len) {
+  if (len >= MAX_TOKEN_LEN) {
+    Error("Too long token");
+  }
+  strncpy(token->str, s, len);
+  token->str[len] = 0;
 }
 
 Token *AllocateToken(const char *s, TokenType type) {
-  if(!s){
+  if (!s) {
     Error("Trying to allocate a token with a null string");
   }
   Token *token = malloc(sizeof(Token));
@@ -19,7 +18,8 @@ Token *AllocateToken(const char *s, TokenType type) {
   return token;
 }
 
-Token *AllocateTokenWithSubstring(const char *begin, const char *end, TokenType type) {
+Token *AllocateTokenWithSubstring(const char *begin, const char *end,
+                                  TokenType type) {
   Token *token = malloc(sizeof(Token));
   InternalCopyTokenStr(token, begin, end - begin);
   token->type = type;
@@ -51,23 +51,21 @@ int IsTypeToken(const Token *token) {
   return IsEqualToken(token, "int") || IsEqualToken(token, "char");
 }
 
-struct TOKEN_LIST{
+struct TOKEN_LIST {
   int capacity;
   int size;
   const Token *tokens[];
 };
 
 TokenList *AllocateTokenList(int capacity) {
-  TokenList *list = malloc(sizeof(TokenList) + sizeof(const Token *) * capacity);
+  TokenList *list =
+      malloc(sizeof(TokenList) + sizeof(const Token *) * capacity);
   list->capacity = capacity;
   list->size = 0;
   return list;
 }
 
-int IsTokenListFull(TokenList *list)
-{
-  return (list->size >= list->capacity);
-}
+int IsTokenListFull(TokenList *list) { return (list->size >= list->capacity); }
 
 void AppendTokenToList(TokenList *list, const Token *token) {
   if (IsTokenListFull(list)) {

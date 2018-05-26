@@ -16,4 +16,3 @@ void Error(const char *fmt, ...) {
   fputc('\n', stderr);
   exit(EXIT_FAILURE);
 }
-
