@@ -171,7 +171,6 @@ ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
   ASTNode *stmt;
   while ((stmt = TryReadStatement(tokens, index, &index))) {
     PushASTNodeToList(stmt_list, stmt);
-    PrintASTNode(stmt, 0);
     putchar('\n');
   }
   comp_stmt->data.comp_stmt.stmt_list = stmt_list;

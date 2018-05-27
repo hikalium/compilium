@@ -75,7 +75,7 @@ void AppendTokenToList(TokenList *list, const Token *token) {
 }
 
 const Token *GetTokenAt(TokenList *list, int index) {
-  if (index < 0 || list->size <= index) return NULL;
+  if (!list || index < 0 || list->size <= index) return NULL;
   return list->tokens[index];
 }
 

@@ -20,18 +20,13 @@ void ExpectNullAST(const char *description, const ASTNode *ast) {
   }
 }
 
-ASTNode *TryReadExpressionStatement(int index, int *after_index);
-
 void TestParsingExpression() {
-  int after_index;
+  TokenList *tokens = AllocateTokenList(64);
 
-  SetNumOfTokens(0);
-  Tokenize("3;");
-  putchar('\n');
-  ASTNode *expr_stmt = TryReadExpressionStatement(0, &after_index);
-  ExpectASTType(
-      "A statement contains a number is parsed as ExpressionStatement",
-      expr_stmt, kExprStmt);
+  Tokenize(tokens, "int main(){return 0;}");
+  ASTNode *expr_stmt = Parse(tokens);
+  ExpectASTType("Simple return source is parsed successfully", expr_stmt,
+                kRoot);
 }
 
 int main(int argc, char *argv[]) {

@@ -45,8 +45,8 @@ const ASTDataReturnStmt *GetDataAsReturnStmt(const ASTNode *node) {
   return &node->data.return_stmt;
 }
 
-const ASTDataILOp *GetDataAsILOp(const ASTNode *node) {
-  if (!node || node->type != kILOp) return NULL;
+const ASTDataILOp *GetDataAsILOpOfType(const ASTNode *node, ILOpType type) {
+  if (!node || node->type != kILOp || node->data.il_op.op != type) return NULL;
   return &node->data.il_op;
 }
 
@@ -74,9 +74,28 @@ void SetOperandOfExprBinOp(ASTNode *node, ASTNode *left, ASTNode *right) {
   node->data.expr_bin_op.right = right;
 }
 
+ASTNode *AllocateASTNodeAsILOp(ILOpType op, int dst_reg, int left_reg,
+                               int right_reg, const ASTNode *ast_node) {
+  ASTNode *node = AllocateASTNode(kILOp);
+  node->data.il_op.op = op;
+  node->data.il_op.dst_reg = dst_reg;
+  node->data.il_op.left_reg = left_reg;
+  node->data.il_op.right_reg = right_reg;
+  node->data.il_op.ast_node = ast_node;
+  return node;
+}
+
 void PrintASTNodePadding(int depth) {
   putchar('\n');
   for (int i = 0; i < depth; i++) putchar(' ');
+}
+
+const char *ILOpTypeStr[kNumOfILOpFunc] = {"Add", "LoadImm", "FuncBegin",
+                                           "FuncEnd", "Return"};
+
+const char *InternalGetILOpTypeStr(ILOpType type) {
+  if (kNumOfILOpFunc <= type) return "?";
+  return ILOpTypeStr[type];
 }
 
 void PrintASTNodeList(ASTNodeList *list, int depth);
@@ -187,18 +206,11 @@ void PrintASTNode(const ASTNode *node, int depth) {
     PrintASTNodePadding(depth);
     printf(")");
   } else if (node->type == kILOp) {
-    printf("(ILOp(%p):", (void *)node);
-    PrintASTNodePadding(depth);
-    printf("op=%d", node->data.il_op.op);
-    PrintASTNodePadding(depth);
-    printf("dst=%p", (void *)node->data.il_op.dst);
-    PrintASTNodePadding(depth);
-    printf("src_left=%p", (void *)node->data.il_op.src_left);
-    PrintASTNodePadding(depth);
-    printf("src_right=%p", (void *)node->data.il_op.src_right);
-    PrintASTNodePadding(depth);
-    printf("reg_index=%d", node->data.il_op.reg_index);
-    PrintASTNodePadding(depth);
+    printf("(ILOp:");
+    printf(" op=%s", InternalGetILOpTypeStr(node->data.il_op.op));
+    printf(" dst=%d", node->data.il_op.dst_reg);
+    printf(" left=%d", node->data.il_op.left_reg);
+    printf(" right=%d", node->data.il_op.right_reg);
     printf(")");
 
   } else {

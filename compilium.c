@@ -1,7 +1,6 @@
 #include "compilium.h"
 
 #define MAX_TOKENS 2048
-
 int main(int argc, char *argv[]) {
   if (argc < 3) {
     Error("Usage: %s <src_c_file> <dst_S_file>", argv[0]);

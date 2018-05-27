@@ -1,61 +1,76 @@
 #include "compilium.h"
 
-void GenerateSymbolForFuncDef(FILE *fp, const ASTNode *node) {
-  const ASTDataFuncDef *def = GetDataAsFuncDef(node);
-  const ASTDataFuncDecl *decl = GetDataAsFuncDecl(def->func_decl);
-  const ASTDataVarDef *defv = GetDataAsVarDef(decl->type_and_name);
-  fprintf(fp, ".global _%s\n", defv->name->str);
-}
+int GenerateIL(ASTNodeList *il, const ASTNode *node);
 
-void GenerateCodeForCompStmt(FILE *fp, const ASTNode *node) {
-  const ASTDataCompStmt *comp = GetDataAsCompStmt(node);
-  const ASTNodeList *stmt_list = comp->stmt_list;
-  for (int i = 0; i < GetSizeOfASTNodeList(stmt_list); i++) {
-    Generate(fp, GetASTNodeAt(stmt_list, i));
-  }
-}
+// https://wiki.osdev.org/System_V_ABI
+// registers should be preserved: rbx, rsp, rbp, r12, r13, r14, and r15
+// scratch registers: rax, rdi, rsi, rdx, rcx, r8, r9, r10, r11
+// return value: rax
 
-void GenerateCodeForFuncDef(FILE *fp, const ASTNode *node) {
-  const ASTDataFuncDef *def = GetDataAsFuncDef(node);
-  const ASTDataFuncDecl *decl = GetDataAsFuncDecl(def->func_decl);
-  const ASTDataVarDef *defv = GetDataAsVarDef(decl->type_and_name);
-  //
-  fprintf(fp, "_%s:\n", defv->name->str);
-  fprintf(fp, "push    rbp\n");
-  fprintf(fp, "mov     rbp, rsp\n");
-  // body. rax is return value.
-  GenerateCodeForCompStmt(fp, def->comp_stmt);
-  //
-  fprintf(fp, "mov     dword ptr [rbp - 4], 0\n");
-  fprintf(fp, "pop     rbp\n");
-  fprintf(fp, "ret\n");
-}
+#define NUM_OF_SCRATCH_REGS 9
+const char *ScratchRegNames[] = {"rax", "rdi", "rsi", "rdx", "rcx",
+                                 "r8",  "r9",  "r10", "r11"};
 
 int GetLabelNumber() {
   static int num = 0;
   return num++;
 }
 
-void GenerateCodeForExprBinOp(FILE *fp, const ASTNode *node) {
-  Error("Not implemented GenerateCodeForExprBinOp");
+#define REG_NULL 0
+
+int GetRegNumber() {
+  static int num = 0;
+  return ++num;
 }
 
-void GenerateCodeForExprVal(FILE *fp, const ASTNode *node) {
-  // https://wiki.osdev.org/System_V_ABI
-  const ASTDataExprVal *expr_val = GetDataAsExprVal(node);
-  char *p;
-  const char *s = expr_val->token->str;
-  int var = strtol(s, &p, 0);
-  if (!(s[0] != 0 && *p == 0)) {
-    Error("%s is not valid as integer.", s);
+void GenerateILForCompStmt(ASTNodeList *il, const ASTNode *node) {
+  const ASTDataCompStmt *comp = GetDataAsCompStmt(node);
+  const ASTNodeList *stmt_list = comp->stmt_list;
+  for (int i = 0; i < GetSizeOfASTNodeList(stmt_list); i++) {
+    GenerateIL(il, GetASTNodeAt(stmt_list, i));
   }
-  fprintf(fp, "mov     rax, %d\n", var);
 }
 
-void GenerateCodeForExprStmt(FILE *fp, const ASTNode *node) {
+void GenerateILForFuncDef(ASTNodeList *il, const ASTNode *node) {
+  const ASTDataFuncDef *def = GetDataAsFuncDef(node);
+  PushASTNodeToList(il, AllocateASTNodeAsILOp(kILOpFuncBegin, REG_NULL,
+                                              REG_NULL, REG_NULL, node));
+  GenerateILForCompStmt(il, def->comp_stmt);
+  PushASTNodeToList(il, AllocateASTNodeAsILOp(kILOpFuncEnd, REG_NULL, REG_NULL,
+                                              REG_NULL, node));
+}
+
+int GenerateILForExprBinOp(ASTNodeList *il, const ASTNode *node) {
+  const ASTDataExprBinOp *bin_op = GetDataAsExprBinOp(node);
+  int il_left = GenerateIL(il, bin_op->left);
+  int il_right = GenerateIL(il, bin_op->right);
+  int dst = GetRegNumber();
+
+  ASTNode *il_op;
+  switch (bin_op->op_type) {
+    case kOpAdd:
+      il_op = AllocateASTNodeAsILOp(kILOpAdd, dst, il_left, il_right, node);
+      PushASTNodeToList(il, il_op);
+      break;
+    default:
+      Error("Not implemented GenerateILForExprBinOp (op_type: %d)",
+            bin_op->op_type);
+  }
+  return dst;
+}
+
+int GenerateILForExprVal(ASTNodeList *il, const ASTNode *node) {
+  int dst = GetRegNumber();
+  ASTNode *il_op =
+      AllocateASTNodeAsILOp(kILOpLoadImm, dst, REG_NULL, REG_NULL, node);
+  PushASTNodeToList(il, il_op);
+  return dst;
+}
+
+int GenerateILForExprStmt(ASTNodeList *il, const ASTNode *node) {
   // https://wiki.osdev.org/System_V_ABI
   const ASTDataExprStmt *expr_stmt = GetDataAsExprStmt(node);
-  Generate(fp, expr_stmt->expr);
+  return GenerateIL(il, expr_stmt->expr);
   /*
   const TokenList *token_list = expr_stmt->expr;
   if (token_list->used == 1 && token_list->tokens[0]->type == kInteger) {
@@ -81,43 +96,116 @@ void GenerateCodeForExprStmt(FILE *fp, const ASTNode *node) {
     fprintf(fp, "lea     rdi, [rip + L%d]\n", label_str);
     fprintf(fp, "call    _%s\n", token_list->tokens[0]->str);
     fprintf(fp, "add     rsp, 16\n");
-    //Error("GenerateCodeForExprStmt: puts case ");
+    //Error("GenerateILForExprStmt: puts case ");
 
 
   } else {
-    Error("GenerateCodeForExprStmt: Not implemented ");
+    Error("GenerateILForExprStmt: Not implemented ");
   }
   */
 }
 
-void Generate(FILE *fp, const ASTNode *node) {
+int GenerateILForReturnStmt(ASTNodeList *il, const ASTNode *node) {
+  const ASTDataReturnStmt *ret = GetDataAsReturnStmt(node);
+  int expr_reg = GenerateILForExprStmt(il, ret->expr_stmt);
+
+  ASTNode *il_op =
+      AllocateASTNodeAsILOp(kILOpReturn, REG_NULL, expr_reg, REG_NULL, node);
+  PushASTNodeToList(il, il_op);
+
+  return REG_NULL;
+}
+
+int GenerateIL(ASTNodeList *il, const ASTNode *node) {
   if (node->type == kRoot) {
-    fputs(".intel_syntax noprefix\n", fp);
     ASTNodeList *list = GetDataAsRoot(node)->root_list;
-    // Generate symbols
     for (int i = 0; i < GetSizeOfASTNodeList(list); i++) {
       const ASTNode *child_node = GetASTNodeAt(list, i);
       if (child_node->type == kFuncDef) {
-        GenerateSymbolForFuncDef(fp, child_node);
+        GenerateILForFuncDef(il, child_node);
       }
     }
-    // Generate function bodies
-    for (int i = 0; i < GetSizeOfASTNodeList(list); i++) {
-      const ASTNode *child_node = GetASTNodeAt(list, i);
-      if (child_node->type == kFuncDef) {
-        GenerateCodeForFuncDef(fp, child_node);
-      }
-    }
+    return -1;
   } else if (node->type == kReturnStmt) {
-    const ASTDataReturnStmt *ret = GetDataAsReturnStmt(node);
-    GenerateCodeForExprStmt(fp, ret->expr_stmt);
+    return GenerateILForReturnStmt(il, node);
   } else if (node->type == kExprBinOp) {
-    GenerateCodeForExprBinOp(fp, node);
+    return GenerateILForExprBinOp(il, node);
   } else if (node->type == kExprVal) {
-    GenerateCodeForExprVal(fp, node);
+    return GenerateILForExprVal(il, node);
   } else if (node->type == kExprStmt) {
-    GenerateCodeForExprStmt(fp, node);
+    return GenerateILForExprStmt(il, node);
   } else {
     Error("Generation for AST Type %d is not implemented.", node->type);
   }
+  return -1;
+}
+
+void GenerateCode(FILE *fp, ASTNodeList *il) {
+  fputs(".intel_syntax noprefix\n", fp);
+  // generate func symbol
+  for (int i = 0; i < GetSizeOfASTNodeList(il); i++) {
+    ASTNode *node = GetASTNodeAt(il, i);
+    const ASTDataILOp *op;
+    if ((op = GetDataAsILOpOfType(node, kILOpFuncBegin))) {
+      const ASTDataFuncDef *def = GetDataAsFuncDef(op->ast_node);
+      const ASTDataFuncDecl *decl = GetDataAsFuncDecl(def->func_decl);
+      const ASTDataVarDef *defv = GetDataAsVarDef(decl->type_and_name);
+      fprintf(fp, ".global _%s\n", defv->name->str);
+      printf("found func: %s\n", defv->name->str);
+    }
+  }
+  // generate code
+  for (int i = 0; i < GetSizeOfASTNodeList(il); i++) {
+    ASTNode *node = GetASTNodeAt(il, i);
+    const ASTDataILOp *op;
+    if ((op = GetDataAsILOpOfType(node, kILOpFuncBegin))) {
+      const ASTDataFuncDef *def = GetDataAsFuncDef(op->ast_node);
+      const ASTDataFuncDecl *decl = GetDataAsFuncDecl(def->func_decl);
+      const ASTDataVarDef *defv = GetDataAsVarDef(decl->type_and_name);
+      fprintf(fp, "_%s:\n", defv->name->str);
+      fprintf(fp, "push    rbp\n");
+      fprintf(fp, "mov     rbp, rsp\n");
+    } else if ((op = GetDataAsILOpOfType(node, kILOpFuncEnd))) {
+      fprintf(fp, "mov     dword ptr [rbp - 4], 0\n");
+      fprintf(fp, "pop     rbp\n");
+      fprintf(fp, "ret\n");
+    } else if ((op = GetDataAsILOpOfType(node, kILOpLoadImm))) {
+      const char *dst_name = ScratchRegNames[op->dst_reg];
+      //
+      char *p;
+      const ASTDataExprVal *val = GetDataAsExprVal(op->ast_node);
+      const char *s = val->token->str;
+      int n = strtol(s, &p, 0);
+      if (!(s[0] != 0 && *p == 0)) {
+        Error("%s is not valid as integer.", s);
+      }
+      fprintf(fp, "mov %s, %d\n", dst_name, n);
+    } else if ((op = GetDataAsILOpOfType(node, kILOpAdd))) {
+      const char *dst = ScratchRegNames[op->dst_reg];
+      const char *left = ScratchRegNames[op->left_reg];
+      const char *right = ScratchRegNames[op->right_reg];
+      //
+      fprintf(fp, "add %s, %s\n", left, right);
+      fprintf(fp, "mov %s, %s\n", dst, left);
+    } else if ((op = GetDataAsILOpOfType(node, kILOpReturn))) {
+      const char *left = ScratchRegNames[op->left_reg];
+      //
+      fprintf(fp, "mov rax, %s\n", left);
+    } else {
+      PrintASTNode(node, 0);
+      putchar('\n');
+      Error("Not implemented code generation for the node shown above");
+    }
+  }
+}
+
+#define MAX_IL_NODES 2048
+void Generate(FILE *fp, const ASTNode *root) {
+  ASTNodeList *intermediate_code = AllocateASTNodeList(MAX_IL_NODES);
+
+  GenerateIL(intermediate_code, root);
+  PrintASTNodeList(intermediate_code, 0);
+  putchar('\n');
+
+  GenerateCode(fp, intermediate_code);
 }

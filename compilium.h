@@ -91,15 +91,21 @@ typedef struct {
 } ASTDataStatementFor;
 
 typedef enum {
-  ILAdd,
+  kILOpAdd,
+  kILOpLoadImm,
+  kILOpFuncBegin,
+  kILOpFuncEnd,
+  kILOpReturn,
+  //
+  kNumOfILOpFunc
 } ILOpType;
 
 typedef struct {
   ILOpType op;
-  ASTNode *dst;
-  ASTNode *src_left;
-  ASTNode *src_right;
-  int reg_index;
+  int dst_reg;
+  int left_reg;
+  int right_reg;
+  const ASTNode *ast_node;
 } ASTDataILOp;
 
 struct AST_NODE {
@@ -130,11 +136,16 @@ const ASTDataExprBinOp *GetDataAsExprBinOp(const ASTNode *node);
 const ASTDataExprVal *GetDataAsExprVal(const ASTNode *node);
 const ASTDataExprStmt *GetDataAsExprStmt(const ASTNode *node);
 const ASTDataReturnStmt *GetDataAsReturnStmt(const ASTNode *node);
+const ASTDataILOp *GetDataAsILOpOfType(const ASTNode *node, ILOpType type);
 
 ASTNode *AllocateASTNode(ASTType type);
+
 ASTNode *AllocateASTNodeAsExprVal(const Token *token);
 ASTNode *AllocateASTNodeAsExprBinOp(ASTExprBinOpType op_type);
 void SetOperandOfExprBinOp(ASTNode *node, ASTNode *left, ASTNode *right);
+
+ASTNode *AllocateASTNodeAsILOp(ILOpType op, int dst_reg, int left_reg,
+                               int right_reg, const ASTNode *ast_node);
 
 void PrintASTNode(const ASTNode *node, int depth);
 ASTNodeList *AllocateASTNodeList(int capacity);
@@ -148,7 +159,7 @@ void PrintASTNodeList(ASTNodeList *list, int depth);
 void Error(const char *fmt, ...);
 
 // @generate.c
-void Generate(FILE *fp, const ASTNode *node);
+void Generate(FILE *fp, const ASTNode *root);
 
 // @parser.c
 ASTNode *Parse(TokenList *tokens);
