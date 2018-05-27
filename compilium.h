@@ -137,7 +137,7 @@ ASTNode *AllocateASTNodeAsExprBinOp(ASTExprBinOpType op_type);
 void SetOperandOfExprBinOp(ASTNode *node, ASTNode *left, ASTNode *right);
 
 void PrintASTNode(const ASTNode *node, int depth);
-ASTNodeList *AllocateASTNodeList();
+ASTNodeList *AllocateASTNodeList(int capacity);
 void PushASTNodeToList(ASTNodeList *list, ASTNode *node);
 ASTNode *PopASTNodeFromList(ASTNodeList *list);
 ASTNode *GetASTNodeAt(const ASTNodeList *list, int index);

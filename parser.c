@@ -37,12 +37,13 @@ void ReduceExprOp(ASTNodeList *expr_stack, ASTNodeList *op_stack) {
   PushASTNodeToList(expr_stack, last_op);
 }
 
+#define MAX_NODES_IN_EXPR 64
 ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
   // 6.5
   // a sequence of operators and operands
   // ... or that designates an object or a function
-  ASTNodeList *expr_stack = AllocateASTNodeList();
-  ASTNodeList *op_stack = AllocateASTNodeList();
+  ASTNodeList *expr_stack = AllocateASTNodeList(MAX_NODES_IN_EXPR);
+  ASTNodeList *op_stack = AllocateASTNodeList(MAX_NODES_IN_EXPR);
   const Token *token;
   while ((token = GetTokenAt(tokens, index))) {
     if (token->type == kInteger) {
@@ -153,6 +154,7 @@ ASTNode *TryReadStatement(TokenList *tokens, int index, int *after_index) {
   return NULL;
 }
 
+#define MAX_NUM_OF_STATEMENTS_IN_BLOCK 64
 ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
                                   int *after_index) {
   // 6.8.2
@@ -165,7 +167,7 @@ ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
   ASTNode *comp_stmt = AllocateASTNode(kCompStmt);
   if (!IsEqualToken(GetTokenAt(tokens, index++), "{")) return NULL;
   //
-  ASTNodeList *stmt_list = AllocateASTNodeList();
+  ASTNodeList *stmt_list = AllocateASTNodeList(MAX_NUM_OF_STATEMENTS_IN_BLOCK);
   ASTNode *stmt;
   while ((stmt = TryReadStatement(tokens, index, &index))) {
     PushASTNodeToList(stmt_list, stmt);
@@ -183,9 +185,11 @@ ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
   return comp_stmt;
 }
 
+#define MAX_ROOT_NODES 64
+#define MAX_ARGS 16
 ASTNode *Parse(TokenList *tokens) {
   ASTNode *root = AllocateASTNode(kRoot);
-  ASTNodeList *root_list = AllocateASTNodeList();
+  ASTNodeList *root_list = AllocateASTNodeList(MAX_ROOT_NODES);
   root->data.root.root_list = root_list;
   int index = 0;
   const Token *token;
@@ -205,7 +209,7 @@ ASTNode *Parse(TokenList *tokens) {
         Error("Expected ( but got %s", token->str);
       }
       // args
-      ASTNodeList *arg_list = AllocateASTNodeList();
+      ASTNodeList *arg_list = AllocateASTNodeList(MAX_ARGS);
       while ((tmp_node = TryReadAsVarDef(tokens, index, &index))) {
         PushASTNodeToList(arg_list, tmp_node);
         if (!IsEqualToken(GetTokenAt(tokens, index), ",")) {

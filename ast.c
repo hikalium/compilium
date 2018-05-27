@@ -206,20 +206,22 @@ void PrintASTNode(const ASTNode *node, int depth) {
   }
 }
 
-#define AST_NODE_LIST_SIZE 64
 struct AST_NODE_LIST {
-  ASTNode *nodes[AST_NODE_LIST_SIZE];
+  int capacity;
   int size;
+  ASTNode *nodes[];
 };
 
-ASTNodeList *AllocateASTNodeList() {
-  ASTNodeList *list = malloc(sizeof(ASTNodeList));
+ASTNodeList *AllocateASTNodeList(int capacity) {
+  ASTNodeList *list =
+      malloc(sizeof(ASTNodeList) + sizeof(ASTNode *) * capacity);
+  list->capacity = capacity;
   list->size = 0;
   return list;
 }
 
 void PushASTNodeToList(ASTNodeList *list, ASTNode *node) {
-  if (list->size >= AST_NODE_LIST_SIZE) {
+  if (list->size >= list->capacity) {
     Error("No more space in ASTNodeList");
   }
   list->nodes[list->size++] = node;
