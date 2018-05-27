@@ -10,8 +10,8 @@ void GenerateSymbolForFuncDef(FILE *fp, const ASTNode *node) {
 void GenerateCodeForCompStmt(FILE *fp, const ASTNode *node) {
   const ASTDataCompStmt *comp = GetDataAsCompStmt(node);
   const ASTNodeList *stmt_list = comp->stmt_list;
-  for (int i = 0; i < stmt_list->used; i++) {
-    Generate(fp, stmt_list->nodes[i]);
+  for (int i = 0; i < GetSizeOfASTNodeList(stmt_list); i++) {
+    Generate(fp, GetASTNodeAt(stmt_list, i));
   }
 }
 
@@ -95,15 +95,15 @@ void Generate(FILE *fp, const ASTNode *node) {
     fputs(".intel_syntax noprefix\n", fp);
     ASTNodeList *list = GetDataAsRoot(node)->root_list;
     // Generate symbols
-    for (int i = 0; i < list->used; i++) {
-      const ASTNode *child_node = list->nodes[i];
+    for (int i = 0; i < GetSizeOfASTNodeList(list); i++) {
+      const ASTNode *child_node = GetASTNodeAt(list, i);
       if (child_node->type == kFuncDef) {
         GenerateSymbolForFuncDef(fp, child_node);
       }
     }
     // Generate function bodies
-    for (int i = 0; i < list->used; i++) {
-      const ASTNode *child_node = list->nodes[i];
+    for (int i = 0; i < GetSizeOfASTNodeList(list); i++) {
+      const ASTNode *child_node = GetASTNodeAt(list, i);
       if (child_node->type == kFuncDef) {
         GenerateCodeForFuncDef(fp, child_node);
       }

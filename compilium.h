@@ -32,15 +32,11 @@ typedef enum {
   kExprStmt,
   kReturnStmt,
   kForStatement,
+  kILOp,
 } ASTType;
 
 typedef struct AST_NODE ASTNode;
-
-#define AST_NODE_LIST_SIZE 64
-typedef struct {
-  ASTNode *nodes[AST_NODE_LIST_SIZE];
-  int used;
-} ASTNodeList;
+typedef struct AST_NODE_LIST ASTNodeList;
 
 typedef struct {
   ASTNodeList *root_list;
@@ -94,9 +90,22 @@ typedef struct {
   ASTNode *body_comp_stmt;
 } ASTDataStatementFor;
 
+typedef enum {
+  ILAdd,
+} ILOpType;
+
+typedef struct {
+  ILOpType op;
+  ASTNode *dst;
+  ASTNode *src_left;
+  ASTNode *src_right;
+  int reg_index;
+} ASTDataILOp;
+
 struct AST_NODE {
   ASTType type;
   union {
+    // TODO: change struct names to match with ASTType
     ASTDataRoot root;
     ASTDataStatementFor for_stmt;
     ASTDataReturnStmt return_stmt;
@@ -107,6 +116,7 @@ struct AST_NODE {
     ASTDataExprVal expr_val;
     ASTDataExprStmt expr_stmt;
     ASTDataVarDef var_def;
+    ASTDataILOp il_op;
   } data;
 };
 
@@ -130,6 +140,8 @@ void PrintASTNode(const ASTNode *node, int depth);
 ASTNodeList *AllocateASTNodeList();
 void PushASTNodeToList(ASTNodeList *list, ASTNode *node);
 ASTNode *PopASTNodeFromList(ASTNodeList *list);
+ASTNode *GetASTNodeAt(const ASTNodeList *list, int index);
+int GetSizeOfASTNodeList(const ASTNodeList *list);
 void PrintASTNodeList(ASTNodeList *list, int depth);
 
 // @error.c

@@ -45,6 +45,11 @@ const ASTDataReturnStmt *GetDataAsReturnStmt(const ASTNode *node) {
   return &node->data.return_stmt;
 }
 
+const ASTDataILOp *GetDataAsILOp(const ASTNode *node) {
+  if (!node || node->type != kILOp) return NULL;
+  return &node->data.il_op;
+}
+
 ASTNode *AllocateASTNode(ASTType type) {
   ASTNode *node = malloc(sizeof(ASTNode));
   node->type = type;
@@ -181,35 +186,65 @@ void PrintASTNode(const ASTNode *node, int depth) {
     PrintASTNode(node->data.for_stmt.body_comp_stmt, depth + 1);
     PrintASTNodePadding(depth);
     printf(")");
+  } else if (node->type == kILOp) {
+    printf("(ILOp(%p):", (void *)node);
+    PrintASTNodePadding(depth);
+    printf("op=%d", node->data.il_op.op);
+    PrintASTNodePadding(depth);
+    printf("dst=%p", (void *)node->data.il_op.dst);
+    PrintASTNodePadding(depth);
+    printf("src_left=%p", (void *)node->data.il_op.src_left);
+    PrintASTNodePadding(depth);
+    printf("src_right=%p", (void *)node->data.il_op.src_right);
+    PrintASTNodePadding(depth);
+    printf("reg_index=%d", node->data.il_op.reg_index);
+    PrintASTNodePadding(depth);
+    printf(")");
+
   } else {
     Error("PrintASTNode not implemented for type %d", node->type);
   }
 }
 
+#define AST_NODE_LIST_SIZE 64
+struct AST_NODE_LIST {
+  ASTNode *nodes[AST_NODE_LIST_SIZE];
+  int size;
+};
+
 ASTNodeList *AllocateASTNodeList() {
   ASTNodeList *list = malloc(sizeof(ASTNodeList));
-  list->used = 0;
+  list->size = 0;
   return list;
 }
 
 void PushASTNodeToList(ASTNodeList *list, ASTNode *node) {
-  if (list->used >= AST_NODE_LIST_SIZE) {
+  if (list->size >= AST_NODE_LIST_SIZE) {
     Error("No more space in ASTNodeList");
   }
-  list->nodes[list->used++] = node;
+  list->nodes[list->size++] = node;
 }
 
 ASTNode *PopASTNodeFromList(ASTNodeList *list) {
-  if (list->used <= 0) {
+  if (list->size <= 0) {
     Error("Trying to pop empty ASTNodeList");
   }
-  return list->nodes[--list->used];
+  return list->nodes[--list->size];
 }
+
+ASTNode *GetASTNodeAt(const ASTNodeList *list, int index) {
+  if (index < 0 || list->size <= index) {
+    Error("ASTNodeList: Trying to read index out of bound");
+  }
+  return list->nodes[index];
+}
+
+int GetSizeOfASTNodeList(const ASTNodeList *list) { return list->size; }
 
 void PrintASTNodeList(ASTNodeList *list, int depth) {
   putchar('[');
   PrintASTNodePadding(depth);
-  for (int i = 0; i < list->used; i++) {
+  for (int i = 0; i < list->size; i++) {
     PrintASTNode(list->nodes[i], depth + 1);
     PrintASTNodePadding(depth);
   }

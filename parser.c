@@ -28,8 +28,8 @@ ASTNode *TryReadAsVarDef(TokenList *tokens, int index, int *after_index) {
 
 void ReduceExprOp(ASTNodeList *expr_stack, ASTNodeList *op_stack) {
   ASTNode *last_op = PopASTNodeFromList(op_stack);
-  if (expr_stack->used < 2) {
-    Error("expr_stack too short (%d < 2)", expr_stack->used);
+  if (GetSizeOfASTNodeList(expr_stack) < 2) {
+    Error("expr_stack too short (%d < 2)", GetSizeOfASTNodeList(expr_stack));
   }
   ASTNode *right = PopASTNodeFromList(expr_stack);
   ASTNode *left = PopASTNodeFromList(expr_stack);
@@ -52,7 +52,7 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
     } else if (token->type == kPunctuator) {
       if (IsEqualToken(token, "+")) {
         ASTNode *opnode = AllocateASTNodeAsExprBinOp(kOpAdd);
-        if (op_stack->used > 0) {
+        if (GetSizeOfASTNodeList(op_stack) > 0) {
           ReduceExprOp(expr_stack, op_stack);
         }
         PushASTNodeToList(op_stack, opnode);
@@ -65,21 +65,21 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
     }
   }
 
-  while (op_stack->used) {
+  while (GetSizeOfASTNodeList(op_stack) != 0) {
     ReduceExprOp(expr_stack, op_stack);
   }
 
-  if (expr_stack->used == 0) {
+  if (GetSizeOfASTNodeList(expr_stack) == 0) {
     return NULL;
   }
 
-  if (expr_stack->used != 1) {
+  if (GetSizeOfASTNodeList(expr_stack) != 1) {
     PrintASTNodeList(expr_stack, 0);
     Error("parse expr failed.");
   }
 
   *after_index = index;
-  return expr_stack->nodes[0];
+  return GetASTNodeAt(expr_stack, 0);
 }
 
 ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
