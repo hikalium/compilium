@@ -125,13 +125,13 @@ ASTNode *TryReadForStatement(TokenList *tokens, int index, int *after_index) {
 
 ASTNode *TryReadReturnStmt(TokenList *tokens, int index, int *after_index) {
   const Token *token;
-  token = GetTokenAt(tokens, index++);
+  token = GetTokenAt(tokens, index);
   if (IsEqualToken(token, "return")) {
     // jump-statement(return)
+    ASTNode *expr_stmt = TryReadExpressionStatement(tokens, index + 1, after_index);
+    if(!expr_stmt) return NULL;
     ASTNode *return_stmt = AllocateASTNode(kReturnStmt);
-    ASTNode *expr_stmt = TryReadExpressionStatement(tokens, index, &index);
     return_stmt->data.return_stmt.expr_stmt = expr_stmt;
-    *after_index = index;
     return return_stmt;
   }
   return NULL;
@@ -171,7 +171,6 @@ ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
   ASTNode *stmt;
   while ((stmt = TryReadStatement(tokens, index, &index))) {
     PushASTNodeToList(stmt_list, stmt);
-    putchar('\n');
   }
   comp_stmt->data.comp_stmt.stmt_list = stmt_list;
   //

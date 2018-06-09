@@ -158,7 +158,6 @@ void Tokenize(TokenList *tokens, const char *p) {
       p++;
     } else if (*p == '\n') {
       p++;
-      putchar('\n');
     } else {
       p = CommonTokenizer(tokens, p);
     }

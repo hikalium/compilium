@@ -11,11 +11,15 @@ int main(int argc, char *argv[]) {
   Tokenize(tokens, input);
   free(input);
 
+  puts("\nTokens:");
+  PrintTokenList(tokens); putchar('\n');
+
   ASTNode *ast = Parse(tokens);
 
-  PrintASTNode(ast, 1);
-  putchar('\n');
+  puts("\nAST:");
+  PrintASTNode(ast, 1); putchar('\n');
 
+  puts("\nCode generation:");
   FILE *dst_fp = fopen(argv[2], "wb");
   if (!dst_fp) {
     Error("Failed to open %s", argv[2]);
