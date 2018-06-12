@@ -1,6 +1,8 @@
 TESTS = simple_return \
 		simple_return_with_bin_op_plus \
-		simple_return_with_bin_op_minus
+		simple_return_with_bin_op_minus \
+		simple_return_with_bin_op_mul \
+		simple_return_with_bin_op_mixed_priority
 
 default: $(addsuffix .test, $(TESTS))
 
