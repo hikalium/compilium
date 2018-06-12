@@ -52,6 +52,10 @@ int GenerateILForExprBinOp(ASTNodeList *il, const ASTNode *node) {
       il_op = AllocateASTNodeAsILOp(kILOpAdd, dst, il_left, il_right, node);
       PushASTNodeToList(il, il_op);
       break;
+    case kOpSub:
+      il_op = AllocateASTNodeAsILOp(kILOpSub, dst, il_left, il_right, node);
+      PushASTNodeToList(il, il_op);
+      break;
     default:
       Error("Not implemented GenerateILForExprBinOp (op_type: %d)",
             bin_op->op_type);
@@ -186,6 +190,13 @@ void GenerateCode(FILE *fp, ASTNodeList *il) {
       const char *right = ScratchRegNames[op->right_reg];
       //
       fprintf(fp, "add %s, %s\n", left, right);
+      fprintf(fp, "mov %s, %s\n", dst, left);
+    } else if ((op = GetDataAsILOpOfType(node, kILOpSub))) {
+      const char *dst = ScratchRegNames[op->dst_reg];
+      const char *left = ScratchRegNames[op->left_reg];
+      const char *right = ScratchRegNames[op->right_reg];
+      //
+      fprintf(fp, "sub %s, %s\n", left, right);
       fprintf(fp, "mov %s, %s\n", dst, left);
     } else if ((op = GetDataAsILOpOfType(node, kILOpReturn))) {
       const char *left = ScratchRegNames[op->left_reg];

@@ -63,6 +63,7 @@ typedef struct {
 
 typedef enum {
   kOpAdd,
+  kOpSub,
 } ASTExprBinOpType;
 
 typedef struct {
@@ -92,6 +93,7 @@ typedef struct {
 
 typedef enum {
   kILOpAdd,
+  kILOpSub,
   kILOpLoadImm,
   kILOpFuncBegin,
   kILOpFuncEnd,

@@ -58,11 +58,20 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
         }
         PushASTNodeToList(op_stack, opnode);
         index++;
-      } else {
+      } else if (IsEqualToken(token, "-")) {
+        ASTNode *opnode = AllocateASTNodeAsExprBinOp(kOpSub);
+        if (GetSizeOfASTNodeList(op_stack) > 0) {
+          ReduceExprOp(expr_stack, op_stack);
+        }
+        PushASTNodeToList(op_stack, opnode);
+        index++;
+      } else if (IsEqualToken(token, ";")) {
         break;
+      } else {
+        Error("Unexpected token(Punctuator) %s", token->str);
       }
     } else {
-      break;
+      Error("Unexpected token %s", token->str);
     }
   }
 
@@ -128,8 +137,9 @@ ASTNode *TryReadReturnStmt(TokenList *tokens, int index, int *after_index) {
   token = GetTokenAt(tokens, index);
   if (IsEqualToken(token, "return")) {
     // jump-statement(return)
-    ASTNode *expr_stmt = TryReadExpressionStatement(tokens, index + 1, after_index);
-    if(!expr_stmt) return NULL;
+    ASTNode *expr_stmt =
+        TryReadExpressionStatement(tokens, index + 1, after_index);
+    if (!expr_stmt) return NULL;
     ASTNode *return_stmt = AllocateASTNode(kReturnStmt);
     return_stmt->data.return_stmt.expr_stmt = expr_stmt;
     return return_stmt;
@@ -169,7 +179,8 @@ ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
   //
   ASTNodeList *stmt_list = AllocateASTNodeList(MAX_NUM_OF_STATEMENTS_IN_BLOCK);
   ASTNode *stmt;
-  while ((stmt = TryReadStatement(tokens, index, &index))) {
+  while (!IsEqualToken(GetTokenAt(tokens, index), "}") &&
+         (stmt = TryReadStatement(tokens, index, &index))) {
     PushASTNodeToList(stmt_list, stmt);
   }
   comp_stmt->data.comp_stmt.stmt_list = stmt_list;

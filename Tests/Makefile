@@ -1,6 +1,11 @@
-default: simple_return.test # hello_world.test
+TESTS = simple_return \
+		simple_return_with_bin_op_plus \
+		simple_return_with_bin_op_minus
 
-.FORCE:
+default: $(addsuffix .test, $(TESTS))
+
+FORCE:
+.PHONY: FORCE
 
 .SECONDARY:
 
@@ -10,14 +15,16 @@ default: simple_return.test # hello_world.test
 %.clang.S : %.c Makefile
 	@ clang -S -mllvm --x86-asm-syntax=intel -o $@ $*.c
 
-%.compilium.S : %.c Makefile .FORCE
-	@ make -q -C ..
+../compilium: FORCE
+	@ make -C ..
+
+%.compilium.S : %.c Makefile ../compilium
 	@ ../compilium $*.c $@ > $*.compilium.log
 
-%.bin : %.S Makefile .FORCE
+%.bin : %.S Makefile FORCE
 	@ clang -o $@ $*.S
 
-%.test : %.clang.bin %.compilium.bin Makefile
+%.test : %.clang.bin %.compilium.bin Makefile FORCE
 	@ rm $*.clang.bin.stdout $*.compilium.bin.stdout; \
 		./$*.clang.bin > $*.clang.bin.stdout; \
 		./$*.compilium.bin > $*.compilium.bin.stdout; \
