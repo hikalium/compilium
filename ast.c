@@ -90,10 +90,18 @@ void PrintASTNodePadding(int depth) {
   for (int i = 0; i < depth; i++) putchar(' ');
 }
 
-const char *ILOpTypeStr[kNumOfILOpFunc] = {"Add", "LoadImm", "FuncBegin",
-                                           "FuncEnd", "Return"};
+const char *ILOpTypeStr[kNumOfILOpFunc];
 
 const char *InternalGetILOpTypeStr(ILOpType type) {
+  if(!ILOpTypeStr[0]){
+    ILOpTypeStr[kILOpAdd] = "Add";
+    ILOpTypeStr[kILOpSub] = "Sub";
+    ILOpTypeStr[kILOpMul] = "Mul";
+    ILOpTypeStr[kILOpLoadImm] = "LoadImm";
+    ILOpTypeStr[kILOpFuncBegin] = "FuncBegin";
+    ILOpTypeStr[kILOpFuncEnd] = "FuncEnd";
+    ILOpTypeStr[kILOpReturn] = "Return";
+  }
   if (kNumOfILOpFunc <= type) return "?";
   return ILOpTypeStr[type];
 }
@@ -254,6 +262,10 @@ ASTNode *GetASTNodeAt(const ASTNodeList *list, int index) {
 }
 
 int GetSizeOfASTNodeList(const ASTNodeList *list) { return list->size; }
+
+ASTNode *GetLastASTNode(const ASTNodeList *list) {
+  return GetASTNodeAt(list, GetSizeOfASTNodeList(list) - 1);
+}
 
 void PrintASTNodeList(ASTNodeList *list, int depth) {
   putchar('[');

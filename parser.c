@@ -37,6 +37,43 @@ void ReduceExprOp(ASTNodeList *expr_stack, ASTNodeList *op_stack) {
   PushASTNodeToList(expr_stack, last_op);
 }
 
+int ExprBinOpPriority[kNumOfExprBinOp];
+
+int IsExprBinOpPriorTo(const ASTNode *left, const ASTNode *right) {
+  const ASTDataExprBinOp *left_op = GetDataAsExprBinOp(left);
+  const ASTDataExprBinOp *right_op = GetDataAsExprBinOp(right);
+
+  if (!left_op || !right_op) {
+    Error("IsExprBinOpPriorTo: node is not an ExprBinOp");
+  }
+
+  if (!ExprBinOpPriority[kNumOfExprBinOp - 1]) {
+    // priority 0 means undefined.
+    ExprBinOpPriority[kOpAdd] = 2;
+    ExprBinOpPriority[kOpSub] = 2;
+    ExprBinOpPriority[kOpMul] = 4;
+  }
+
+  int left_priority = ExprBinOpPriority[left_op->op_type];
+  int right_priority = ExprBinOpPriority[right_op->op_type];
+  if (!left_priority || !right_priority) {
+    Error("IsExprBinOpPriorTo: Undefined operator priority");
+  }
+
+  return left_priority >= right_priority;
+}
+
+ASTExprBinOpType GetExprBinOpTypeFromToken(const Token *token) {
+  if (IsEqualToken(token, "+")) {
+    return kOpAdd;
+  } else if (IsEqualToken(token, "-")) {
+    return kOpSub;
+  } else if (IsEqualToken(token, "*")) {
+    return kOpMul;
+  }
+  return kOpUndefined;
+}
+
 #define MAX_NODES_IN_EXPR 64
 ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
   // 6.5
@@ -51,16 +88,11 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
       PushASTNodeToList(expr_stack, vnode);
       index++;
     } else if (token->type == kPunctuator) {
-      if (IsEqualToken(token, "+")) {
-        ASTNode *opnode = AllocateASTNodeAsExprBinOp(kOpAdd);
-        if (GetSizeOfASTNodeList(op_stack) > 0) {
-          ReduceExprOp(expr_stack, op_stack);
-        }
-        PushASTNodeToList(op_stack, opnode);
-        index++;
-      } else if (IsEqualToken(token, "-")) {
-        ASTNode *opnode = AllocateASTNodeAsExprBinOp(kOpSub);
-        if (GetSizeOfASTNodeList(op_stack) > 0) {
+      ASTExprBinOpType op_type = GetExprBinOpTypeFromToken(token);
+      if (op_type != kOpUndefined) {
+        ASTNode *opnode = AllocateASTNodeAsExprBinOp(op_type);
+        while (GetSizeOfASTNodeList(op_stack) > 0 &&
+               IsExprBinOpPriorTo(GetLastASTNode(op_stack), opnode)) {
           ReduceExprOp(expr_stack, op_stack);
         }
         PushASTNodeToList(op_stack, opnode);
@@ -68,9 +100,16 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
       } else if (IsEqualToken(token, ";")) {
         break;
       } else {
-        Error("Unexpected token(Punctuator) %s", token->str);
+        Error("Unexpected punctuator %s", token->str);
       }
-    } else {
+    } else if (token->type == kIdentifier){
+      if(IsEqualToken(token, "puts")){
+        ASTNode *opnode = AllocateASTNodeAsExprBinOp(kOpFuncCall);
+        Error("puts!");
+      } else{
+        Error("Unexpected identifier %s", token->str);
+      }
+    } else{
       Error("Unexpected token %s", token->str);
     }
   }

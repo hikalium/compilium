@@ -62,8 +62,12 @@ typedef struct {
 } ASTDataCompStmt;
 
 typedef enum {
+  kOpUndefined,
   kOpAdd,
   kOpSub,
+  kOpMul,
+  kOpFuncCall,
+  kNumOfExprBinOp
 } ASTExprBinOpType;
 
 typedef struct {
@@ -94,6 +98,7 @@ typedef struct {
 typedef enum {
   kILOpAdd,
   kILOpSub,
+  kILOpMul,
   kILOpLoadImm,
   kILOpFuncBegin,
   kILOpFuncEnd,
@@ -104,9 +109,9 @@ typedef enum {
 
 typedef struct {
   ILOpType op;
-  int dst_reg;
-  int left_reg;
-  int right_reg;
+  int dst_reg;    // 0: unused
+  int left_reg;   // 0: unused
+  int right_reg;  // 0: unused
   const ASTNode *ast_node;
 } ASTDataILOp;
 
@@ -155,6 +160,7 @@ void PushASTNodeToList(ASTNodeList *list, ASTNode *node);
 ASTNode *PopASTNodeFromList(ASTNodeList *list);
 ASTNode *GetASTNodeAt(const ASTNodeList *list, int index);
 int GetSizeOfASTNodeList(const ASTNodeList *list);
+ASTNode *GetLastASTNode(const ASTNodeList *list);
 void PrintASTNodeList(ASTNodeList *list, int depth);
 
 // @error.c
