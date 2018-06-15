@@ -12,12 +12,14 @@ int main(int argc, char *argv[]) {
   free(input);
 
   puts("\nTokens:");
-  PrintTokenList(tokens); putchar('\n');
+  PrintTokenList(tokens);
+  putchar('\n');
 
   ASTNode *ast = Parse(tokens);
 
   puts("\nAST:");
-  PrintASTNode(ast, 1); putchar('\n');
+  PrintASTNode(ast, 1);
+  putchar('\n');
 
   puts("\nCode generation:");
   FILE *dst_fp = fopen(argv[2], "wb");

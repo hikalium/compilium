@@ -31,35 +31,43 @@ typedef enum {
   kExprVal,
   kExprStmt,
   kReturnStmt,
-  kForStatement,
+  kForStmt,
   kILOp,
 } ASTType;
 
-typedef struct AST_NODE ASTNode;
 typedef struct AST_NODE_LIST ASTNodeList;
 
 typedef struct {
-  ASTNodeList *root_list;
-} ASTDataRoot;
+  ASTType type;
+} ASTNode;
 
 typedef struct {
+  ASTType type;
+  ASTNodeList *root_list;
+} ASTRoot;
+
+typedef struct {
+  ASTType type;
   TokenList *type_tokens;
   const Token *name;
-} ASTDataVarDef;
+} ASTVarDef;
 
 typedef struct {
+  ASTType type;
   ASTNode *type_and_name;
   ASTNodeList *arg_list;
-} ASTDataFuncDecl;
+} ASTFuncDecl;
 
 typedef struct {
+  ASTType type;
   ASTNode *func_decl;
   ASTNode *comp_stmt;
-} ASTDataFuncDef;
+} ASTFuncDef;
 
 typedef struct {
+  ASTType type;
   ASTNodeList *stmt_list;
-} ASTDataCompStmt;
+} ASTCompStmt;
 
 typedef enum {
   kOpUndefined,
@@ -70,29 +78,34 @@ typedef enum {
 } ASTExprBinOpType;
 
 typedef struct {
+  ASTType type;
   ASTExprBinOpType op_type;
   ASTNode *left;
   ASTNode *right;
-} ASTDataExprBinOp;
+} ASTExprBinOp;
 
 typedef struct {
+  ASTType type;
   const Token *token;
-} ASTDataExprVal;
+} ASTExprVal;
 
 typedef struct {
+  ASTType type;
   ASTNode *expr;
-} ASTDataExprStmt;
+} ASTExprStmt;
 
 typedef struct {
+  ASTType type;
   ASTNode *expr_stmt;
-} ASTDataReturnStmt;
+} ASTReturnStmt;
 
 typedef struct {
+  ASTType type;
   ASTNode *init_expr;
   ASTNode *cond_expr;
   ASTNode *updt_expr;
   ASTNode *body_comp_stmt;
-} ASTDataStatementFor;
+} ASTForStmt;
 
 typedef enum {
   kILOpAdd,
@@ -107,53 +120,51 @@ typedef enum {
 } ILOpType;
 
 typedef struct {
+  ASTType type;
   ILOpType op;
   int dst_reg;    // 0: unused
   int left_reg;   // 0: unused
   int right_reg;  // 0: unused
-  const ASTNode *ast_node;
-} ASTDataILOp;
-
-struct AST_NODE {
-  ASTType type;
-  union {
-    // TODO: change struct names to match with ASTType
-    ASTDataRoot root;
-    ASTDataStatementFor for_stmt;
-    ASTDataReturnStmt return_stmt;
-    ASTDataCompStmt comp_stmt;
-    ASTDataFuncDecl func_decl;
-    ASTDataFuncDef func_def;
-    ASTDataExprBinOp expr_bin_op;
-    ASTDataExprVal expr_val;
-    ASTDataExprStmt expr_stmt;
-    ASTDataVarDef var_def;
-    ASTDataILOp il_op;
-  } data;
-};
+  ASTNode *ast_node;
+} ASTILOp;
 
 // @ast.c
-const ASTDataRoot *GetDataAsRoot(const ASTNode *node);
-const ASTDataVarDef *GetDataAsVarDef(const ASTNode *node);
-const ASTDataFuncDecl *GetDataAsFuncDecl(const ASTNode *node);
-const ASTDataFuncDef *GetDataAsFuncDef(const ASTNode *node);
-const ASTDataCompStmt *GetDataAsCompStmt(const ASTNode *node);
-const ASTDataExprBinOp *GetDataAsExprBinOp(const ASTNode *node);
-const ASTDataExprVal *GetDataAsExprVal(const ASTNode *node);
-const ASTDataExprStmt *GetDataAsExprStmt(const ASTNode *node);
-const ASTDataReturnStmt *GetDataAsReturnStmt(const ASTNode *node);
-const ASTDataILOp *GetDataAsILOpOfType(const ASTNode *node, ILOpType type);
+ASTNode *ToASTNode(void *node);
 
-ASTNode *AllocateASTNode(ASTType type);
+#define DefToAST(type) AST##type *ToAST##type(ASTNode *node)
+DefToAST(Root);
+DefToAST(VarDef);
+DefToAST(FuncDecl);
+DefToAST(FuncDef);
+DefToAST(CompStmt);
+DefToAST(ExprBinOp);
+DefToAST(ExprVal);
+DefToAST(ExprStmt);
+DefToAST(ReturnStmt);
+DefToAST(ForStmt);
+DefToAST(ILOp);
+
+#define DefAllocAST(type) AST##type *AllocAST##type()
+DefAllocAST(Root);
+DefAllocAST(VarDef);
+DefAllocAST(FuncDecl);
+DefAllocAST(FuncDef);
+DefAllocAST(CompStmt);
+DefAllocAST(ExprBinOp);
+DefAllocAST(ExprVal);
+DefAllocAST(ExprStmt);
+DefAllocAST(ReturnStmt);
+DefAllocAST(ForStmt);
+DefAllocAST(ILOp);
 
 ASTNode *AllocateASTNodeAsExprVal(const Token *token);
 ASTNode *AllocateASTNodeAsExprBinOp(ASTExprBinOpType op_type);
-void SetOperandOfExprBinOp(ASTNode *node, ASTNode *left, ASTNode *right);
+void SetOperandOfExprBinOp(ASTExprBinOp *node, ASTNode *left, ASTNode *right);
 
 ASTNode *AllocateASTNodeAsILOp(ILOpType op, int dst_reg, int left_reg,
-                               int right_reg, const ASTNode *ast_node);
+                               int right_reg, ASTNode *ast_node);
 
-void PrintASTNode(const ASTNode *node, int depth);
+void PrintASTNode(ASTNode *node, int depth);
 ASTNodeList *AllocateASTNodeList(int capacity);
 void PushASTNodeToList(ASTNodeList *list, ASTNode *node);
 ASTNode *PopASTNodeFromList(ASTNodeList *list);
@@ -166,7 +177,7 @@ void PrintASTNodeList(ASTNodeList *list, int depth);
 void Error(const char *fmt, ...);
 
 // @generate.c
-void Generate(FILE *fp, const ASTNode *root);
+void Generate(FILE *fp, ASTNode *root);
 
 // @parser.c
 ASTNode *Parse(TokenList *tokens);

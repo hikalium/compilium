@@ -18,7 +18,7 @@ run: compilium
 	make -C Tests sample.compilium.bin
 
 debug: compilium_dbg
-	lldb ./compilium_dbg Tests/test.c
+	lldb ./compilium_dbg Tests/sample.c Tests/sample.compilium.S
 
 test: compilium
 	make -C Tests/

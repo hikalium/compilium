@@ -1,6 +1,6 @@
 #include "compilium.h"
 
-int GenerateIL(ASTNodeList *il, const ASTNode *node);
+int GenerateIL(ASTNodeList *il, ASTNode *node);
 
 // https://wiki.osdev.org/System_V_ABI
 // registers should be preserved: rbx, rsp, rbp, r12, r13, r14, and r15
@@ -23,16 +23,16 @@ int GetRegNumber() {
   return ++num;
 }
 
-void GenerateILForCompStmt(ASTNodeList *il, const ASTNode *node) {
-  const ASTDataCompStmt *comp = GetDataAsCompStmt(node);
-  const ASTNodeList *stmt_list = comp->stmt_list;
+void GenerateILForCompStmt(ASTNodeList *il, ASTNode *node) {
+  ASTCompStmt *comp = ToASTCompStmt(node);
+  ASTNodeList *stmt_list = comp->stmt_list;
   for (int i = 0; i < GetSizeOfASTNodeList(stmt_list); i++) {
     GenerateIL(il, GetASTNodeAt(stmt_list, i));
   }
 }
 
-void GenerateILForFuncDef(ASTNodeList *il, const ASTNode *node) {
-  const ASTDataFuncDef *def = GetDataAsFuncDef(node);
+void GenerateILForFuncDef(ASTNodeList *il, ASTNode *node) {
+  ASTFuncDef *def = ToASTFuncDef(node);
   PushASTNodeToList(il, AllocateASTNodeAsILOp(kILOpFuncBegin, REG_NULL,
                                               REG_NULL, REG_NULL, node));
   GenerateILForCompStmt(il, def->comp_stmt);
@@ -40,8 +40,8 @@ void GenerateILForFuncDef(ASTNodeList *il, const ASTNode *node) {
                                               REG_NULL, node));
 }
 
-int GenerateILForExprBinOp(ASTNodeList *il, const ASTNode *node) {
-  const ASTDataExprBinOp *bin_op = GetDataAsExprBinOp(node);
+int GenerateILForExprBinOp(ASTNodeList *il, ASTNode *node) {
+  ASTExprBinOp *bin_op = ToASTExprBinOp(node);
   int il_left = GenerateIL(il, bin_op->left);
   int il_right = GenerateIL(il, bin_op->right);
   int dst = GetRegNumber();
@@ -67,7 +67,7 @@ int GenerateILForExprBinOp(ASTNodeList *il, const ASTNode *node) {
   return dst;
 }
 
-int GenerateILForExprVal(ASTNodeList *il, const ASTNode *node) {
+int GenerateILForExprVal(ASTNodeList *il, ASTNode *node) {
   int dst = GetRegNumber();
   ASTNode *il_op =
       AllocateASTNodeAsILOp(kILOpLoadImm, dst, REG_NULL, REG_NULL, node);
@@ -75,9 +75,9 @@ int GenerateILForExprVal(ASTNodeList *il, const ASTNode *node) {
   return dst;
 }
 
-int GenerateILForExprStmt(ASTNodeList *il, const ASTNode *node) {
+int GenerateILForExprStmt(ASTNodeList *il, ASTNode *node) {
   // https://wiki.osdev.org/System_V_ABI
-  const ASTDataExprStmt *expr_stmt = GetDataAsExprStmt(node);
+  const ASTExprStmt *expr_stmt = ToASTExprStmt(node);
   return GenerateIL(il, expr_stmt->expr);
   /*
   const TokenList *token_list = expr_stmt->expr;
@@ -113,8 +113,8 @@ int GenerateILForExprStmt(ASTNodeList *il, const ASTNode *node) {
   */
 }
 
-int GenerateILForReturnStmt(ASTNodeList *il, const ASTNode *node) {
-  const ASTDataReturnStmt *ret = GetDataAsReturnStmt(node);
+int GenerateILForReturnStmt(ASTNodeList *il, ASTNode *node) {
+  ASTReturnStmt *ret = ToASTReturnStmt(node);
   int expr_reg = GenerateILForExprStmt(il, ret->expr_stmt);
 
   ASTNode *il_op =
@@ -124,11 +124,11 @@ int GenerateILForReturnStmt(ASTNodeList *il, const ASTNode *node) {
   return REG_NULL;
 }
 
-int GenerateIL(ASTNodeList *il, const ASTNode *node) {
+int GenerateIL(ASTNodeList *il, ASTNode *node) {
   if (node->type == kRoot) {
-    ASTNodeList *list = GetDataAsRoot(node)->root_list;
+    ASTNodeList *list = ToASTRoot(node)->root_list;
     for (int i = 0; i < GetSizeOfASTNodeList(list); i++) {
-      const ASTNode *child_node = GetASTNodeAt(list, i);
+      ASTNode *child_node = GetASTNodeAt(list, i);
       if (child_node->type == kFuncDef) {
         GenerateILForFuncDef(il, child_node);
       }
@@ -153,11 +153,11 @@ void GenerateCode(FILE *fp, ASTNodeList *il) {
   // generate func symbol
   for (int i = 0; i < GetSizeOfASTNodeList(il); i++) {
     ASTNode *node = GetASTNodeAt(il, i);
-    const ASTDataILOp *op;
-    if ((op = GetDataAsILOpOfType(node, kILOpFuncBegin))) {
-      const ASTDataFuncDef *def = GetDataAsFuncDef(op->ast_node);
-      const ASTDataFuncDecl *decl = GetDataAsFuncDecl(def->func_decl);
-      const ASTDataVarDef *defv = GetDataAsVarDef(decl->type_and_name);
+    ASTILOp *op = ToASTILOp(node);
+    if (op->op == kILOpFuncBegin) {
+      ASTFuncDef *def = ToASTFuncDef(op->ast_node);
+      ASTFuncDecl *decl = ToASTFuncDecl(def->func_decl);
+      ASTVarDef *defv = ToASTVarDef(decl->type_and_name);
       fprintf(fp, ".global _%s\n", defv->name->str);
       printf("found func: %s\n", defv->name->str);
     }
@@ -165,68 +165,73 @@ void GenerateCode(FILE *fp, ASTNodeList *il) {
   // generate code
   for (int i = 0; i < GetSizeOfASTNodeList(il); i++) {
     ASTNode *node = GetASTNodeAt(il, i);
-    const ASTDataILOp *op;
-    if ((op = GetDataAsILOpOfType(node, kILOpFuncBegin))) {
-      const ASTDataFuncDef *def = GetDataAsFuncDef(op->ast_node);
-      const ASTDataFuncDecl *decl = GetDataAsFuncDecl(def->func_decl);
-      const ASTDataVarDef *defv = GetDataAsVarDef(decl->type_and_name);
-      fprintf(fp, "_%s:\n", defv->name->str);
-      fprintf(fp, "push    rbp\n");
-      fprintf(fp, "mov     rbp, rsp\n");
-    } else if ((op = GetDataAsILOpOfType(node, kILOpFuncEnd))) {
-      fprintf(fp, "mov     dword ptr [rbp - 4], 0\n");
-      fprintf(fp, "pop     rbp\n");
-      fprintf(fp, "ret\n");
-    } else if ((op = GetDataAsILOpOfType(node, kILOpLoadImm))) {
-      const char *dst_name = ScratchRegNames[op->dst_reg];
-      //
-      char *p;
-      const ASTDataExprVal *val = GetDataAsExprVal(op->ast_node);
-      const char *s = val->token->str;
-      int n = strtol(s, &p, 0);
-      if (!(s[0] != 0 && *p == 0)) {
-        Error("%s is not valid as integer.", s);
-      }
-      fprintf(fp, "mov %s, %d\n", dst_name, n);
-    } else if ((op = GetDataAsILOpOfType(node, kILOpAdd))) {
-      const char *dst = ScratchRegNames[op->dst_reg];
-      const char *left = ScratchRegNames[op->left_reg];
-      const char *right = ScratchRegNames[op->right_reg];
-      //
-      fprintf(fp, "add %s, %s\n", left, right);
-      fprintf(fp, "mov %s, %s\n", dst, left);
-    } else if ((op = GetDataAsILOpOfType(node, kILOpSub))) {
-      const char *dst = ScratchRegNames[op->dst_reg];
-      const char *left = ScratchRegNames[op->left_reg];
-      const char *right = ScratchRegNames[op->right_reg];
-      //
-      fprintf(fp, "sub %s, %s\n", left, right);
-      fprintf(fp, "mov %s, %s\n", dst, left);
-    } else if ((op = GetDataAsILOpOfType(node, kILOpMul))) {
-      const char *dst = ScratchRegNames[op->dst_reg];
-      const char *left = ScratchRegNames[op->left_reg];
-      const char *right = ScratchRegNames[op->right_reg];
-      //
-      // eDX: eAX <- eAX * r/m
-      fprintf(fp, "mov rax, %s\n", left);
-      fprintf(fp, "push rdx\n");
-      fprintf(fp, "imul %s\n", right);
-      fprintf(fp, "pop rdx\n");
-      fprintf(fp, "mov %s, rax\n", dst);
-    } else if ((op = GetDataAsILOpOfType(node, kILOpReturn))) {
-      const char *left = ScratchRegNames[op->left_reg];
-      //
-      fprintf(fp, "mov rax, %s\n", left);
-    } else {
-      PrintASTNode(node, 0);
-      putchar('\n');
-      Error("Not implemented code generation for the node shown above");
+    ASTILOp *op = ToASTILOp(node);
+    if (!op) {
+      Error("op is null!");
+    }
+    switch (op->op) {
+      case kILOpFuncBegin: {
+        const ASTFuncDef *def = ToASTFuncDef(op->ast_node);
+        const ASTFuncDecl *decl = ToASTFuncDecl(def->func_decl);
+        const ASTVarDef *defv = ToASTVarDef(decl->type_and_name);
+        fprintf(fp, "_%s:\n", defv->name->str);
+        fprintf(fp, "push    rbp\n");
+        fprintf(fp, "mov     rbp, rsp\n");
+      } break;
+      case kILOpFuncEnd:
+        fprintf(fp, "mov     dword ptr [rbp - 4], 0\n");
+        fprintf(fp, "pop     rbp\n");
+        fprintf(fp, "ret\n");
+        break;
+      case kILOpLoadImm: {
+        const char *dst_name = ScratchRegNames[op->dst_reg];
+        //
+        char *p;
+        ASTExprVal *val = ToASTExprVal(op->ast_node);
+        const char *s = val->token->str;
+        int n = strtol(s, &p, 0);
+        if (!(s[0] != 0 && *p == 0)) {
+          Error("%s is not valid as integer.", s);
+        }
+        fprintf(fp, "mov %s, %d\n", dst_name, n);
+      } break;
+      case kILOpAdd:
+      case kILOpSub:
+      case kILOpMul: {
+        const char *dst = ScratchRegNames[op->dst_reg];
+        const char *left = ScratchRegNames[op->left_reg];
+        const char *right = ScratchRegNames[op->right_reg];
+        //
+        if (op->op == kILOpAdd) {
+          fprintf(fp, "add %s, %s\n", left, right);
+          fprintf(fp, "mov %s, %s\n", dst, left);
+        } else if (op->op == kILOpSub) {
+          fprintf(fp, "sub %s, %s\n", left, right);
+          fprintf(fp, "mov %s, %s\n", dst, left);
+        } else if (op->op == kILOpMul) {
+          // eDX: eAX <- eAX * r/m
+          fprintf(fp, "mov rax, %s\n", left);
+          fprintf(fp, "push rdx\n");
+          fprintf(fp, "imul %s\n", right);
+          fprintf(fp, "pop rdx\n");
+          fprintf(fp, "mov %s, rax\n", dst);
+        }
+      } break;
+      case kILOpReturn: {
+        const char *left = ScratchRegNames[op->left_reg];
+        //
+        fprintf(fp, "mov rax, %s\n", left);
+      } break;
+      default:
+        PrintASTNode(node, 0);
+        putchar('\n');
+        Error("Not implemented code generation for the node shown above");
     }
   }
 }
 
 #define MAX_IL_NODES 2048
-void Generate(FILE *fp, const ASTNode *root) {
+void Generate(FILE *fp, ASTNode *root) {
   ASTNodeList *intermediate_code = AllocateASTNodeList(MAX_IL_NODES);
 
   GenerateIL(intermediate_code, root);
