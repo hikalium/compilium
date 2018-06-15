@@ -66,7 +66,6 @@ typedef enum {
   kOpAdd,
   kOpSub,
   kOpMul,
-  kOpFuncCall,
   kNumOfExprBinOp
 } ASTExprBinOpType;
 

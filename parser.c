@@ -103,12 +103,7 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
         Error("Unexpected punctuator %s", token->str);
       }
     } else if (token->type == kIdentifier){
-      if(IsEqualToken(token, "puts")){
-        ASTNode *opnode = AllocateASTNodeAsExprBinOp(kOpFuncCall);
-        Error("puts!");
-      } else{
-        Error("Unexpected identifier %s", token->str);
-      }
+      Error("Unexpected identifier %s", token->str);
     } else{
       Error("Unexpected token %s", token->str);
     }
