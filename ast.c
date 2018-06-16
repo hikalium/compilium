@@ -8,9 +8,18 @@ ASTNode *ToASTNode(void *node) { return (ASTNode *)node; }
     return (AST##Type *)node;                        \
   }
 
-GenToAST(Root) GenToAST(VarDef) GenToAST(FuncDecl) GenToAST(FuncDef)
-    GenToAST(CompStmt) GenToAST(ExprBinOp) GenToAST(ExprVal) GenToAST(ExprStmt)
-        GenToAST(ReturnStmt) GenToAST(ForStmt) GenToAST(ILOp)
+GenToAST(Root);
+GenToAST(VarDef);
+GenToAST(FuncDecl);
+GenToAST(FuncDef);
+GenToAST(CompStmt);
+GenToAST(ExprBinOp);
+GenToAST(ExprVal);
+GenToAST(ExprStmt);
+GenToAST(ReturnStmt);
+GenToAST(ForStmt);
+GenToAST(ILOp);
+
 #define GenAllocAST(Type)                                     \
   AST##Type *AllocAST##Type() {                               \
     AST##Type *node = (AST##Type *)malloc(sizeof(AST##Type)); \
@@ -18,14 +27,19 @@ GenToAST(Root) GenToAST(VarDef) GenToAST(FuncDecl) GenToAST(FuncDef)
     return node;                                              \
   }
 
-            GenAllocAST(Root) GenAllocAST(VarDef) GenAllocAST(FuncDecl)
-                GenAllocAST(FuncDef) GenAllocAST(CompStmt)
-                    GenAllocAST(ExprBinOp) GenAllocAST(ExprVal)
-                        GenAllocAST(ExprStmt) GenAllocAST(ReturnStmt)
-                            GenAllocAST(ForStmt) GenAllocAST(ILOp)
+GenAllocAST(Root);
+GenAllocAST(VarDef);
+GenAllocAST(FuncDecl);
+GenAllocAST(FuncDef);
+GenAllocAST(CompStmt);
+GenAllocAST(ExprBinOp);
+GenAllocAST(ExprVal);
+GenAllocAST(ExprStmt);
+GenAllocAST(ReturnStmt);
+GenAllocAST(ForStmt);
+GenAllocAST(ILOp);
 
-                                ASTNode *AllocateASTNodeAsExprVal(
-                                    const Token *token) {
+ASTNode *AllocateASTNodeAsExprVal(const Token *token) {
   ASTExprVal *node = AllocASTExprVal();
   node->token = token;
   return ToASTNode(node);
