@@ -1,4 +1,6 @@
 #include "compilium.h"
+ASTExprStmt *ParseExprStmt(TokenList *tokens, int index,
+                                    int *after_index);
 
 void ReduceExprOp(ASTList *expr_stack, ASTList *op_stack) {
   ASTNode *last_op = PopASTNodeFromList(op_stack);
@@ -100,17 +102,6 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
   return GetASTNodeAt(expr_stack, 0);
 }
 
-ASTNode *TryReadExpressionStatement(TokenList *tokens, int index,
-                                    int *after_index) {
-  // expression-statement:
-  //   expression ;
-  ASTNode *expr = ReadExpression(tokens, index, &index);
-  if (!expr || !IsEqualToken(GetTokenAt(tokens, index++), ";")) return NULL;
-  ASTExprStmt *expr_stmt = AllocASTExprStmt();
-  expr_stmt->expr = expr;
-  *after_index = index;
-  return ToASTNode(expr_stmt);
-}
 /*
 ASTNode *TryReadForStatement(TokenList *tokens, int index, int *after_index) {
   // 6.8.5.3
@@ -143,7 +134,7 @@ ASTNode *TryReadReturnStmt(TokenList *tokens, int index, int *after_index) {
   if (IsEqualToken(token, "return")) {
     // jump-statement(return)
     ASTNode *expr_stmt =
-        TryReadExpressionStatement(tokens, index + 1, after_index);
+        ToASTNode(ParseExprStmt(tokens, index + 1, after_index));
     if (!expr_stmt) return NULL;
     ASTReturnStmt *return_stmt = AllocASTReturnStmt();
     return_stmt->expr_stmt = expr_stmt;
@@ -164,9 +155,21 @@ ASTNode *TryReadStatement(TokenList *tokens, int index, int *after_index) {
   ASTNode *statement;
   if ((statement = TryReadReturnStmt(tokens, index, after_index)) ||
       //(statement = TryReadForStatement(tokens, index, after_index)) ||
-      (statement = TryReadExpressionStatement(tokens, index, after_index)))
+      (statement = ToASTNode(ParseExprStmt(tokens, index, after_index))))
     return statement;
   return NULL;
+}
+
+ASTExprStmt *ParseExprStmt(TokenList *tokens, int index,
+                                    int *after_index) {
+  // expression-statement:
+  //   expression ;
+  ASTNode *expr = ReadExpression(tokens, index, &index);
+  if (!expr || !IsEqualToken(GetTokenAt(tokens, index++), ";")) return NULL;
+  ASTExprStmt *expr_stmt = AllocASTExprStmt();
+  expr_stmt->expr = expr;
+  *after_index = index;
+  return expr_stmt;
 }
 
 #define MAX_NUM_OF_STATEMENTS_IN_BLOCK 64
