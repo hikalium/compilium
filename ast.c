@@ -12,7 +12,6 @@ struct AST_LIST {
 const char* ASTTypeName[kNumOfASTType];
 
 void InitASTTypeName() {
-  ASTTypeName[kVarDef] = "VarDef";
   ASTTypeName[kFuncDecl] = "FuncDecl";
   ASTTypeName[kFuncDef] = "FuncDef";
   ASTTypeName[kCompStmt] = "CompStmt";
@@ -52,7 +51,6 @@ ASTNode* ToASTNode(void* node) { return (ASTNode*)node; }
     return (AST##Type*)node; \
   }
 
-GenToAST(VarDef);
 GenToAST(FuncDecl);
 GenToAST(FuncDef);
 GenToAST(CompStmt);
@@ -75,7 +73,6 @@ GenToAST(Ident);
     return node; \
   }
 
-GenAllocAST(VarDef);
 GenAllocAST(FuncDecl);
 GenAllocAST(FuncDef);
 GenAllocAST(CompStmt);
@@ -193,11 +190,7 @@ void PrintASTNode(ASTNode* node, int depth) {
     printf("(Unknown: %d)", node->type);
     return;
   }
-  if (node->type == kVarDef) {
-    ASTVarDef* var_def = ToASTVarDef(node);
-    PrintTokenListWithName(depth + 1, "type=", var_def->type_tokens);
-    PrintfWithPadding(depth + 1, "name=%s", var_def->name->str);
-  } else if (node->type == kFuncDecl) {
+  if (node->type == kFuncDecl) {
     ASTFuncDecl* func_decl = ToASTFuncDecl(node);
     PrintASTNodeWithName(depth + 1, "type_and_name=", func_decl->type_and_name);
     PrintASTNodeWithName(depth + 1,

@@ -1,31 +1,5 @@
 #include "compilium.h"
 
-ASTNode *TryReadAsVarDef(TokenList *tokens, int index, int *after_index) {
-  ASTVarDef *var_def = AllocASTVarDef();
-  const Token *token;
-  TokenList *token_list = AllocateTokenList();
-  var_def->type_tokens = token_list;
-
-  token = GetTokenAt(tokens, index);
-  if (IsEqualToken(token, "const")) {
-    AppendTokenToList(token_list, token);
-    token = GetTokenAt(tokens, ++index);
-  }
-  if (IsTypeToken(token)) {
-    AppendTokenToList(token_list, token);
-    token = GetTokenAt(tokens, ++index);
-  } else {
-    return NULL;
-  }
-  while (IsEqualToken(token, "*")) {
-    AppendTokenToList(token_list, token);
-    token = GetTokenAt(tokens, ++index);
-  }
-  var_def->name = GetTokenAt(tokens, index++);
-  *after_index = index;
-  return ToASTNode(var_def);
-}
-
 void ReduceExprOp(ASTList *expr_stack, ASTList *op_stack) {
   ASTNode *last_op = PopASTNodeFromList(op_stack);
   if (GetSizeOfASTList(expr_stack) < 2) {

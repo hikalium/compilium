@@ -22,7 +22,6 @@ typedef struct {
 typedef struct TOKEN_LIST TokenList;
 
 typedef enum {
-  kVarDef,
   kFuncDecl,
   kFuncDef,
   kCompStmt,
@@ -51,12 +50,6 @@ typedef struct {
   ASTType type;
   ASTList *root_list;
 } ASTRoot;
-
-typedef struct {
-  ASTType type;
-  TokenList *type_tokens;
-  const Token *name;
-} ASTVarDef;
 
 typedef struct {
   ASTType type;
@@ -162,7 +155,6 @@ void InitASTTypeName();
 
 ASTNode *ToASTNode(void *node);
 #define DefToAST(type) AST##type *ToAST##type(ASTNode *node)
-DefToAST(VarDef);
 DefToAST(FuncDecl);
 DefToAST(FuncDef);
 DefToAST(CompStmt);
@@ -179,7 +171,6 @@ DefToAST(DirectDecltor);
 DefToAST(Ident);
 
 #define DefAllocAST(type) AST##type *AllocAST##type()
-DefAllocAST(VarDef);
 DefAllocAST(FuncDecl);
 DefAllocAST(FuncDef);
 DefAllocAST(CompStmt);
