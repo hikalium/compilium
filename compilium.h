@@ -33,6 +33,10 @@ typedef enum {
   kForStmt,
   kILOp,
   kList,
+  kKeyword,
+  kDecltor,
+  kDirectDecltor,
+  kIdent,
   //
   kNumOfASTType
 } ASTType;
@@ -60,11 +64,6 @@ typedef struct {
   ASTList *arg_list;
 } ASTFuncDecl;
 
-typedef struct {
-  ASTType type;
-  ASTNode *func_decl;
-  ASTNode *comp_stmt;
-} ASTFuncDef;
 
 typedef struct {
   ASTType type;
@@ -130,7 +129,37 @@ typedef struct {
   ASTNode *ast_node;
 } ASTILOp;
 
-// @ast.c
+typedef struct {
+  ASTType type;
+  const Token *token;
+} ASTKeyword;
+
+typedef struct {
+  ASTType type;
+  const Token *token;
+} ASTIdent;
+
+typedef struct AST_DIRECT_DECLTOR ASTDirectDecltor;
+struct AST_DIRECT_DECLTOR {
+  ASTType type;
+  ASTDirectDecltor *direct_decltor;
+  ASTNode *data;
+};
+
+typedef struct {
+  ASTType type;
+  ASTDirectDecltor *direct_decltor;
+} ASTDecltor;
+
+
+typedef struct {
+  ASTType type;
+  ASTList *decl_specs;
+  ASTDecltor *decltor;
+  ASTCompStmt *comp_stmt;
+} ASTFuncDef;
+
+// @st.c
 void InitASTTypeName();
 
 ASTNode *ToASTNode(void *node);
@@ -146,6 +175,10 @@ DefToAST(ReturnStmt);
 DefToAST(ForStmt);
 DefToAST(ILOp);
 DefToAST(List);
+DefToAST(Keyword);
+DefToAST(Decltor);
+DefToAST(DirectDecltor);
+DefToAST(Ident);
 
 #define DefAllocAST(type) AST##type *AllocAST##type()
 DefAllocAST(VarDef);
@@ -159,6 +192,10 @@ DefAllocAST(ReturnStmt);
 DefAllocAST(ForStmt);
 DefAllocAST(ILOp);
 ASTList *AllocASTList(int capacity);
+DefAllocAST(Keyword);
+DefAllocAST(Decltor);
+DefAllocAST(DirectDecltor);
+DefAllocAST(Ident);
 
 ASTNode *AllocateASTNodeAsExprVal(const Token *token);
 ASTNode *AllocateASTNodeAsExprBinOp(ASTExprBinOpType op_type);

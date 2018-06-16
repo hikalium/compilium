@@ -196,7 +196,7 @@ ASTNode *TryReadStatement(TokenList *tokens, int index, int *after_index) {
 }
 
 #define MAX_NUM_OF_STATEMENTS_IN_BLOCK 64
-ASTNode *ParseCompStmt(TokenList *tokens, int index, int *after_index) {
+ASTCompStmt *ParseCompStmt(TokenList *tokens, int index, int *after_index) {
   // 6.8.2
   // compound-statement:
   //   { block-item-list(opt) }
@@ -221,55 +221,113 @@ ASTNode *ParseCompStmt(TokenList *tokens, int index, int *after_index) {
   index++;
   //
   *after_index = index;
-  return ToASTNode(comp_stmt);
+  return comp_stmt;
+}
+
+ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index, int *after_index)
+{
+  // direct-declarator
+  ASTDirectDecltor *last_direct_decltor = NULL;
+  for (;;) {
+    const Token *token = GetTokenAt(tokens, index);
+    if(!token) break;
+    if(token->type == kIdentifier){
+      if(last_direct_decltor) break;
+      //
+      ASTIdent *ident = AllocASTIdent();
+      ident->token = token;
+      //
+      ASTDirectDecltor *direct_decltor = AllocASTDirectDecltor();
+      direct_decltor->direct_decltor = last_direct_decltor;
+      direct_decltor->data = ToASTNode(ident);
+      last_direct_decltor = direct_decltor;
+      //
+      index++;
+      continue;
+    } else if(token->type == kPunctuator){
+      if(IsEqualToken(token, "(")){
+        token = GetTokenAt(tokens, index + 1);
+        if(IsEqualToken(token, ")")){
+          if(!last_direct_decltor) break;
+          //
+          ASTList *list = AllocASTList(0);
+          //
+          ASTDirectDecltor *direct_decltor = AllocASTDirectDecltor();
+          direct_decltor->direct_decltor = last_direct_decltor;
+          direct_decltor->data = ToASTNode(list);
+          last_direct_decltor = direct_decltor;
+          //
+          index += 2;
+          continue;
+        }
+      }
+    }
+    break;
+  }
+  *after_index = index;
+  return last_direct_decltor;
+}
+
+ASTDecltor *ParseDecltor(TokenList *tokens, int index, int *after_index)
+{
+  // declarator
+  // TODO: Impl pointer(opt)
+  ASTDirectDecltor *direct_decltor = ParseDirectDecltor(tokens, index, &index);
+  if(!direct_decltor){
+    return NULL;
+  }
+  ASTDecltor *decltor = AllocASTDecltor();
+  decltor->direct_decltor = direct_decltor;
+   *after_index = index;
+  return decltor;
+}
+
+#define MAX_NODES_IN_DECL_SPECS 4
+ASTList *ParseDeclSpecs(TokenList *tokens, int index, int *after_index)
+{
+  // declaration-specifiers
+  // ASTList<ASTKeyword>
+  ASTList *list = AllocASTList(MAX_NODES_IN_DECL_SPECS);
+  for (;;) {
+    const Token *token = GetTokenAt(tokens, index);
+    if(IsEqualToken(token, "int")){
+      ASTKeyword *kw = AllocASTKeyword();
+      kw->token = token;
+      PushASTNodeToList(list, ToASTNode(kw));
+      index++;
+      continue;
+    }
+    break;
+  }
+  *after_index = index;
+  return list;
 }
 
 #define MAX_ARGS 16
 ASTNode *ParseFuncDef(TokenList *tokens, int index, int *after_index) {
   // function-definition
-  const Token *token;
-  ASTNode *tmp_node;
-  if ((tmp_node = TryReadAsVarDef(tokens, index, &index))) {
-    // 6.7.6.3
-    // T D( parameter-type-list )
-    // T D( identifier-list_opt )
-    // func decl / def
-    ASTNode *type_and_name = tmp_node;
-    //
-    token = GetTokenAt(tokens, index++);
-    if (!IsEqualToken(token, "(")) {
-      return NULL;
-    }
-    // args
-    ASTList *arg_list = AllocASTList(MAX_ARGS);
-    while ((tmp_node = TryReadAsVarDef(tokens, index, &index))) {
-      PushASTNodeToList(arg_list, tmp_node);
-      if (!IsEqualToken(GetTokenAt(tokens, index), ",")) {
-        break;
-      }
-      index++;
-    }
-    //
-    token = GetTokenAt(tokens, index++);
-    if (!IsEqualToken(token, ")")) {
-      return NULL;
-    }
-    //
-    ASTFuncDecl *func_decl = AllocASTFuncDecl();
-    func_decl->type_and_name = type_and_name;
-    func_decl->arg_list = arg_list;
-
-    ASTNode *comp_stmt = ParseCompStmt(tokens, index, &index);
-    if (!comp_stmt) {
-      return NULL;
-    }
-    ASTFuncDef *func_def = AllocASTFuncDef();
-    func_def->func_decl = ToASTNode(func_decl);
-    func_def->comp_stmt = comp_stmt;
-    *after_index = index;
-    return ToASTNode(func_def);
+  ASTList *decl_specs = ParseDeclSpecs(tokens, index, &index);
+  if (!decl_specs) {
+    return NULL;
   }
-  return NULL;
+
+  ASTDecltor *decltor = ParseDecltor(tokens, index, &index);
+  if (!decltor) {
+    return NULL;
+  }
+
+  ASTCompStmt *comp_stmt = ParseCompStmt(tokens, index, &index);
+  if (!comp_stmt) {
+    printf("comp_stmt is null!");
+    return NULL;
+  }
+
+  ASTFuncDef *func_def = AllocASTFuncDef();
+  func_def->decl_specs = decl_specs;
+  func_def->decltor = decltor;
+  func_def->comp_stmt = comp_stmt;
+  *after_index = index;
+  return ToASTNode(func_def);
 }
 
 #define MAX_NODES_IN_TRANSLATION_UNIT 64

@@ -35,7 +35,7 @@ void GenerateILForFuncDef(ASTList *il, ASTNode *node) {
   ASTFuncDef *def = ToASTFuncDef(node);
   PushASTNodeToList(il, AllocateASTNodeAsILOp(kILOpFuncBegin, REG_NULL,
                                               REG_NULL, REG_NULL, node));
-  GenerateILForCompStmt(il, def->comp_stmt);
+  GenerateILForCompStmt(il, ToASTNode(def->comp_stmt));
   PushASTNodeToList(il, AllocateASTNodeAsILOp(kILOpFuncEnd, REG_NULL, REG_NULL,
                                               REG_NULL, node));
 }
@@ -156,11 +156,12 @@ void GenerateCode(FILE *fp, ASTList *il) {
     ASTNode *node = GetASTNodeAt(il, i);
     ASTILOp *op = ToASTILOp(node);
     if (op->op == kILOpFuncBegin) {
-      ASTFuncDef *def = ToASTFuncDef(op->ast_node);
-      ASTFuncDecl *decl = ToASTFuncDecl(def->func_decl);
-      ASTVarDef *defv = ToASTVarDef(decl->type_and_name);
-      fprintf(fp, ".global _%s\n", defv->name->str);
-      printf("found func: %s\n", defv->name->str);
+      //ASTFuncDef *def = ToASTFuncDef(op->ast_node);
+     // ASTFuncDecl *decl = ToASTFuncDecl(def->func_decl);
+      Error("ToDo: impl GenerateCode");
+      //ASTVarDef *defv = ToASTVarDef(decl->type_and_name);
+      //fprintf(fp, ".global _%s\n", defv->name->str);
+      //printf("found func: %s\n", defv->name->str);
     }
   }
   // generate code
@@ -172,12 +173,14 @@ void GenerateCode(FILE *fp, ASTList *il) {
     }
     switch (op->op) {
       case kILOpFuncBegin: {
+        /*Error("ToDo: impl GenerateCode");
         const ASTFuncDef *def = ToASTFuncDef(op->ast_node);
         const ASTFuncDecl *decl = ToASTFuncDecl(def->func_decl);
         const ASTVarDef *defv = ToASTVarDef(decl->type_and_name);
         fprintf(fp, "_%s:\n", defv->name->str);
         fprintf(fp, "push    rbp\n");
         fprintf(fp, "mov     rbp, rsp\n");
+        */
       } break;
       case kILOpFuncEnd:
         fprintf(fp, "mov     dword ptr [rbp - 4], 0\n");
