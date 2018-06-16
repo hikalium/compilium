@@ -15,6 +15,7 @@ int main(int argc, char *argv[]) {
   PrintTokenList(tokens);
   putchar('\n');
 
+  InitASTTypeName();
   ASTNode *ast = Parse(tokens);
 
   puts("\nAST:");

@@ -9,6 +9,37 @@ struct AST_LIST {
   ASTNode* nodes[];
 };
 
+const char* ASTTypeName[kNumOfASTType];
+
+void InitASTTypeName() {
+  ASTTypeName[kVarDef] = "VarDef";
+  ASTTypeName[kFuncDecl] = "FuncDecl";
+  ASTTypeName[kFuncDef] = "FuncDef";
+  ASTTypeName[kCompStmt] = "CompStmt";
+  ASTTypeName[kExprBinOp] = "ExprBinOp";
+  ASTTypeName[kExprStmt] = "ExprStmt";
+  ASTTypeName[kReturnStmt] = "ReturnStmt";
+  ASTTypeName[kForStmt] = "ForStmt";
+  ASTTypeName[kILOp] = "ILOp";
+  ASTTypeName[kList] = "List";
+}
+
+const char* ILOpTypeStr[kNumOfILOpFunc];
+
+const char* InternalGetILOpTypeStr(ILOpType type) {
+  if (!ILOpTypeStr[0]) {
+    ILOpTypeStr[kILOpAdd] = "Add";
+    ILOpTypeStr[kILOpSub] = "Sub";
+    ILOpTypeStr[kILOpMul] = "Mul";
+    ILOpTypeStr[kILOpLoadImm] = "LoadImm";
+    ILOpTypeStr[kILOpFuncBegin] = "FuncBegin";
+    ILOpTypeStr[kILOpFuncEnd] = "FuncEnd";
+    ILOpTypeStr[kILOpReturn] = "Return";
+  }
+  if (kNumOfILOpFunc <= type) return "?";
+  return ILOpTypeStr[type];
+}
+
 ASTNode* ToASTNode(void* node) { return (ASTNode*)node; }
 
 #define GenToAST(Type) \
@@ -90,22 +121,6 @@ void PrintASTNodePadding(int depth) {
   for (int i = 0; i < depth; i++) putchar(' ');
 }
 
-const char* ILOpTypeStr[kNumOfILOpFunc];
-
-const char* InternalGetILOpTypeStr(ILOpType type) {
-  if (!ILOpTypeStr[0]) {
-    ILOpTypeStr[kILOpAdd] = "Add";
-    ILOpTypeStr[kILOpSub] = "Sub";
-    ILOpTypeStr[kILOpMul] = "Mul";
-    ILOpTypeStr[kILOpLoadImm] = "LoadImm";
-    ILOpTypeStr[kILOpFuncBegin] = "FuncBegin";
-    ILOpTypeStr[kILOpFuncEnd] = "FuncEnd";
-    ILOpTypeStr[kILOpReturn] = "Return";
-  }
-  if (kNumOfILOpFunc <= type) return "?";
-  return ILOpTypeStr[type];
-}
-
 void PrintfWithPadding(int depth, const char* fmt, ...) {
   PrintASTNodePadding(depth);
   va_list ap;
@@ -113,12 +128,6 @@ void PrintfWithPadding(int depth, const char* fmt, ...) {
   vfprintf(stdout, fmt, ap);
   va_end(ap);
 }
-
-const char* ASTTypeName[kNumOfASTType] = {
-    "Root",        "VarDef",     "FuncDecl", "FuncDef",
-    "CompStmt",    "kExprBinOp", "kExprVal", "kExprStmt",
-    "kReturnStmt", "kForStmt",   "kILOp",
-};
 
 void PrintASTNodeWithName(int depth, const char* name, ASTNode* node) {
   PrintfWithPadding(depth, name);

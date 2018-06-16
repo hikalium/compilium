@@ -131,8 +131,9 @@ typedef struct {
 } ASTILOp;
 
 // @ast.c
-ASTNode *ToASTNode(void *node);
+void InitASTTypeName();
 
+ASTNode *ToASTNode(void *node);
 #define DefToAST(type) AST##type *ToAST##type(ASTNode *node)
 DefToAST(VarDef);
 DefToAST(FuncDecl);
