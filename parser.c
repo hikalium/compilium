@@ -128,7 +128,7 @@ ASTNode *TryReadForStatement(TokenList *tokens, int index, int *after_index) {
   return ToASTNode(for_stmt);
 }
 */
-ASTNode *TryReadReturnStmt(TokenList *tokens, int index, int *after_index) {
+ASTNode *ParseJumpStmt(TokenList *tokens, int index, int *after_index) {
   const Token *token;
   token = GetTokenAt(tokens, index);
   if (IsEqualToken(token, "return")) {
@@ -136,8 +136,11 @@ ASTNode *TryReadReturnStmt(TokenList *tokens, int index, int *after_index) {
     ASTNode *expr_stmt =
         ToASTNode(ParseExprStmt(tokens, index + 1, after_index));
     if (!expr_stmt) return NULL;
-    ASTReturnStmt *return_stmt = AllocASTReturnStmt();
-    return_stmt->expr_stmt = expr_stmt;
+    ASTKeyword *kw = AllocASTKeyword();
+    kw->token = token;
+    ASTJumpStmt *return_stmt = AllocASTJumpStmt();
+    return_stmt->kw = kw;
+    return_stmt->param = expr_stmt;
     return ToASTNode(return_stmt);
   }
   return NULL;
@@ -153,7 +156,7 @@ ASTNode *ParseStmt(TokenList *tokens, int index, int *after_index) {
   //   iteration-statement
   //   jump-statement
   ASTNode *statement;
-  if ((statement = TryReadReturnStmt(tokens, index, after_index)) ||
+  if ((statement = ParseJumpStmt(tokens, index, after_index)) ||
       //(statement = TryReadForStatement(tokens, index, after_index)) ||
       (statement = ToASTNode(ParseExprStmt(tokens, index, after_index))))
     return statement;

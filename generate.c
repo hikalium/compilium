@@ -113,13 +113,17 @@ int GenerateILForExprStmt(ASTList *il, ASTNode *node) {
   */
 }
 
-int GenerateILForReturnStmt(ASTList *il, ASTNode *node) {
-  ASTReturnStmt *ret = ToASTReturnStmt(node);
-  int expr_reg = GenerateILForExprStmt(il, ret->expr_stmt);
+int GenerateILForJumpStmt(ASTList *il, ASTNode *node) {
+  ASTJumpStmt *jump_stmt = ToASTJumpStmt(node);
+  if(IsEqualToken(jump_stmt->kw->token, "return")){
+    int expr_reg = GenerateILForExprStmt(il, jump_stmt->param);
 
-  ASTNode *il_op =
-      AllocateASTNodeAsILOp(kILOpReturn, REG_NULL, expr_reg, REG_NULL, node);
-  PushASTNodeToList(il, il_op);
+    ASTNode *il_op =
+       AllocateASTNodeAsILOp(kILOpReturn, REG_NULL, expr_reg, REG_NULL, node);
+    PushASTNodeToList(il, il_op);
+  } else{
+    Error("Not implemented JumpStmt (%s)", jump_stmt->kw->token->str);
+  }
 
   return REG_NULL;
 }
@@ -135,8 +139,8 @@ int GenerateIL(ASTList *il, ASTNode *node) {
       }
     }
     return -1;
-  } else if (node->type == kReturnStmt) {
-    return GenerateILForReturnStmt(il, node);
+  } else if (node->type == kJumpStmt) {
+    return GenerateILForJumpStmt(il, node);
   } else if (node->type == kExprBinOp) {
     return GenerateILForExprBinOp(il, node);
   } else if (node->type == kExprVal) {

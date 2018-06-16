@@ -28,7 +28,7 @@ typedef enum {
   kExprBinOp,
   kExprVal,
   kExprStmt,
-  kReturnStmt,
+  kJumpStmt,
   kForStmt,
   kILOp,
   kList,
@@ -45,6 +45,11 @@ typedef struct AST_LIST ASTList;
 typedef struct {
   ASTType type;
 } ASTNode;
+
+typedef struct {
+  ASTType type;
+  const Token *token;
+} ASTKeyword;
 
 typedef struct {
   ASTType type;
@@ -89,8 +94,9 @@ typedef struct {
 
 typedef struct {
   ASTType type;
-  ASTNode *expr_stmt;
-} ASTReturnStmt;
+  ASTKeyword *kw;
+  ASTNode *param;
+} ASTJumpStmt;
 
 typedef struct {
   ASTType type;
@@ -120,11 +126,6 @@ typedef struct {
   int right_reg;  // 0: unused
   ASTNode *ast_node;
 } ASTILOp;
-
-typedef struct {
-  ASTType type;
-  const Token *token;
-} ASTKeyword;
 
 typedef struct {
   ASTType type;
@@ -161,7 +162,7 @@ DefToAST(CompStmt);
 DefToAST(ExprBinOp);
 DefToAST(ExprVal);
 DefToAST(ExprStmt);
-DefToAST(ReturnStmt);
+DefToAST(JumpStmt);
 DefToAST(ForStmt);
 DefToAST(ILOp);
 DefToAST(List);
@@ -177,7 +178,7 @@ DefAllocAST(CompStmt);
 DefAllocAST(ExprBinOp);
 DefAllocAST(ExprVal);
 DefAllocAST(ExprStmt);
-DefAllocAST(ReturnStmt);
+DefAllocAST(JumpStmt);
 DefAllocAST(ForStmt);
 DefAllocAST(ILOp);
 ASTList *AllocASTList(int capacity);
