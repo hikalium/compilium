@@ -143,7 +143,7 @@ ASTNode *TryReadReturnStmt(TokenList *tokens, int index, int *after_index) {
   return NULL;
 }
 
-ASTNode *TryReadStatement(TokenList *tokens, int index, int *after_index) {
+ASTNode *ParseStmt(TokenList *tokens, int index, int *after_index) {
   // 6.8
   // statement:
   //   labeled-statement
@@ -186,7 +186,7 @@ ASTCompStmt *ParseCompStmt(TokenList *tokens, int index, int *after_index) {
   ASTList *stmt_list = AllocASTList(MAX_NUM_OF_STATEMENTS_IN_BLOCK);
   ASTNode *stmt;
   while (!IsEqualToken(GetTokenAt(tokens, index), "}") &&
-         (stmt = TryReadStatement(tokens, index, &index))) {
+         (stmt = ParseStmt(tokens, index, &index))) {
     PushASTNodeToList(stmt_list, stmt);
   }
   ASTCompStmt *comp_stmt = AllocASTCompStmt();
