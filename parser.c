@@ -26,10 +26,10 @@ ASTNode *TryReadAsVarDef(TokenList *tokens, int index, int *after_index) {
   return ToASTNode(var_def);
 }
 
-void ReduceExprOp(ASTNodeList *expr_stack, ASTNodeList *op_stack) {
+void ReduceExprOp(ASTList *expr_stack, ASTList *op_stack) {
   ASTNode *last_op = PopASTNodeFromList(op_stack);
-  if (GetSizeOfASTNodeList(expr_stack) < 2) {
-    Error("expr_stack too short (%d < 2)", GetSizeOfASTNodeList(expr_stack));
+  if (GetSizeOfASTList(expr_stack) < 2) {
+    Error("expr_stack too short (%d < 2)", GetSizeOfASTList(expr_stack));
   }
   ASTNode *right = PopASTNodeFromList(expr_stack);
   ASTNode *left = PopASTNodeFromList(expr_stack);
@@ -79,8 +79,8 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
   // 6.5
   // a sequence of operators and operands
   // ... or that designates an object or a function
-  ASTNodeList *expr_stack = AllocateASTNodeList(MAX_NODES_IN_EXPR);
-  ASTNodeList *op_stack = AllocateASTNodeList(MAX_NODES_IN_EXPR);
+  ASTList *expr_stack = AllocateASTList(MAX_NODES_IN_EXPR);
+  ASTList *op_stack = AllocateASTList(MAX_NODES_IN_EXPR);
   const Token *token;
   while ((token = GetTokenAt(tokens, index))) {
     if (token->type == kInteger) {
@@ -91,7 +91,7 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
       ASTExprBinOpType op_type = GetExprBinOpTypeFromToken(token);
       if (op_type != kOpUndefined) {
         ASTNode *opnode = AllocateASTNodeAsExprBinOp(op_type);
-        while (GetSizeOfASTNodeList(op_stack) > 0 &&
+        while (GetSizeOfASTList(op_stack) > 0 &&
                IsExprBinOpPriorTo(GetLastASTNode(op_stack), opnode)) {
           ReduceExprOp(expr_stack, op_stack);
         }
@@ -109,16 +109,16 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
     }
   }
 
-  while (GetSizeOfASTNodeList(op_stack) != 0) {
+  while (GetSizeOfASTList(op_stack) != 0) {
     ReduceExprOp(expr_stack, op_stack);
   }
 
-  if (GetSizeOfASTNodeList(expr_stack) == 0) {
+  if (GetSizeOfASTList(expr_stack) == 0) {
     return NULL;
   }
 
-  if (GetSizeOfASTNodeList(expr_stack) != 1) {
-    PrintASTNodeList(expr_stack, 0);
+  if (GetSizeOfASTList(expr_stack) != 1) {
+    PrintASTList(expr_stack, 0);
     Error("parse expr failed.");
   }
 
@@ -210,7 +210,7 @@ ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
   //   statement
   if (!IsEqualToken(GetTokenAt(tokens, index++), "{")) return NULL;
   //
-  ASTNodeList *stmt_list = AllocateASTNodeList(MAX_NUM_OF_STATEMENTS_IN_BLOCK);
+  ASTList *stmt_list = AllocateASTList(MAX_NUM_OF_STATEMENTS_IN_BLOCK);
   ASTNode *stmt;
   while (!IsEqualToken(GetTokenAt(tokens, index), "}") &&
          (stmt = TryReadStatement(tokens, index, &index))) {
@@ -232,7 +232,7 @@ ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
 #define MAX_ARGS 16
 ASTNode *Parse(TokenList *tokens) {
   ASTRoot *root = AllocASTRoot();
-  ASTNodeList *root_list = AllocateASTNodeList(MAX_ROOT_NODES);
+  ASTList *root_list = AllocateASTList(MAX_ROOT_NODES);
   root->root_list = root_list;
   int index = 0;
   const Token *token;
@@ -252,7 +252,7 @@ ASTNode *Parse(TokenList *tokens) {
         Error("Expected ( but got %s", token->str);
       }
       // args
-      ASTNodeList *arg_list = AllocateASTNodeList(MAX_ARGS);
+      ASTList *arg_list = AllocateASTList(MAX_ARGS);
       while ((tmp_node = TryReadAsVarDef(tokens, index, &index))) {
         PushASTNodeToList(arg_list, tmp_node);
         if (!IsEqualToken(GetTokenAt(tokens, index), ",")) {

@@ -1,6 +1,6 @@
 #include "compilium.h"
 
-int GenerateIL(ASTNodeList *il, ASTNode *node);
+int GenerateIL(ASTList *il, ASTNode *node);
 
 // https://wiki.osdev.org/System_V_ABI
 // registers should be preserved: rbx, rsp, rbp, r12, r13, r14, and r15
@@ -23,15 +23,15 @@ int GetRegNumber() {
   return ++num;
 }
 
-void GenerateILForCompStmt(ASTNodeList *il, ASTNode *node) {
+void GenerateILForCompStmt(ASTList *il, ASTNode *node) {
   ASTCompStmt *comp = ToASTCompStmt(node);
-  ASTNodeList *stmt_list = comp->stmt_list;
-  for (int i = 0; i < GetSizeOfASTNodeList(stmt_list); i++) {
+  ASTList *stmt_list = comp->stmt_list;
+  for (int i = 0; i < GetSizeOfASTList(stmt_list); i++) {
     GenerateIL(il, GetASTNodeAt(stmt_list, i));
   }
 }
 
-void GenerateILForFuncDef(ASTNodeList *il, ASTNode *node) {
+void GenerateILForFuncDef(ASTList *il, ASTNode *node) {
   ASTFuncDef *def = ToASTFuncDef(node);
   PushASTNodeToList(il, AllocateASTNodeAsILOp(kILOpFuncBegin, REG_NULL,
                                               REG_NULL, REG_NULL, node));
@@ -40,7 +40,7 @@ void GenerateILForFuncDef(ASTNodeList *il, ASTNode *node) {
                                               REG_NULL, node));
 }
 
-int GenerateILForExprBinOp(ASTNodeList *il, ASTNode *node) {
+int GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
   ASTExprBinOp *bin_op = ToASTExprBinOp(node);
   int il_left = GenerateIL(il, bin_op->left);
   int il_right = GenerateIL(il, bin_op->right);
@@ -67,7 +67,7 @@ int GenerateILForExprBinOp(ASTNodeList *il, ASTNode *node) {
   return dst;
 }
 
-int GenerateILForExprVal(ASTNodeList *il, ASTNode *node) {
+int GenerateILForExprVal(ASTList *il, ASTNode *node) {
   int dst = GetRegNumber();
   ASTNode *il_op =
       AllocateASTNodeAsILOp(kILOpLoadImm, dst, REG_NULL, REG_NULL, node);
@@ -75,7 +75,7 @@ int GenerateILForExprVal(ASTNodeList *il, ASTNode *node) {
   return dst;
 }
 
-int GenerateILForExprStmt(ASTNodeList *il, ASTNode *node) {
+int GenerateILForExprStmt(ASTList *il, ASTNode *node) {
   // https://wiki.osdev.org/System_V_ABI
   const ASTExprStmt *expr_stmt = ToASTExprStmt(node);
   return GenerateIL(il, expr_stmt->expr);
@@ -113,7 +113,7 @@ int GenerateILForExprStmt(ASTNodeList *il, ASTNode *node) {
   */
 }
 
-int GenerateILForReturnStmt(ASTNodeList *il, ASTNode *node) {
+int GenerateILForReturnStmt(ASTList *il, ASTNode *node) {
   ASTReturnStmt *ret = ToASTReturnStmt(node);
   int expr_reg = GenerateILForExprStmt(il, ret->expr_stmt);
 
@@ -124,10 +124,10 @@ int GenerateILForReturnStmt(ASTNodeList *il, ASTNode *node) {
   return REG_NULL;
 }
 
-int GenerateIL(ASTNodeList *il, ASTNode *node) {
+int GenerateIL(ASTList *il, ASTNode *node) {
   if (node->type == kRoot) {
-    ASTNodeList *list = ToASTRoot(node)->root_list;
-    for (int i = 0; i < GetSizeOfASTNodeList(list); i++) {
+    ASTList *list = ToASTRoot(node)->root_list;
+    for (int i = 0; i < GetSizeOfASTList(list); i++) {
       ASTNode *child_node = GetASTNodeAt(list, i);
       if (child_node->type == kFuncDef) {
         GenerateILForFuncDef(il, child_node);
@@ -148,10 +148,10 @@ int GenerateIL(ASTNodeList *il, ASTNode *node) {
   return -1;
 }
 
-void GenerateCode(FILE *fp, ASTNodeList *il) {
+void GenerateCode(FILE *fp, ASTList *il) {
   fputs(".intel_syntax noprefix\n", fp);
   // generate func symbol
-  for (int i = 0; i < GetSizeOfASTNodeList(il); i++) {
+  for (int i = 0; i < GetSizeOfASTList(il); i++) {
     ASTNode *node = GetASTNodeAt(il, i);
     ASTILOp *op = ToASTILOp(node);
     if (op->op == kILOpFuncBegin) {
@@ -163,7 +163,7 @@ void GenerateCode(FILE *fp, ASTNodeList *il) {
     }
   }
   // generate code
-  for (int i = 0; i < GetSizeOfASTNodeList(il); i++) {
+  for (int i = 0; i < GetSizeOfASTList(il); i++) {
     ASTNode *node = GetASTNodeAt(il, i);
     ASTILOp *op = ToASTILOp(node);
     if (!op) {
@@ -232,10 +232,10 @@ void GenerateCode(FILE *fp, ASTNodeList *il) {
 
 #define MAX_IL_NODES 2048
 void Generate(FILE *fp, ASTNode *root) {
-  ASTNodeList *intermediate_code = AllocateASTNodeList(MAX_IL_NODES);
+  ASTList *intermediate_code = AllocateASTList(MAX_IL_NODES);
 
   GenerateIL(intermediate_code, root);
-  PrintASTNodeList(intermediate_code, 0);
+  PrintASTList(intermediate_code, 0);
   putchar('\n');
 
   GenerateCode(fp, intermediate_code);

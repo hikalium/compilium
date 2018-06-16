@@ -33,11 +33,12 @@ typedef enum {
   kReturnStmt,
   kForStmt,
   kILOp,
+  kList,
   //
   kNumOfASTType
 } ASTType;
 
-typedef struct AST_NODE_LIST ASTNodeList;
+typedef struct AST_LIST ASTList;
 
 typedef struct {
   ASTType type;
@@ -45,7 +46,7 @@ typedef struct {
 
 typedef struct {
   ASTType type;
-  ASTNodeList *root_list;
+  ASTList *root_list;
 } ASTRoot;
 
 typedef struct {
@@ -57,7 +58,7 @@ typedef struct {
 typedef struct {
   ASTType type;
   ASTNode *type_and_name;
-  ASTNodeList *arg_list;
+  ASTList *arg_list;
 } ASTFuncDecl;
 
 typedef struct {
@@ -68,7 +69,7 @@ typedef struct {
 
 typedef struct {
   ASTType type;
-  ASTNodeList *stmt_list;
+  ASTList *stmt_list;
 } ASTCompStmt;
 
 typedef enum {
@@ -167,13 +168,13 @@ ASTNode *AllocateASTNodeAsILOp(ILOpType op, int dst_reg, int left_reg,
                                int right_reg, ASTNode *ast_node);
 
 void PrintASTNode(ASTNode *node, int depth);
-ASTNodeList *AllocateASTNodeList(int capacity);
-void PushASTNodeToList(ASTNodeList *list, ASTNode *node);
-ASTNode *PopASTNodeFromList(ASTNodeList *list);
-ASTNode *GetASTNodeAt(const ASTNodeList *list, int index);
-int GetSizeOfASTNodeList(const ASTNodeList *list);
-ASTNode *GetLastASTNode(const ASTNodeList *list);
-void PrintASTNodeList(ASTNodeList *list, int depth);
+ASTList *AllocateASTList(int capacity);
+void PushASTNodeToList(ASTList *list, ASTNode *node);
+ASTNode *PopASTNodeFromList(ASTList *list);
+ASTNode *GetASTNodeAt(const ASTList *list, int index);
+int GetSizeOfASTList(const ASTList *list);
+ASTNode *GetLastASTNode(const ASTList *list);
+void PrintASTList(ASTList *list, int depth);
 
 // @error.c
 void Error(const char *fmt, ...);
