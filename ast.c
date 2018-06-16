@@ -128,6 +128,25 @@ ASTNode* AllocateASTNodeAsILOp(ILOpType op, int dst_reg, int left_reg,
   return ToASTNode(node);
 }
 
+const char* GetIdentStrFromDirectDecltor(ASTDirectDecltor* direct_decltor) {
+  if (!direct_decltor) return NULL;
+  if (direct_decltor->direct_decltor)
+    return GetIdentStrFromDirectDecltor(direct_decltor->direct_decltor);
+  ASTIdent* ident = ToASTIdent(direct_decltor->data);
+  if (!ident) return NULL;
+  return ident->token->str;
+}
+
+const char* GetIdentStrFromDecltor(ASTDecltor* decltor) {
+  if (!decltor) return NULL;
+  return GetIdentStrFromDirectDecltor(decltor->direct_decltor);
+}
+
+const char* GetFuncNameStrFromFuncDef(ASTFuncDef* func_def) {
+  if (!func_def) return NULL;
+  return GetIdentStrFromDecltor(func_def->decltor);
+}
+
 void PrintASTNodePadding(int depth) {
   putchar('\n');
   for (int i = 0; i < depth; i++) putchar(' ');
@@ -185,9 +204,11 @@ void PrintASTNode(ASTNode* node, int depth) {
                          "arg_list=", ToASTNode(func_decl->arg_list));
   } else if (node->type == kFuncDef) {
     ASTFuncDef* func_def = ToASTFuncDef(node);
-    PrintASTNodeWithName(depth + 1, "decl_specs=", ToASTNode(func_def->decl_specs));
+    PrintASTNodeWithName(depth + 1,
+                         "decl_specs=", ToASTNode(func_def->decl_specs));
     PrintASTNodeWithName(depth + 1, "decltor=", ToASTNode(func_def->decltor));
-    PrintASTNodeWithName(depth + 1, "comp_stmt=", ToASTNode(func_def->comp_stmt));
+    PrintASTNodeWithName(depth + 1,
+                         "comp_stmt=", ToASTNode(func_def->comp_stmt));
   } else if (node->type == kCompStmt) {
     ASTCompStmt* comp_stmt = ToASTCompStmt(node);
     PrintASTNodeWithName(depth + 1, "body=", ToASTNode(comp_stmt->stmt_list));
@@ -214,25 +235,29 @@ void PrintASTNode(ASTNode* node, int depth) {
                          "body_comp_stmt=", for_stmt->body_comp_stmt);
   } else if (node->type == kILOp) {
     ASTILOp* il_op = ToASTILOp(node);
-    PrintfWithPadding(depth + 1, " op=%s", InternalGetILOpTypeStr(il_op->op));
-    PrintfWithPadding(depth + 1, " dst=%d", il_op->dst_reg);
-    PrintfWithPadding(depth + 1, " left=%d", il_op->left_reg);
-    PrintfWithPadding(depth + 1, " right=%d", il_op->right_reg);
+    PrintfWithPadding(depth + 1, "op=%s", InternalGetILOpTypeStr(il_op->op));
+    PrintfWithPadding(depth + 1, "dst=%d", il_op->dst_reg);
+    PrintfWithPadding(depth + 1, "left=%d", il_op->left_reg);
+    PrintfWithPadding(depth + 1, "right=%d", il_op->right_reg);
+    PrintASTNodeWithName(depth + 1, "ast_node=", il_op->ast_node);
   } else if (node->type == kKeyword) {
     ASTKeyword* kw = ToASTKeyword(node);
     PrintTokenWithName(depth + 1, "token=", kw->token);
   } else if (node->type == kDecltor) {
-    ASTDecltor *decltor = ToASTDecltor(node);
-    PrintASTNodeWithName(depth + 1, "direct_decltor=", ToASTNode(decltor->direct_decltor));
+    ASTDecltor* decltor = ToASTDecltor(node);
+    PrintASTNodeWithName(depth + 1,
+                         "direct_decltor=", ToASTNode(decltor->direct_decltor));
   } else if (node->type == kDirectDecltor) {
-    ASTDirectDecltor *direct_decltor = ToASTDirectDecltor(node);
-    PrintASTNodeWithName(depth + 1, "direct_decltor=", ToASTNode(direct_decltor->direct_decltor));
+    ASTDirectDecltor* direct_decltor = ToASTDirectDecltor(node);
+    PrintASTNodeWithName(depth + 1, "direct_decltor=",
+                         ToASTNode(direct_decltor->direct_decltor));
     PrintASTNodeWithName(depth + 1, "data=", direct_decltor->data);
   } else if (node->type == kIdent) {
-    ASTIdent* ident= ToASTIdent(node);
+    ASTIdent* ident = ToASTIdent(node);
     PrintTokenWithName(depth + 1, "token=", ident->token);
   } else {
-    Error("PrintASTNode not implemented for type %d (%s)", node->type, ASTTypeName[node->type] ? ASTTypeName[node->type] : "?");
+    Error("PrintASTNode not implemented for type %d (%s)", node->type,
+          ASTTypeName[node->type] ? ASTTypeName[node->type] : "?");
   }
   PrintfWithPadding(depth, ")");
 }

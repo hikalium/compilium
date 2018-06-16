@@ -156,12 +156,13 @@ void GenerateCode(FILE *fp, ASTList *il) {
     ASTNode *node = GetASTNodeAt(il, i);
     ASTILOp *op = ToASTILOp(node);
     if (op->op == kILOpFuncBegin) {
-      //ASTFuncDef *def = ToASTFuncDef(op->ast_node);
-     // ASTFuncDecl *decl = ToASTFuncDecl(def->func_decl);
-      Error("ToDo: impl GenerateCode");
-      //ASTVarDef *defv = ToASTVarDef(decl->type_and_name);
-      //fprintf(fp, ".global _%s\n", defv->name->str);
-      //printf("found func: %s\n", defv->name->str);
+      const char *func_name =
+          GetFuncNameStrFromFuncDef(ToASTFuncDef(op->ast_node));
+      if (!func_name) {
+        Error("func_name is null");
+      }
+      fprintf(fp, ".global _%s\n", func_name);
+      printf("found func: %s\n", func_name);
     }
   }
   // generate code
@@ -173,14 +174,14 @@ void GenerateCode(FILE *fp, ASTList *il) {
     }
     switch (op->op) {
       case kILOpFuncBegin: {
-        /*Error("ToDo: impl GenerateCode");
-        const ASTFuncDef *def = ToASTFuncDef(op->ast_node);
-        const ASTFuncDecl *decl = ToASTFuncDecl(def->func_decl);
-        const ASTVarDef *defv = ToASTVarDef(decl->type_and_name);
-        fprintf(fp, "_%s:\n", defv->name->str);
+        const char *func_name =
+            GetFuncNameStrFromFuncDef(ToASTFuncDef(op->ast_node));
+        if (!func_name) {
+          Error("func_name is null");
+        }
+        fprintf(fp, "_%s:\n", func_name);
         fprintf(fp, "push    rbp\n");
         fprintf(fp, "mov     rbp, rsp\n");
-        */
       } break;
       case kILOpFuncEnd:
         fprintf(fp, "mov     dword ptr [rbp - 4], 0\n");

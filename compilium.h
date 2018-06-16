@@ -64,7 +64,6 @@ typedef struct {
   ASTList *arg_list;
 } ASTFuncDecl;
 
-
 typedef struct {
   ASTType type;
   ASTList *stmt_list;
@@ -151,7 +150,6 @@ typedef struct {
   ASTDirectDecltor *direct_decltor;
 } ASTDecltor;
 
-
 typedef struct {
   ASTType type;
   ASTList *decl_specs;
@@ -203,6 +201,10 @@ void SetOperandOfExprBinOp(ASTExprBinOp *node, ASTNode *left, ASTNode *right);
 
 ASTNode *AllocateASTNodeAsILOp(ILOpType op, int dst_reg, int left_reg,
                                int right_reg, ASTNode *ast_node);
+
+const char *GetIdentStrFromDecltor(ASTDecltor *decltor);
+const char *GetIdentStrFromDecltor(ASTDecltor *decltor);
+const char *GetFuncNameStrFromFuncDef(ASTFuncDef *func_def);
 
 void PrintASTNode(ASTNode *node, int depth);
 void PushASTNodeToList(ASTList *list, ASTNode *node);

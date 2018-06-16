@@ -224,15 +224,15 @@ ASTCompStmt *ParseCompStmt(TokenList *tokens, int index, int *after_index) {
   return comp_stmt;
 }
 
-ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index, int *after_index)
-{
+ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index,
+                                     int *after_index) {
   // direct-declarator
   ASTDirectDecltor *last_direct_decltor = NULL;
   for (;;) {
     const Token *token = GetTokenAt(tokens, index);
-    if(!token) break;
-    if(token->type == kIdentifier){
-      if(last_direct_decltor) break;
+    if (!token) break;
+    if (token->type == kIdentifier) {
+      if (last_direct_decltor) break;
       //
       ASTIdent *ident = AllocASTIdent();
       ident->token = token;
@@ -244,11 +244,11 @@ ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index, int *after_in
       //
       index++;
       continue;
-    } else if(token->type == kPunctuator){
-      if(IsEqualToken(token, "(")){
+    } else if (token->type == kPunctuator) {
+      if (IsEqualToken(token, "(")) {
         token = GetTokenAt(tokens, index + 1);
-        if(IsEqualToken(token, ")")){
-          if(!last_direct_decltor) break;
+        if (IsEqualToken(token, ")")) {
+          if (!last_direct_decltor) break;
           //
           ASTList *list = AllocASTList(0);
           //
@@ -268,29 +268,27 @@ ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index, int *after_in
   return last_direct_decltor;
 }
 
-ASTDecltor *ParseDecltor(TokenList *tokens, int index, int *after_index)
-{
+ASTDecltor *ParseDecltor(TokenList *tokens, int index, int *after_index) {
   // declarator
   // TODO: Impl pointer(opt)
   ASTDirectDecltor *direct_decltor = ParseDirectDecltor(tokens, index, &index);
-  if(!direct_decltor){
+  if (!direct_decltor) {
     return NULL;
   }
   ASTDecltor *decltor = AllocASTDecltor();
   decltor->direct_decltor = direct_decltor;
-   *after_index = index;
+  *after_index = index;
   return decltor;
 }
 
 #define MAX_NODES_IN_DECL_SPECS 4
-ASTList *ParseDeclSpecs(TokenList *tokens, int index, int *after_index)
-{
+ASTList *ParseDeclSpecs(TokenList *tokens, int index, int *after_index) {
   // declaration-specifiers
   // ASTList<ASTKeyword>
   ASTList *list = AllocASTList(MAX_NODES_IN_DECL_SPECS);
   for (;;) {
     const Token *token = GetTokenAt(tokens, index);
-    if(IsEqualToken(token, "int")){
+    if (IsEqualToken(token, "int")) {
       ASTKeyword *kw = AllocASTKeyword();
       kw->token = token;
       PushASTNodeToList(list, ToASTNode(kw));
