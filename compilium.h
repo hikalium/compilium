@@ -33,6 +33,8 @@ typedef enum {
   kReturnStmt,
   kForStmt,
   kILOp,
+  //
+  kNumOfASTType
 } ASTType;
 
 typedef struct AST_NODE_LIST ASTNodeList;
@@ -122,8 +124,8 @@ typedef enum {
 typedef struct {
   ASTType type;
   ILOpType op;
-  int dst_reg;    // 0: unused
-  int left_reg;   // 0: unused
+  int dst_reg;  // 0: unused
+  int left_reg;  // 0: unused
   int right_reg;  // 0: unused
   ASTNode *ast_node;
 } ASTILOp;

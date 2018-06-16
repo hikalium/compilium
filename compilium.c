@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
   ASTNode *ast = Parse(tokens);
 
   puts("\nAST:");
-  PrintASTNode(ast, 1);
+  PrintASTNode(ast, 0);
   putchar('\n');
 
   puts("\nCode generation:");

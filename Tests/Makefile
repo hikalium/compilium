@@ -20,8 +20,9 @@ FORCE:
 ../compilium: FORCE
 	@ make -C ..
 
-%.compilium.S : %.c Makefile ../compilium
-	@ ../compilium $*.c $@ > $*.compilium.log
+%.compilium.S : %.c Makefile ../compilium FORCE
+	@ rm $@ $*.compilium.log; \
+		../compilium $*.c $@ > $*.compilium.log
 
 %.bin : %.S Makefile FORCE
 	@ clang -o $@ $*.S
