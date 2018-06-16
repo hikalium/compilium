@@ -22,7 +22,6 @@ typedef struct {
 typedef struct TOKEN_LIST TokenList;
 
 typedef enum {
-  kRoot,
   kVarDef,
   kFuncDecl,
   kFuncDef,
@@ -135,7 +134,6 @@ typedef struct {
 ASTNode *ToASTNode(void *node);
 
 #define DefToAST(type) AST##type *ToAST##type(ASTNode *node)
-DefToAST(Root);
 DefToAST(VarDef);
 DefToAST(FuncDecl);
 DefToAST(FuncDef);
@@ -146,9 +144,9 @@ DefToAST(ExprStmt);
 DefToAST(ReturnStmt);
 DefToAST(ForStmt);
 DefToAST(ILOp);
+DefToAST(List);
 
 #define DefAllocAST(type) AST##type *AllocAST##type()
-DefAllocAST(Root);
 DefAllocAST(VarDef);
 DefAllocAST(FuncDecl);
 DefAllocAST(FuncDef);

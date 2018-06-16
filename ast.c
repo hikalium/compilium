@@ -17,7 +17,6 @@ ASTNode* ToASTNode(void* node) { return (ASTNode*)node; }
     return (AST##Type*)node; \
   }
 
-GenToAST(Root);
 GenToAST(VarDef);
 GenToAST(FuncDecl);
 GenToAST(FuncDef);
@@ -37,7 +36,6 @@ GenToAST(List);
     return node; \
   }
 
-GenAllocAST(Root);
 GenAllocAST(VarDef);
 GenAllocAST(FuncDecl);
 GenAllocAST(FuncDef);
@@ -155,10 +153,7 @@ void PrintASTNode(ASTNode* node, int depth) {
     printf("(Unknown: %d)", node->type);
     return;
   }
-  if (node->type == kRoot) {
-    ASTRoot* root = ToASTRoot(node);
-    PrintASTNodeWithName(depth + 1, "root_list=", ToASTNode(root->root_list));
-  } else if (node->type == kVarDef) {
+  if (node->type == kVarDef) {
     ASTVarDef* var_def = ToASTVarDef(node);
     PrintTokenListWithName(depth + 1, "type=", var_def->type_tokens);
     PrintfWithPadding(depth + 1, "name=%s", var_def->name->str);

@@ -228,9 +228,78 @@ ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
   return ToASTNode(comp_stmt);
 }
 
-#define MAX_ROOT_NODES 64
 #define MAX_ARGS 16
+ASTNode *ParseFuncDef(TokenList *tokens, int index, int *after_index) {
+  const Token *token;
+  ASTNode *tmp_node;
+  if ((tmp_node = TryReadAsVarDef(tokens, index, &index))) {
+    // 6.7.6.3
+    // T D( parameter-type-list )
+    // T D( identifier-list_opt )
+    // func decl / def
+    ASTNode *type_and_name = tmp_node;
+    //
+    token = GetTokenAt(tokens, index++);
+    if (!IsEqualToken(token, "(")) {
+      return NULL;
+    }
+    // args
+    ASTList *arg_list = AllocASTList(MAX_ARGS);
+    while ((tmp_node = TryReadAsVarDef(tokens, index, &index))) {
+      PushASTNodeToList(arg_list, tmp_node);
+      if (!IsEqualToken(GetTokenAt(tokens, index), ",")) {
+        break;
+      }
+      index++;
+    }
+    //
+    token = GetTokenAt(tokens, index++);
+    if (!IsEqualToken(token, ")")) {
+      return NULL;
+    }
+    //
+    ASTFuncDecl *func_decl = AllocASTFuncDecl();
+    func_decl->type_and_name = type_and_name;
+    func_decl->arg_list = arg_list;
+
+    token = GetTokenAt(tokens, index);
+    if (IsEqualToken(token, "{")) {
+      ASTNode *comp_stmt = TryReadCompoundStatement(tokens, index, &index);
+      if (!comp_stmt) {
+        return NULL;
+      }
+      ASTFuncDef *func_def = AllocASTFuncDef();
+      func_def->func_decl = ToASTNode(func_decl);
+      func_def->comp_stmt = comp_stmt;
+      *after_index = index;
+      return ToASTNode(func_def);
+    }
+  }
+  return NULL;
+}
+
+#define MAX_NODES_IN_TRANSLATION_UNIT 64
+ASTNode *ParseTranslationUnit(TokenList *tokens, int index, int *after_index) {
+  // ASTList<ASTFuncDef | ASTDecl>
+  ASTList *list = AllocASTList(MAX_NODES_IN_TRANSLATION_UNIT);
+  for (;;) {
+    ASTNode *node = ParseFuncDef(tokens, index, &index);
+    if (node) {
+      PushASTNodeToList(list, node);
+      continue;
+    }
+    if (index != GetSizeOfTokenList(tokens)) {
+      Error("Unexpected Token %s", GetTokenAt(tokens, index)->str);
+    }
+    break;
+  }
+  *after_index = index;
+  return ToASTNode(list);
+}
+
+#define MAX_ROOT_NODES 64
 ASTNode *Parse(TokenList *tokens) {
+  /*
   ASTRoot *root = AllocASTRoot();
   ASTList *root_list = AllocASTList(MAX_ROOT_NODES);
   root->root_list = root_list;
@@ -291,6 +360,7 @@ ASTNode *Parse(TokenList *tokens) {
     } else {
       Error("Unexpected token: %s", token->str);
     }
-  }
-  return ToASTNode(root);
+  }*/
+  int index = 0;
+  return ParseTranslationUnit(tokens, index, &index);
 }

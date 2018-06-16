@@ -125,8 +125,9 @@ int GenerateILForReturnStmt(ASTList *il, ASTNode *node) {
 }
 
 int GenerateIL(ASTList *il, ASTNode *node) {
-  if (node->type == kRoot) {
-    ASTList *list = ToASTRoot(node)->root_list;
+  if (node->type == kList) {
+    // translation-unit
+    ASTList *list = ToASTList(node);
     for (int i = 0; i < GetSizeOfASTList(list); i++) {
       ASTNode *child_node = GetASTNodeAt(list, i);
       if (child_node->type == kFuncDef) {
