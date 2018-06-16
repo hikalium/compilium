@@ -79,8 +79,8 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
   // 6.5
   // a sequence of operators and operands
   // ... or that designates an object or a function
-  ASTList *expr_stack = AllocateASTList(MAX_NODES_IN_EXPR);
-  ASTList *op_stack = AllocateASTList(MAX_NODES_IN_EXPR);
+  ASTList *expr_stack = AllocASTList(MAX_NODES_IN_EXPR);
+  ASTList *op_stack = AllocASTList(MAX_NODES_IN_EXPR);
   const Token *token;
   while ((token = GetTokenAt(tokens, index))) {
     if (token->type == kInteger) {
@@ -118,7 +118,7 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
   }
 
   if (GetSizeOfASTList(expr_stack) != 1) {
-    PrintASTList(expr_stack, 0);
+    PrintASTNode(ToASTNode(expr_stack), 0);
     Error("parse expr failed.");
   }
 
@@ -210,7 +210,7 @@ ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
   //   statement
   if (!IsEqualToken(GetTokenAt(tokens, index++), "{")) return NULL;
   //
-  ASTList *stmt_list = AllocateASTList(MAX_NUM_OF_STATEMENTS_IN_BLOCK);
+  ASTList *stmt_list = AllocASTList(MAX_NUM_OF_STATEMENTS_IN_BLOCK);
   ASTNode *stmt;
   while (!IsEqualToken(GetTokenAt(tokens, index), "}") &&
          (stmt = TryReadStatement(tokens, index, &index))) {
@@ -232,7 +232,7 @@ ASTNode *TryReadCompoundStatement(TokenList *tokens, int index,
 #define MAX_ARGS 16
 ASTNode *Parse(TokenList *tokens) {
   ASTRoot *root = AllocASTRoot();
-  ASTList *root_list = AllocateASTList(MAX_ROOT_NODES);
+  ASTList *root_list = AllocASTList(MAX_ROOT_NODES);
   root->root_list = root_list;
   int index = 0;
   const Token *token;
@@ -252,7 +252,7 @@ ASTNode *Parse(TokenList *tokens) {
         Error("Expected ( but got %s", token->str);
       }
       // args
-      ASTList *arg_list = AllocateASTList(MAX_ARGS);
+      ASTList *arg_list = AllocASTList(MAX_ARGS);
       while ((tmp_node = TryReadAsVarDef(tokens, index, &index))) {
         PushASTNodeToList(arg_list, tmp_node);
         if (!IsEqualToken(GetTokenAt(tokens, index), ",")) {

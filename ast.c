@@ -2,6 +2,13 @@
 
 #include "compilium.h"
 
+struct AST_LIST {
+  ASTType type;
+  int capacity;
+  int size;
+  ASTNode* nodes[];
+};
+
 ASTNode* ToASTNode(void* node) { return (ASTNode*)node; }
 
 #define GenToAST(Type) \
@@ -21,6 +28,7 @@ GenToAST(ExprStmt);
 GenToAST(ReturnStmt);
 GenToAST(ForStmt);
 GenToAST(ILOp);
+GenToAST(List);
 
 #define GenAllocAST(Type) \
   AST##Type* AllocAST##Type() { \
@@ -40,6 +48,14 @@ GenAllocAST(ExprStmt);
 GenAllocAST(ReturnStmt);
 GenAllocAST(ForStmt);
 GenAllocAST(ILOp);
+
+ASTList* AllocASTList(int capacity) {
+  ASTList* list = malloc(sizeof(ASTList) + sizeof(ASTNode*) * capacity);
+  list->type = kList;
+  list->capacity = capacity;
+  list->size = 0;
+  return list;
+}
 
 ASTNode* AllocateASTNodeAsExprVal(const Token* token) {
   ASTExprVal* node = AllocASTExprVal();
@@ -106,14 +122,9 @@ const char* ASTTypeName[kNumOfASTType] = {
     "kReturnStmt", "kForStmt",   "kILOp",
 };
 
-void PrintASTList(ASTList* list, int depth);
 void PrintASTNodeWithName(int depth, const char* name, ASTNode* node) {
   PrintfWithPadding(depth, name);
   PrintASTNode(node, depth);
-}
-void PrintASTListWithName(int depth, const char* name, ASTList* list) {
-  PrintfWithPadding(depth, name);
-  PrintASTList(list, depth);
 }
 void PrintTokenWithName(int depth, const char* name, const Token* token) {
   PrintfWithPadding(depth + 1, name);
@@ -128,7 +139,17 @@ void PrintASTNode(ASTNode* node, int depth) {
     printf("(Null)");
     return;
   }
-  if (node->type < kNumOfASTType) {
+  if (node->type == kList) {
+    ASTList* list = ToASTList(node);
+    putchar('[');
+    for (int i = 0; i < list->size; i++) {
+      PrintASTNodePadding(depth + 1);
+      PrintASTNode(list->nodes[i], depth + 1);
+    }
+    PrintASTNodePadding(depth);
+    putchar(']');
+    return;
+  } else if (node->type < kNumOfASTType) {
     printf("(%s:", ASTTypeName[node->type]);
   } else {
     printf("(Unknown: %d)", node->type);
@@ -136,7 +157,7 @@ void PrintASTNode(ASTNode* node, int depth) {
   }
   if (node->type == kRoot) {
     ASTRoot* root = ToASTRoot(node);
-    PrintASTListWithName(depth + 1, "root_list=", root->root_list);
+    PrintASTNodeWithName(depth + 1, "root_list=", ToASTNode(root->root_list));
   } else if (node->type == kVarDef) {
     ASTVarDef* var_def = ToASTVarDef(node);
     PrintTokenListWithName(depth + 1, "type=", var_def->type_tokens);
@@ -144,14 +165,15 @@ void PrintASTNode(ASTNode* node, int depth) {
   } else if (node->type == kFuncDecl) {
     ASTFuncDecl* func_decl = ToASTFuncDecl(node);
     PrintASTNodeWithName(depth + 1, "type_and_name=", func_decl->type_and_name);
-    PrintASTListWithName(depth + 1, "arg_list=", func_decl->arg_list);
+    PrintASTNodeWithName(depth + 1,
+                         "arg_list=", ToASTNode(func_decl->arg_list));
   } else if (node->type == kFuncDef) {
     ASTFuncDef* func_def = ToASTFuncDef(node);
     PrintASTNodeWithName(depth + 1, "func_decl=", func_def->func_decl);
     PrintASTNodeWithName(depth + 1, "comp_stmt=", func_def->comp_stmt);
   } else if (node->type == kCompStmt) {
     ASTCompStmt* comp_stmt = ToASTCompStmt(node);
-    PrintASTListWithName(depth + 1, "body=", comp_stmt->stmt_list);
+    PrintASTNodeWithName(depth + 1, "body=", ToASTNode(comp_stmt->stmt_list));
   } else if (node->type == kExprBinOp) {
     ASTExprBinOp* expr_bin_op = ToASTExprBinOp(node);
     PrintfWithPadding(depth + 1, "op_type=%d", expr_bin_op->op_type);
@@ -185,20 +207,6 @@ void PrintASTNode(ASTNode* node, int depth) {
   PrintfWithPadding(depth, ")");
 }
 
-struct AST_LIST {
-  ASTType type;
-  int capacity;
-  int size;
-  ASTNode* nodes[];
-};
-
-ASTList* AllocateASTList(int capacity) {
-  ASTList* list = malloc(sizeof(ASTList) + sizeof(ASTNode*) * capacity);
-  list->capacity = capacity;
-  list->size = 0;
-  return list;
-}
-
 void PushASTNodeToList(ASTList* list, ASTNode* node) {
   if (list->size >= list->capacity) {
     Error("No more space in ASTList");
@@ -224,14 +232,4 @@ int GetSizeOfASTList(const ASTList* list) { return list->size; }
 
 ASTNode* GetLastASTNode(const ASTList* list) {
   return GetASTNodeAt(list, GetSizeOfASTList(list) - 1);
-}
-
-void PrintASTList(ASTList* list, int depth) {
-  putchar('[');
-  for (int i = 0; i < list->size; i++) {
-    PrintASTNodePadding(depth + 1);
-    PrintASTNode(list->nodes[i], depth + 1);
-  }
-  PrintASTNodePadding(depth);
-  putchar(']');
 }

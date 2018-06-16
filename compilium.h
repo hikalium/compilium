@@ -159,6 +159,7 @@ DefAllocAST(ExprStmt);
 DefAllocAST(ReturnStmt);
 DefAllocAST(ForStmt);
 DefAllocAST(ILOp);
+ASTList *AllocASTList(int capacity);
 
 ASTNode *AllocateASTNodeAsExprVal(const Token *token);
 ASTNode *AllocateASTNodeAsExprBinOp(ASTExprBinOpType op_type);
@@ -168,13 +169,11 @@ ASTNode *AllocateASTNodeAsILOp(ILOpType op, int dst_reg, int left_reg,
                                int right_reg, ASTNode *ast_node);
 
 void PrintASTNode(ASTNode *node, int depth);
-ASTList *AllocateASTList(int capacity);
 void PushASTNodeToList(ASTList *list, ASTNode *node);
 ASTNode *PopASTNodeFromList(ASTList *list);
 ASTNode *GetASTNodeAt(const ASTList *list, int index);
 int GetSizeOfASTList(const ASTList *list);
 ASTNode *GetLastASTNode(const ASTList *list);
-void PrintASTList(ASTList *list, int depth);
 
 // @error.c
 void Error(const char *fmt, ...);

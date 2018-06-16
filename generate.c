@@ -232,10 +232,10 @@ void GenerateCode(FILE *fp, ASTList *il) {
 
 #define MAX_IL_NODES 2048
 void Generate(FILE *fp, ASTNode *root) {
-  ASTList *intermediate_code = AllocateASTList(MAX_IL_NODES);
+  ASTList *intermediate_code = AllocASTList(MAX_IL_NODES);
 
   GenerateIL(intermediate_code, root);
-  PrintASTList(intermediate_code, 0);
+  PrintASTNode(ToASTNode(intermediate_code), 0);
   putchar('\n');
 
   GenerateCode(fp, intermediate_code);
