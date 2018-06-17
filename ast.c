@@ -102,17 +102,13 @@ ASTNode* AllocAndInitASTConstant(const Token* token) {
   return ToASTNode(node);
 }
 
-ASTNode* AllocateASTNodeAsExprBinOp(ASTExprBinOpType op_type) {
+ASTNode* AllocAndInitASTExprBinOp(const Token* op, ASTNode* left,
+                                  ASTNode* right) {
   ASTExprBinOp* node = AllocASTExprBinOp();
-  node->op_type = op_type;
-  node->left = NULL;
-  node->right = NULL;
-  return ToASTNode(node);
-}
-
-void SetOperandOfExprBinOp(ASTExprBinOp* node, ASTNode* left, ASTNode* right) {
+  node->op = op;
   node->left = left;
   node->right = right;
+  return ToASTNode(node);
 }
 
 ASTNode* AllocateASTNodeAsILOp(ILOpType op, int dst_reg, int left_reg,
@@ -208,7 +204,7 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintASTNodeWithName(depth + 1, "body=", ToASTNode(comp_stmt->stmt_list));
   } else if (node->type == kASTExprBinOp) {
     ASTExprBinOp* expr_bin_op = ToASTExprBinOp(node);
-    PrintfWithPadding(depth + 1, "op_type=%d", expr_bin_op->op_type);
+    PrintTokenWithName(depth + 1, "op=%d", expr_bin_op->op);
     PrintASTNodeWithName(depth + 1, "left=", expr_bin_op->left);
     PrintASTNodeWithName(depth + 1, "right=", expr_bin_op->right);
   } else if (node->type == kASTConstant) {

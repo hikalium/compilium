@@ -67,17 +67,9 @@ typedef struct {
   ASTList *stmt_list;
 } ASTCompStmt;
 
-typedef enum {
-  kOpUndefined,
-  kOpAdd,
-  kOpSub,
-  kOpMul,
-  kNumOfExprBinOp
-} ASTExprBinOpType;
-
 typedef struct {
   ASTType type;
-  ASTExprBinOpType op_type;
+  const Token *op;
   ASTNode *left;
   ASTNode *right;
 } ASTExprBinOp;
@@ -188,8 +180,8 @@ DefAllocAST(DirectDecltor);
 DefAllocAST(Ident);
 
 ASTNode *AllocAndInitASTConstant(const Token *token);
-ASTNode *AllocateASTNodeAsExprBinOp(ASTExprBinOpType op_type);
-void SetOperandOfExprBinOp(ASTExprBinOp *node, ASTNode *left, ASTNode *right);
+ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
+                                  ASTNode *right);
 
 ASTNode *AllocateASTNodeAsILOp(ILOpType op, int dst_reg, int left_reg,
                                int right_reg, ASTNode *ast_node);

@@ -47,22 +47,17 @@ int GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
   int dst = GetRegNumber();
 
   ASTNode *il_op;
-  switch (bin_op->op_type) {
-    case kOpAdd:
-      il_op = AllocateASTNodeAsILOp(kILOpAdd, dst, il_left, il_right, node);
-      PushASTNodeToList(il, il_op);
-      break;
-    case kOpSub:
-      il_op = AllocateASTNodeAsILOp(kILOpSub, dst, il_left, il_right, node);
-      PushASTNodeToList(il, il_op);
-      break;
-    case kOpMul:
-      il_op = AllocateASTNodeAsILOp(kILOpMul, dst, il_left, il_right, node);
-      PushASTNodeToList(il, il_op);
-      break;
-    default:
-      Error("Not implemented GenerateILForExprBinOp (op_type: %d)",
-            bin_op->op_type);
+  if (IsEqualToken(bin_op->op, "+")) {
+    il_op = AllocateASTNodeAsILOp(kILOpAdd, dst, il_left, il_right, node);
+    PushASTNodeToList(il, il_op);
+  } else if (IsEqualToken(bin_op->op, "-")) {
+    il_op = AllocateASTNodeAsILOp(kILOpSub, dst, il_left, il_right, node);
+    PushASTNodeToList(il, il_op);
+  } else if (IsEqualToken(bin_op->op, "*")) {
+    il_op = AllocateASTNodeAsILOp(kILOpMul, dst, il_left, il_right, node);
+    PushASTNodeToList(il, il_op);
+  } else {
+    Error("Not implemented GenerateILForExprBinOp (op: %s)", bin_op->op->str);
   }
   return dst;
 }

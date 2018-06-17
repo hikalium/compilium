@@ -1,59 +1,77 @@
 #include "compilium.h"
+
 ASTExprStmt *ParseExprStmt(TokenList *tokens, int index, int *after_index);
 
-void ReduceExprOp(ASTList *expr_stack, ASTList *op_stack) {
-  ASTNode *last_op = PopASTNodeFromList(op_stack);
-  if (GetSizeOfASTList(expr_stack) < 2) {
-    Error("expr_stack too short (%d < 2)", GetSizeOfASTList(expr_stack));
+ASTNode *ParsePrimaryExpr(TokenList *tokens, int index, int *after_index) {
+  const Token *token = GetTokenAt(tokens, index++);
+  if (token->type == kInteger) {
+    *after_index = index;
+    return AllocAndInitASTConstant(token);
   }
-  ASTNode *right = PopASTNodeFromList(expr_stack);
-  ASTNode *left = PopASTNodeFromList(expr_stack);
-  SetOperandOfExprBinOp(ToASTExprBinOp(last_op), left, right);
-  PushASTNodeToList(expr_stack, last_op);
+  return NULL;
 }
 
-int ExprBinOpPriority[kNumOfExprBinOp];
-
-int IsExprBinOpPriorTo(ASTNode *left, ASTNode *right) {
-  ASTExprBinOp *left_op = ToASTExprBinOp(left);
-  ASTExprBinOp *right_op = ToASTExprBinOp(right);
-
-  if (!left_op || !right_op) {
-    Error("IsExprBinOpPriorTo: node is not an ExprBinOp");
-  }
-
-  if (!ExprBinOpPriority[kNumOfExprBinOp - 1]) {
-    // priority 0 means undefined.
-    ExprBinOpPriority[kOpAdd] = 2;
-    ExprBinOpPriority[kOpSub] = 2;
-    ExprBinOpPriority[kOpMul] = 4;
-  }
-
-  int left_priority = ExprBinOpPriority[left_op->op_type];
-  int right_priority = ExprBinOpPriority[right_op->op_type];
-  if (!left_priority || !right_priority) {
-    Error("IsExprBinOpPriorTo: Undefined operator priority");
-  }
-
-  return left_priority >= right_priority;
+ASTNode *ParsePostExpr(TokenList *tokens, int index, int *after_index) {
+  return ParsePrimaryExpr(tokens, index, after_index);
 }
 
-ASTExprBinOpType GetExprBinOpTypeFromToken(const Token *token) {
-  if (IsEqualToken(token, "+")) {
-    return kOpAdd;
-  } else if (IsEqualToken(token, "-")) {
-    return kOpSub;
-  } else if (IsEqualToken(token, "*")) {
-    return kOpMul;
+ASTNode *ParseUnaryExpr(TokenList *tokens, int index, int *after_index) {
+  return ParsePostExpr(tokens, index, after_index);
+}
+
+ASTNode *ParseCastExpr(TokenList *tokens, int index, int *after_index) {
+  return ParseUnaryExpr(tokens, index, after_index);
+}
+
+ASTNode *ParseMultiplicativeExpr(TokenList *tokens, int index,
+                                 int *after_index) {
+  // multiplicative-expression
+  ASTNode *last = NULL;
+  ASTNode *node = NULL;
+  const Token *op = NULL;
+  while ((node = ParseCastExpr(tokens, index, &index))) {
+    if (!last) {
+      last = node;
+    } else {
+      last = AllocAndInitASTExprBinOp(op, last, node);
+    }
+    op = GetTokenAt(tokens, index);
+    if (!IsEqualToken(op, "*") && !IsEqualToken(op, "/") &&
+        !IsEqualToken(op, "%")) {
+      break;
+    }
+    index++;
   }
-  return kOpUndefined;
+  *after_index = index;
+  return last;
+}
+
+ASTNode *ParseAdditiveExpr(TokenList *tokens, int index, int *after_index) {
+  // additive-expression
+  ASTNode *last = NULL;
+  ASTNode *node = NULL;
+  const Token *op = NULL;
+  while ((node = ParseMultiplicativeExpr(tokens, index, &index))) {
+    if (!last) {
+      last = node;
+    } else {
+      last = AllocAndInitASTExprBinOp(op, last, node);
+    }
+    op = GetTokenAt(tokens, index);
+    if (!IsEqualToken(op, "+") && !IsEqualToken(op, "-")) {
+      break;
+    }
+    index++;
+  }
+  *after_index = index;
+  return last;
 }
 
 #define MAX_NODES_IN_EXPR 64
-ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
-  // 6.5
-  // a sequence of operators and operands
-  // ... or that designates an object or a function
+ASTNode *ParseExpression(TokenList *tokens, int index, int *after_index) {
+  // expression
+  return ParseAdditiveExpr(tokens, index, after_index);
+  /*
   ASTList *expr_stack = AllocASTList(MAX_NODES_IN_EXPR);
   ASTList *op_stack = AllocASTList(MAX_NODES_IN_EXPR);
   const Token *token;
@@ -99,6 +117,7 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
 
   *after_index = index;
   return GetASTNodeAt(expr_stack, 0);
+  */
 }
 
 /*
@@ -165,8 +184,8 @@ ASTNode *ParseStmt(TokenList *tokens, int index, int *after_index) {
 ASTExprStmt *ParseExprStmt(TokenList *tokens, int index, int *after_index) {
   // expression-statement:
   //   expression ;
-  ASTNode *expr = ReadExpression(tokens, index, &index);
-  if (!expr || !IsEqualToken(GetTokenAt(tokens, index++), ";")) return NULL;
+  ASTNode *expr = ParseExpression(tokens, index, &index);
+  if (!IsEqualToken(GetTokenAt(tokens, index++), ";")) return NULL;
   ASTExprStmt *expr_stmt = AllocASTExprStmt();
   expr_stmt->expr = expr;
   *after_index = index;
