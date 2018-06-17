@@ -26,7 +26,7 @@ typedef enum {
   kASTFuncDef,
   kASTCompStmt,
   kASTExprBinOp,
-  kASTExprVal,
+  kASTConstant,
   kASTExprStmt,
   kASTJumpStmt,
   kASTForStmt,
@@ -85,7 +85,7 @@ typedef struct {
 typedef struct {
   ASTType type;
   const Token *token;
-} ASTExprVal;
+} ASTConstant;
 
 typedef struct {
   ASTType type;
@@ -160,7 +160,7 @@ DefToAST(FuncDecl);
 DefToAST(FuncDef);
 DefToAST(CompStmt);
 DefToAST(ExprBinOp);
-DefToAST(ExprVal);
+DefToAST(Constant);
 DefToAST(ExprStmt);
 DefToAST(JumpStmt);
 DefToAST(ForStmt);
@@ -176,7 +176,7 @@ DefAllocAST(FuncDecl);
 DefAllocAST(FuncDef);
 DefAllocAST(CompStmt);
 DefAllocAST(ExprBinOp);
-DefAllocAST(ExprVal);
+DefAllocAST(Constant);
 DefAllocAST(ExprStmt);
 DefAllocAST(JumpStmt);
 DefAllocAST(ForStmt);
@@ -187,7 +187,7 @@ DefAllocAST(Decltor);
 DefAllocAST(DirectDecltor);
 DefAllocAST(Ident);
 
-ASTNode *AllocateASTNodeAsExprVal(const Token *token);
+ASTNode *AllocAndInitASTConstant(const Token *token);
 ASTNode *AllocateASTNodeAsExprBinOp(ASTExprBinOpType op_type);
 void SetOperandOfExprBinOp(ASTExprBinOp *node, ASTNode *left, ASTNode *right);
 

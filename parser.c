@@ -59,7 +59,7 @@ ASTNode *ReadExpression(TokenList *tokens, int index, int *after_index) {
   const Token *token;
   while ((token = GetTokenAt(tokens, index))) {
     if (token->type == kInteger) {
-      ASTNode *vnode = AllocateASTNodeAsExprVal(token);
+      ASTNode *vnode = AllocAndInitASTConstant(token);
       PushASTNodeToList(expr_stack, vnode);
       index++;
     } else if (token->type == kPunctuator) {

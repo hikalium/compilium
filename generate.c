@@ -67,7 +67,7 @@ int GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
   return dst;
 }
 
-int GenerateILForExprVal(ASTList *il, ASTNode *node) {
+int GenerateILForConstant(ASTList *il, ASTNode *node) {
   int dst = GetRegNumber();
   ASTNode *il_op =
       AllocateASTNodeAsILOp(kILOpLoadImm, dst, REG_NULL, REG_NULL, node);
@@ -143,8 +143,8 @@ int GenerateIL(ASTList *il, ASTNode *node) {
     return GenerateILForJumpStmt(il, node);
   } else if (node->type == kASTExprBinOp) {
     return GenerateILForExprBinOp(il, node);
-  } else if (node->type == kASTExprVal) {
-    return GenerateILForExprVal(il, node);
+  } else if (node->type == kASTConstant) {
+    return GenerateILForConstant(il, node);
   } else if (node->type == kASTExprStmt) {
     return GenerateILForExprStmt(il, node);
   } else {
@@ -196,7 +196,7 @@ void GenerateCode(FILE *fp, ASTList *il) {
         const char *dst_name = ScratchRegNames[op->dst_reg];
         //
         char *p;
-        ASTExprVal *val = ToASTExprVal(op->ast_node);
+        ASTConstant *val = ToASTConstant(op->ast_node);
         const char *s = val->token->str;
         int n = strtol(s, &p, 0);
         if (!(s[0] != 0 && *p == 0)) {
