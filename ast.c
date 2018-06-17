@@ -12,19 +12,19 @@ struct AST_LIST {
 const char* ASTTypeName[kNumOfASTType];
 
 void InitASTTypeName() {
-  ASTTypeName[kFuncDecl] = "FuncDecl";
-  ASTTypeName[kFuncDef] = "FuncDef";
-  ASTTypeName[kCompStmt] = "CompStmt";
-  ASTTypeName[kExprBinOp] = "ExprBinOp";
-  ASTTypeName[kExprStmt] = "ExprStmt";
-  ASTTypeName[kJumpStmt] = "JumpStmt";
-  ASTTypeName[kForStmt] = "ForStmt";
-  ASTTypeName[kILOp] = "ILOp";
-  ASTTypeName[kList] = "List";
-  ASTTypeName[kKeyword] = "Keyword";
-  ASTTypeName[kDecltor] = "Decltor";
-  ASTTypeName[kDirectDecltor] = "DirectDecltor";
-  ASTTypeName[kIdent] = "Ident";
+  ASTTypeName[kASTFuncDecl] = "FuncDecl";
+  ASTTypeName[kASTFuncDef] = "FuncDef";
+  ASTTypeName[kASTCompStmt] = "CompStmt";
+  ASTTypeName[kASTExprBinOp] = "ExprBinOp";
+  ASTTypeName[kASTExprStmt] = "ExprStmt";
+  ASTTypeName[kASTJumpStmt] = "JumpStmt";
+  ASTTypeName[kASTForStmt] = "ForStmt";
+  ASTTypeName[kASTILOp] = "ILOp";
+  ASTTypeName[kASTList] = "List";
+  ASTTypeName[kASTKeyword] = "Keyword";
+  ASTTypeName[kASTDecltor] = "Decltor";
+  ASTTypeName[kASTDirectDecltor] = "DirectDecltor";
+  ASTTypeName[kASTIdent] = "Ident";
 }
 
 const char* ILOpTypeStr[kNumOfILOpFunc];
@@ -47,7 +47,7 @@ ASTNode* ToASTNode(void* node) { return (ASTNode*)node; }
 
 #define GenToAST(Type) \
   AST##Type* ToAST##Type(ASTNode* node) { \
-    if (!node || node->type != k##Type) return NULL; \
+    if (!node || node->type != kAST##Type) return NULL; \
     return (AST##Type*)node; \
   }
 
@@ -69,7 +69,7 @@ GenToAST(Ident);
 #define GenAllocAST(Type) \
   AST##Type* AllocAST##Type() { \
     AST##Type* node = (AST##Type*)malloc(sizeof(AST##Type)); \
-    node->type = k##Type; \
+    node->type = kAST##Type; \
     return node; \
   }
 
@@ -89,7 +89,7 @@ GenAllocAST(Ident);
 
 ASTList* AllocASTList(int capacity) {
   ASTList* list = malloc(sizeof(ASTList) + sizeof(ASTNode*) * capacity);
-  list->type = kList;
+  list->type = kASTList;
   list->capacity = capacity;
   list->size = 0;
   return list;
@@ -174,7 +174,7 @@ void PrintASTNode(ASTNode* node, int depth) {
     printf("(Null)");
     return;
   }
-  if (node->type == kList) {
+  if (node->type == kASTList) {
     ASTList* list = ToASTList(node);
     putchar('[');
     for (int i = 0; i < list->size; i++) {
@@ -190,63 +190,63 @@ void PrintASTNode(ASTNode* node, int depth) {
     printf("(Unknown: %d)", node->type);
     return;
   }
-  if (node->type == kFuncDecl) {
+  if (node->type == kASTFuncDecl) {
     ASTFuncDecl* func_decl = ToASTFuncDecl(node);
     PrintASTNodeWithName(depth + 1, "type_and_name=", func_decl->type_and_name);
     PrintASTNodeWithName(depth + 1,
                          "arg_list=", ToASTNode(func_decl->arg_list));
-  } else if (node->type == kFuncDef) {
+  } else if (node->type == kASTFuncDef) {
     ASTFuncDef* func_def = ToASTFuncDef(node);
     PrintASTNodeWithName(depth + 1,
                          "decl_specs=", ToASTNode(func_def->decl_specs));
     PrintASTNodeWithName(depth + 1, "decltor=", ToASTNode(func_def->decltor));
     PrintASTNodeWithName(depth + 1,
                          "comp_stmt=", ToASTNode(func_def->comp_stmt));
-  } else if (node->type == kCompStmt) {
+  } else if (node->type == kASTCompStmt) {
     ASTCompStmt* comp_stmt = ToASTCompStmt(node);
     PrintASTNodeWithName(depth + 1, "body=", ToASTNode(comp_stmt->stmt_list));
-  } else if (node->type == kExprBinOp) {
+  } else if (node->type == kASTExprBinOp) {
     ASTExprBinOp* expr_bin_op = ToASTExprBinOp(node);
     PrintfWithPadding(depth + 1, "op_type=%d", expr_bin_op->op_type);
     PrintASTNodeWithName(depth + 1, "left=", expr_bin_op->left);
     PrintASTNodeWithName(depth + 1, "right=", expr_bin_op->right);
-  } else if (node->type == kExprVal) {
+  } else if (node->type == kASTExprVal) {
     ASTExprVal* expr_val = ToASTExprVal(node);
     PrintTokenWithName(depth + 1, "token=", expr_val->token);
-  } else if (node->type == kExprStmt) {
+  } else if (node->type == kASTExprStmt) {
     ASTExprStmt* expr_stmt = ToASTExprStmt(node);
     PrintASTNodeWithName(depth + 1, "expression=", expr_stmt->expr);
-  } else if (node->type == kJumpStmt) {
+  } else if (node->type == kASTJumpStmt) {
     ASTJumpStmt* jump_stmt = ToASTJumpStmt(node);
     PrintASTNodeWithName(depth + 1, "kw=", ToASTNode(jump_stmt->kw));
     PrintASTNodeWithName(depth + 1, "param=", jump_stmt->param);
-  } else if (node->type == kForStmt) {
+  } else if (node->type == kASTForStmt) {
     ASTForStmt* for_stmt = ToASTForStmt(node);
     PrintASTNodeWithName(depth + 1, "init_expr=", for_stmt->init_expr);
     PrintASTNodeWithName(depth + 1, "cond_expr=", for_stmt->cond_expr);
     PrintASTNodeWithName(depth + 1, "updt_expr=", for_stmt->updt_expr);
     PrintASTNodeWithName(depth + 1,
                          "body_comp_stmt=", for_stmt->body_comp_stmt);
-  } else if (node->type == kILOp) {
+  } else if (node->type == kASTILOp) {
     ASTILOp* il_op = ToASTILOp(node);
     PrintfWithPadding(depth + 1, "op=%s", InternalGetILOpTypeStr(il_op->op));
     PrintfWithPadding(depth + 1, "dst=%d", il_op->dst_reg);
     PrintfWithPadding(depth + 1, "left=%d", il_op->left_reg);
     PrintfWithPadding(depth + 1, "right=%d", il_op->right_reg);
     PrintASTNodeWithName(depth + 1, "ast_node=", il_op->ast_node);
-  } else if (node->type == kKeyword) {
+  } else if (node->type == kASTKeyword) {
     ASTKeyword* kw = ToASTKeyword(node);
     PrintTokenWithName(depth + 1, "token=", kw->token);
-  } else if (node->type == kDecltor) {
+  } else if (node->type == kASTDecltor) {
     ASTDecltor* decltor = ToASTDecltor(node);
     PrintASTNodeWithName(depth + 1,
                          "direct_decltor=", ToASTNode(decltor->direct_decltor));
-  } else if (node->type == kDirectDecltor) {
+  } else if (node->type == kASTDirectDecltor) {
     ASTDirectDecltor* direct_decltor = ToASTDirectDecltor(node);
     PrintASTNodeWithName(depth + 1, "direct_decltor=",
                          ToASTNode(direct_decltor->direct_decltor));
     PrintASTNodeWithName(depth + 1, "data=", direct_decltor->data);
-  } else if (node->type == kIdent) {
+  } else if (node->type == kASTIdent) {
     ASTIdent* ident = ToASTIdent(node);
     PrintTokenWithName(depth + 1, "token=", ident->token);
   } else {

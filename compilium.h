@@ -22,20 +22,20 @@ typedef struct {
 typedef struct TOKEN_LIST TokenList;
 
 typedef enum {
-  kFuncDecl,
-  kFuncDef,
-  kCompStmt,
-  kExprBinOp,
-  kExprVal,
-  kExprStmt,
-  kJumpStmt,
-  kForStmt,
-  kILOp,
-  kList,
-  kKeyword,
-  kDecltor,
-  kDirectDecltor,
-  kIdent,
+  kASTFuncDecl,
+  kASTFuncDef,
+  kASTCompStmt,
+  kASTExprBinOp,
+  kASTExprVal,
+  kASTExprStmt,
+  kASTJumpStmt,
+  kASTForStmt,
+  kASTILOp,
+  kASTList,
+  kASTKeyword,
+  kASTDecltor,
+  kASTDirectDecltor,
+  kASTIdent,
   //
   kNumOfASTType
 } ASTType;

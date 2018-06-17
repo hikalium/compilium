@@ -115,13 +115,13 @@ int GenerateILForExprStmt(ASTList *il, ASTNode *node) {
 
 int GenerateILForJumpStmt(ASTList *il, ASTNode *node) {
   ASTJumpStmt *jump_stmt = ToASTJumpStmt(node);
-  if(IsEqualToken(jump_stmt->kw->token, "return")){
+  if (IsEqualToken(jump_stmt->kw->token, "return")) {
     int expr_reg = GenerateILForExprStmt(il, jump_stmt->param);
 
     ASTNode *il_op =
-       AllocateASTNodeAsILOp(kILOpReturn, REG_NULL, expr_reg, REG_NULL, node);
+        AllocateASTNodeAsILOp(kILOpReturn, REG_NULL, expr_reg, REG_NULL, node);
     PushASTNodeToList(il, il_op);
-  } else{
+  } else {
     Error("Not implemented JumpStmt (%s)", jump_stmt->kw->token->str);
   }
 
@@ -129,23 +129,23 @@ int GenerateILForJumpStmt(ASTList *il, ASTNode *node) {
 }
 
 int GenerateIL(ASTList *il, ASTNode *node) {
-  if (node->type == kList) {
+  if (node->type == kASTList) {
     // translation-unit
     ASTList *list = ToASTList(node);
     for (int i = 0; i < GetSizeOfASTList(list); i++) {
       ASTNode *child_node = GetASTNodeAt(list, i);
-      if (child_node->type == kFuncDef) {
+      if (child_node->type == kASTFuncDef) {
         GenerateILForFuncDef(il, child_node);
       }
     }
     return -1;
-  } else if (node->type == kJumpStmt) {
+  } else if (node->type == kASTJumpStmt) {
     return GenerateILForJumpStmt(il, node);
-  } else if (node->type == kExprBinOp) {
+  } else if (node->type == kASTExprBinOp) {
     return GenerateILForExprBinOp(il, node);
-  } else if (node->type == kExprVal) {
+  } else if (node->type == kASTExprVal) {
     return GenerateILForExprVal(il, node);
-  } else if (node->type == kExprStmt) {
+  } else if (node->type == kASTExprStmt) {
     return GenerateILForExprStmt(il, node);
   } else {
     Error("Generation for AST Type %d is not implemented.", node->type);

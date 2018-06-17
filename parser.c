@@ -1,6 +1,5 @@
 #include "compilium.h"
-ASTExprStmt *ParseExprStmt(TokenList *tokens, int index,
-                                    int *after_index);
+ASTExprStmt *ParseExprStmt(TokenList *tokens, int index, int *after_index);
 
 void ReduceExprOp(ASTList *expr_stack, ASTList *op_stack) {
   ASTNode *last_op = PopASTNodeFromList(op_stack);
@@ -163,8 +162,7 @@ ASTNode *ParseStmt(TokenList *tokens, int index, int *after_index) {
   return NULL;
 }
 
-ASTExprStmt *ParseExprStmt(TokenList *tokens, int index,
-                                    int *after_index) {
+ASTExprStmt *ParseExprStmt(TokenList *tokens, int index, int *after_index) {
   // expression-statement:
   //   expression ;
   ASTNode *expr = ReadExpression(tokens, index, &index);
