@@ -66,6 +66,7 @@ GenToAST(Keyword);
 GenToAST(Decltor);
 GenToAST(DirectDecltor);
 GenToAST(Ident);
+GenToAST(Decl);
 
 #define GenAllocAST(Type) \
   AST##Type* AllocAST##Type() { \
@@ -87,6 +88,7 @@ GenAllocAST(Keyword);
 GenAllocAST(Decltor);
 GenAllocAST(DirectDecltor);
 GenAllocAST(Ident);
+GenAllocAST(Decl);
 
 ASTList* AllocASTList(int capacity) {
   ASTList* list = malloc(sizeof(ASTList) + sizeof(ASTNode*) * capacity);

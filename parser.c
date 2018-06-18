@@ -70,54 +70,23 @@ ASTNode *ParseAdditiveExpr(TokenList *tokens, int index, int *after_index) {
 #define MAX_NODES_IN_EXPR 64
 ASTNode *ParseExpression(TokenList *tokens, int index, int *after_index) {
   // expression
-  return ParseAdditiveExpr(tokens, index, after_index);
-  /*
-  ASTList *expr_stack = AllocASTList(MAX_NODES_IN_EXPR);
-  ASTList *op_stack = AllocASTList(MAX_NODES_IN_EXPR);
-  const Token *token;
-  while ((token = GetTokenAt(tokens, index))) {
-    if (token->type == kInteger) {
-      ASTNode *vnode = AllocAndInitASTConstant(token);
-      PushASTNodeToList(expr_stack, vnode);
-      index++;
-    } else if (token->type == kPunctuator) {
-      ASTExprBinOpType op_type = GetExprBinOpTypeFromToken(token);
-      if (op_type != kOpUndefined) {
-        ASTNode *opnode = AllocateASTNodeAsExprBinOp(op_type);
-        while (GetSizeOfASTList(op_stack) > 0 &&
-               IsExprBinOpPriorTo(GetLastASTNode(op_stack), opnode)) {
-          ReduceExprOp(expr_stack, op_stack);
-        }
-        PushASTNodeToList(op_stack, opnode);
-        index++;
-      } else if (IsEqualToken(token, ";")) {
-        break;
-      } else {
-        Error("Unexpected punctuator %s", token->str);
-      }
-    } else if (token->type == kIdentifier) {
-      Error("Unexpected identifier %s", token->str);
+  ASTNode *last = NULL;
+  ASTNode *node = NULL;
+  const Token *op = NULL;
+  while ((node = ParseAdditiveExpr(tokens, index, &index))) {
+    if (!last) {
+      last = node;
     } else {
-      Error("Unexpected token %s", token->str);
+      last = AllocAndInitASTExprBinOp(op, last, node);
     }
+    op = GetTokenAt(tokens, index);
+    if (!IsEqualToken(op, ",")) {
+      break;
+    }
+    index++;
   }
-
-  while (GetSizeOfASTList(op_stack) != 0) {
-    ReduceExprOp(expr_stack, op_stack);
-  }
-
-  if (GetSizeOfASTList(expr_stack) == 0) {
-    return NULL;
-  }
-
-  if (GetSizeOfASTList(expr_stack) != 1) {
-    PrintASTNode(ToASTNode(expr_stack), 0);
-    Error("parse expr failed.");
-  }
-
   *after_index = index;
-  return GetASTNodeAt(expr_stack, 0);
-  */
+  return last;
 }
 
 /*
@@ -221,6 +190,32 @@ ASTCompStmt *ParseCompStmt(TokenList *tokens, int index, int *after_index) {
   return comp_stmt;
 }
 
+#define MAX_NUM_OF_NODES_IN_PARAM_TYPE_LIST 8
+ASTList *ParseParamTypeList(TokenList *tokens, int index, int *after_index)
+{
+  ASTList *list = AllocASTList(MAX_NUM_OF_NODES_IN_PARAM_TYPE_LIST);
+  const Token *token;
+  ASTIdent *node;
+  for(;;){
+    token = GetTokenAt(tokens, index);
+    if(token->type != kIdentifier){
+      return NULL;
+    }
+    node = AllocASTIdent();
+    node->token = token;
+    PushASTNodeToList(list, ToASTNode(node));
+    index++;
+    //
+    token = GetTokenAt(tokens, index);
+    if(token->type != kPunctuator || !IsEqualToken(token, ",")){
+      break;
+    }
+    index++;
+  }
+  *after_index = index;
+  return list;
+}
+
 ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index,
                                      int *after_index) {
   // direct-declarator
@@ -243,18 +238,20 @@ ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index,
       continue;
     } else if (token->type == kPunctuator) {
       if (IsEqualToken(token, "(")) {
-        token = GetTokenAt(tokens, index + 1);
+        index++;
+        //
+        ASTList *list;
+        list = ParseParamTypeList(tokens, index, &index);
+        // node can be null
+        token = GetTokenAt(tokens, index);
         if (IsEqualToken(token, ")")) {
+          index++;
           if (!last_direct_decltor) break;
-          //
-          ASTList *list = AllocASTList(0);
           //
           ASTDirectDecltor *direct_decltor = AllocASTDirectDecltor();
           direct_decltor->direct_decltor = last_direct_decltor;
           direct_decltor->data = ToASTNode(list);
           last_direct_decltor = direct_decltor;
-          //
-          index += 2;
           continue;
         }
       }
@@ -298,7 +295,6 @@ ASTList *ParseDeclSpecs(TokenList *tokens, int index, int *after_index) {
   return list;
 }
 
-#define MAX_ARGS 16
 ASTNode *ParseFuncDef(TokenList *tokens, int index, int *after_index) {
   // function-definition
   ASTList *decl_specs = ParseDeclSpecs(tokens, index, &index);
@@ -325,12 +321,45 @@ ASTNode *ParseFuncDef(TokenList *tokens, int index, int *after_index) {
   return ToASTNode(func_def);
 }
 
+#define MAX_NODES_IN_INIT_DECLTORS  8
+ASTList *ParseInitDecltors(TokenList *tokens, int index, int *after_index) {
+  // declaration-specifiers
+  // ASTList<ASTKeyword>
+  ASTList *list = AllocASTList(MAX_NODES_IN_INIT_DECLTORS);
+  ASTNode *node;
+  const Token *token;
+  for (;;) {
+    node = ToASTNode(ParseDecltor(tokens, index, &index));
+    // TODO: Add InitDecltor case
+    if(!node) return NULL;
+    PushASTNodeToList(list, node);
+    token = GetTokenAt(tokens, index + 1);
+    if (!IsEqualToken(token, ",")) break;
+    index++;
+  }
+  *after_index = index;
+  return list;
+}
+
+ASTDecl *ParseDecl(TokenList *tokens, int index, int *after_index) {
+  ASTList *decl_specs = ParseDeclSpecs(tokens, index, &index);
+  if(!decl_specs) return NULL;
+  ASTList *init_decltors = ParseInitDecltors(tokens, index, &index);
+  //
+  *after_index = index;
+  ASTDecl *decl = AllocASTDecl();
+  decl->decl_specs = decl_specs;
+  decl->init_decltors = init_decltors;
+  return decl;
+}
+
 #define MAX_NODES_IN_TRANSLATION_UNIT 64
 ASTNode *ParseTranslationUnit(TokenList *tokens, int index, int *after_index) {
   // ASTList<ASTFuncDef | ASTDecl>
   ASTList *list = AllocASTList(MAX_NODES_IN_TRANSLATION_UNIT);
+  ASTNode *node;
   for (;;) {
-    ASTNode *node = ParseFuncDef(tokens, index, &index);
+    node = ParseFuncDef(tokens, index, &index);
     if (node) {
       PushASTNodeToList(list, node);
       continue;
