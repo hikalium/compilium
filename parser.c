@@ -1,6 +1,30 @@
 #include "compilium.h"
 
 ASTExprStmt *ParseExprStmt(TokenList *tokens, int index, int *after_index);
+ASTList *ParseDeclSpecs(TokenList *tokens, int index, int *after_index);
+ASTDecltor *ParseDecltor(TokenList *tokens, int index, int *after_index);
+
+#define MAX_NUM_OF_NODES_IN_COMMA_SEPARATED_LIST 8
+ASTList *ParseCommaSeparatedList(TokenList *tokens, int index, int *after_index,
+                                 ASTNode *(elem_parser)(TokenList *tokens,
+                                                        int index,
+                                                        int *after_index)) {
+  ASTList *list = AllocASTList(MAX_NUM_OF_NODES_IN_COMMA_SEPARATED_LIST);
+  ASTNode *node;
+  const Token *token;
+  for (;;) {
+    node = elem_parser(tokens, index, &index);
+    if (!node) return NULL;
+    PushASTNodeToList(list, node);
+    index++;
+
+    token = GetTokenAt(tokens, index);
+    if (!IsEqualToken(token, ",")) break;
+    index++;
+  }
+  *after_index = index;
+  return list;
+}
 
 ASTNode *ParsePrimaryExpr(TokenList *tokens, int index, int *after_index) {
   const Token *token = GetTokenAt(tokens, index++);
@@ -190,30 +214,57 @@ ASTCompStmt *ParseCompStmt(TokenList *tokens, int index, int *after_index) {
   return comp_stmt;
 }
 
-#define MAX_NUM_OF_NODES_IN_PARAM_TYPE_LIST 8
-ASTList *ParseIdentList(TokenList *tokens, int index, int *after_index)
-{
-  ASTList *list = AllocASTList(MAX_NUM_OF_NODES_IN_PARAM_TYPE_LIST);
+ASTIdent *ParseIdent(TokenList *tokens, int index, int *after_index) {
   const Token *token;
-  ASTIdent *node;
-  for(;;){
-    token = GetTokenAt(tokens, index);
-    if(token->type != kIdentifier){
-      return NULL;
-    }
-    node = AllocASTIdent();
-    node->token = token;
-    PushASTNodeToList(list, ToASTNode(node));
-    index++;
-    //
-    token = GetTokenAt(tokens, index);
-    if(token->type != kPunctuator || !IsEqualToken(token, ",")){
-      break;
-    }
-    index++;
+  ASTIdent *ident;
+  token = GetTokenAt(tokens, index++);
+  if (token->type != kIdentifier) {
+    return NULL;
   }
+  ident = AllocASTIdent();
+  ident->token = token;
   *after_index = index;
-  return list;
+  return ident;
+}
+
+ASTNode *ParseIdentNode(TokenList *tokens, int index, int *after_index) {
+  return ToASTNode(ParseIdent(tokens, index, after_index));
+}
+
+ASTList *ParseIdentList(TokenList *tokens, int index, int *after_index) {
+  return ParseCommaSeparatedList(tokens, index, after_index, ParseIdentNode);
+}
+
+ASTParamDecl *ParseParamDecl(TokenList *tokens, int index, int *after_index) {
+  // parameter-declaration
+  // TODO: Impl abstract case.
+  ASTList *decl_specs = ParseDeclSpecs(tokens, index, &index);
+  if (!decl_specs) return NULL;
+  ASTDecltor *decltor = ParseDecltor(tokens, index, &index);
+  if (!decltor) return NULL;
+
+  ASTParamDecl *param_decl = AllocASTParamDecl();
+  param_decl->decl_specs = decl_specs;
+  param_decl->decltor = ToASTNode(decltor);
+
+  *after_index = index;
+  return param_decl;
+}
+
+ASTNode *ParseParamDeclNode(TokenList *tokens, int index, int *after_index) {
+  return ToASTNode(ParseParamDecl(tokens, index, after_index));
+}
+
+ASTList *ParseParamList(TokenList *tokens, int index, int *after_index) {
+  // parameter-list
+  return ParseCommaSeparatedList(tokens, index, after_index,
+                                 ParseParamDeclNode);
+}
+
+ASTList *ParseParamTypeList(TokenList *tokens, int index, int *after_index) {
+  // parameter-type-list
+  // TODO: Impl ", ..." case
+  return ParseParamList(tokens, index, after_index);
 }
 
 ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index,
@@ -241,7 +292,8 @@ ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index,
         index++;
         //
         ASTList *list;
-        list = ParseIdentList(tokens, index, &index);
+        list = ParseParamTypeList(tokens, index, &index);
+        if(!list) list = ParseIdentList(tokens, index, &index);
         // Identlist can be null
         token = GetTokenAt(tokens, index);
         if (IsEqualToken(token, ")")) {
@@ -275,21 +327,50 @@ ASTDecltor *ParseDecltor(TokenList *tokens, int index, int *after_index) {
   return decltor;
 }
 
+ASTNode *ParseDecltorNode(TokenList *tokens, int index, int *after_index) {
+  return ToASTNode(ParseDecltor(tokens, index, after_index));
+}
+
+ASTNode *ParseTypeSpec(TokenList *tokens, int index, int *after_index) {
+  // type-specifier
+  // ASTKeyword | ASTSpec
+  // TODO: Impl struct cases (ASTSpec)
+  const Token *token = GetTokenAt(tokens, index++);
+  if (IsEqualToken(token, "int") || IsEqualToken(token, "char")) {
+    ASTKeyword *kw = AllocASTKeyword();
+    kw->token = token;
+
+    *after_index = index;
+    return ToASTNode(kw);
+  }
+  return NULL;
+}
+
+ASTKeyword *ParseTypeQual(TokenList *tokens, int index, int *after_index) {
+  // type-qualifier
+  // ASTKeyword
+  const Token *token = GetTokenAt(tokens, index++);
+  if (IsEqualToken(token, "const")) {
+    ASTKeyword *kw = AllocASTKeyword();
+    kw->token = token;
+
+    *after_index = index;
+    return kw;
+  }
+  return NULL;
+}
+
 #define MAX_NODES_IN_DECL_SPECS 4
 ASTList *ParseDeclSpecs(TokenList *tokens, int index, int *after_index) {
   // declaration-specifiers
   // ASTList<ASTKeyword>
   ASTList *list = AllocASTList(MAX_NODES_IN_DECL_SPECS);
+  ASTNode *node;
   for (;;) {
-    const Token *token = GetTokenAt(tokens, index);
-    if (IsEqualToken(token, "int")) {
-      ASTKeyword *kw = AllocASTKeyword();
-      kw->token = token;
-      PushASTNodeToList(list, ToASTNode(kw));
-      index++;
-      continue;
-    }
-    break;
+    node = ParseTypeSpec(tokens, index, &index);
+    if(!node) node = ToASTNode(ParseTypeQual(tokens, index, &index));
+    if (!node) break;
+    PushASTNodeToList(list, node);
   }
   *after_index = index;
   return list;
@@ -321,29 +402,16 @@ ASTNode *ParseFuncDef(TokenList *tokens, int index, int *after_index) {
   return ToASTNode(func_def);
 }
 
-#define MAX_NODES_IN_INIT_DECLTORS  8
+#define MAX_NODES_IN_INIT_DECLTORS 8
 ASTList *ParseInitDecltors(TokenList *tokens, int index, int *after_index) {
   // declaration-specifiers
   // ASTList<ASTKeyword>
-  ASTList *list = AllocASTList(MAX_NODES_IN_INIT_DECLTORS);
-  ASTNode *node;
-  const Token *token;
-  for (;;) {
-    node = ToASTNode(ParseDecltor(tokens, index, &index));
-    // TODO: Add InitDecltor case
-    if(!node) return NULL;
-    PushASTNodeToList(list, node);
-    token = GetTokenAt(tokens, index + 1);
-    if (!IsEqualToken(token, ",")) break;
-    index++;
-  }
-  *after_index = index;
-  return list;
+  return ParseCommaSeparatedList(tokens, index, after_index, ParseDecltorNode);
 }
 
 ASTDecl *ParseDecl(TokenList *tokens, int index, int *after_index) {
   ASTList *decl_specs = ParseDeclSpecs(tokens, index, &index);
-  if(!decl_specs) return NULL;
+  if (!decl_specs) return NULL;
   ASTList *init_decltors = ParseInitDecltors(tokens, index, &index);
   //
   *after_index = index;

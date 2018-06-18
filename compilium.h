@@ -37,6 +37,7 @@ typedef enum {
   kASTDirectDecltor,
   kASTIdent,
   kASTDecl,
+  kASTParamDecl,
   //
   kNumOfASTType
 } ASTType;
@@ -150,6 +151,12 @@ typedef struct {
   ASTList *init_decltors;;
 } ASTDecl;
 
+typedef struct {
+  ASTType type;
+  ASTList *decl_specs;
+  ASTNode *decltor;
+} ASTParamDecl;
+
 // @st.c
 void InitASTTypeName();
 
@@ -170,6 +177,7 @@ DefToAST(Decltor);
 DefToAST(DirectDecltor);
 DefToAST(Ident);
 DefToAST(Decl);
+DefToAST(ParamDecl);
 
 #define DefAllocAST(type) AST##type *AllocAST##type()
 DefAllocAST(FuncDecl);
@@ -187,6 +195,7 @@ DefAllocAST(Decltor);
 DefAllocAST(DirectDecltor);
 DefAllocAST(Ident);
 DefAllocAST(Decl);
+DefAllocAST(ParamDecl);
 
 
 ASTNode *AllocAndInitASTConstant(const Token *token);
