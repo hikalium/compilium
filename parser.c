@@ -191,7 +191,7 @@ ASTCompStmt *ParseCompStmt(TokenList *tokens, int index, int *after_index) {
 }
 
 #define MAX_NUM_OF_NODES_IN_PARAM_TYPE_LIST 8
-ASTList *ParseParamTypeList(TokenList *tokens, int index, int *after_index)
+ASTList *ParseIdentList(TokenList *tokens, int index, int *after_index)
 {
   ASTList *list = AllocASTList(MAX_NUM_OF_NODES_IN_PARAM_TYPE_LIST);
   const Token *token;
@@ -241,8 +241,8 @@ ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index,
         index++;
         //
         ASTList *list;
-        list = ParseParamTypeList(tokens, index, &index);
-        // node can be null
+        list = ParseIdentList(tokens, index, &index);
+        // Identlist can be null
         token = GetTokenAt(tokens, index);
         if (IsEqualToken(token, ")")) {
           index++;
