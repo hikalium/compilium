@@ -30,6 +30,11 @@ void InitASTTypeName() {
   ASTTypeName[kASTParamDecl] = "ParamDecl";
 }
 
+const char* GetASTTypeName(ASTNode* node) {
+  if (!node || kNumOfASTType <= node->type) return "?";
+  return ASTTypeName[node->type];
+}
+
 const char* ILOpTypeStr[kNumOfILOpFunc];
 
 const char* InternalGetILOpTypeStr(ILOpType type) {
@@ -212,7 +217,7 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintASTNodeWithName(depth + 1, "body=", ToASTNode(comp_stmt->stmt_list));
   } else if (node->type == kASTExprBinOp) {
     ASTExprBinOp* expr_bin_op = ToASTExprBinOp(node);
-    PrintTokenWithName(depth + 1, "op=%d", expr_bin_op->op);
+    PrintTokenWithName(depth + 1, "op=", expr_bin_op->op);
     PrintASTNodeWithName(depth + 1, "left=", expr_bin_op->left);
     PrintASTNodeWithName(depth + 1, "right=", expr_bin_op->right);
   } else if (node->type == kASTConstant) {
@@ -266,7 +271,7 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintASTNodeWithName(depth + 1, "decltor=", ToASTNode(param_decl->decltor));
   } else {
     Error("PrintASTNode not implemented for type %d (%s)", node->type,
-          ASTTypeName[node->type] ? ASTTypeName[node->type] : "?");
+          GetASTTypeName(node));
   }
   PrintfWithPadding(depth, ")");
 }

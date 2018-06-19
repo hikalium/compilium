@@ -124,6 +124,7 @@ int GenerateILForJumpStmt(ASTList *il, ASTNode *node) {
 }
 
 int GenerateIL(ASTList *il, ASTNode *node) {
+  printf("GenerateIL: AST%s...\n", GetASTTypeName(node));
   if (node->type == kASTList) {
     // translation-unit
     ASTList *list = ToASTList(node);
@@ -143,7 +144,7 @@ int GenerateIL(ASTList *il, ASTNode *node) {
   } else if (node->type == kASTExprStmt) {
     return GenerateILForExprStmt(il, node);
   } else {
-    Error("Generation for AST Type %d is not implemented.", node->type);
+    Error("Generation for AST%s is not implemented.", GetASTTypeName(node));
   }
   return -1;
 }

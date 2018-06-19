@@ -170,6 +170,7 @@ typedef struct {
 
 // @st.c
 void InitASTTypeName();
+const char *GetASTTypeName(ASTNode *node);
 
 ASTNode *ToASTNode(void *node);
 #define DefToAST(type) AST##type *ToAST##type(ASTNode *node)
