@@ -1,5 +1,24 @@
 #include "compilium.h"
 
+const char *ILOpTypeName[kNumOfILOpFunc];
+
+void InitILOpTypeName() {
+  ILOpTypeName[kILOpAdd] = "Add";
+  ILOpTypeName[kILOpSub] = "Sub";
+  ILOpTypeName[kILOpMul] = "Mul";
+  ILOpTypeName[kILOpLoadImm] = "LoadImm";
+  ILOpTypeName[kILOpLoadIdent] = "LoadIdent";
+  ILOpTypeName[kILOpFuncBegin] = "FuncBegin";
+  ILOpTypeName[kILOpFuncEnd] = "FuncEnd";
+  ILOpTypeName[kILOpReturn] = "Return";
+  ILOpTypeName[kILOpCall] = "Call";
+}
+
+const char *GetILOpTypeName(ILOpType type) {
+  if (kNumOfILOpFunc <= type) return "?";
+  return ILOpTypeName[type];
+}
+
 int GenerateIL(ASTList *il, ASTNode *node);
 
 // https://wiki.osdev.org/System_V_ABI
@@ -51,32 +70,38 @@ int GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
   } else if (IsEqualToken(bin_op->op, "*")) {
     il_op_type = kILOpMul;
   }
-  if(il_op_type != kILOpNop){
+  if (il_op_type != kILOpNop) {
     dst = GetRegNumber();
     int il_left = GenerateIL(il, bin_op->left);
     int il_right = GenerateIL(il, bin_op->right);
-    ASTNode *il_op = AllocateASTNodeAsILOp(il_op_type, dst, il_left, il_right, node);
+    ASTNode *il_op =
+        AllocateASTNodeAsILOp(il_op_type, dst, il_left, il_right, node);
     PushASTNodeToList(il, il_op);
-  } else if(IsEqualToken(bin_op->op, "(")){
+  } else if (IsEqualToken(bin_op->op, "(")) {
     // func_call
     ASTList *call_params = AllocASTList(8);
-    if(bin_op->right) {
+    if (bin_op->right) {
       ASTList *arg_list = ToASTList(bin_op->right);
-      if(!arg_list) Error("arg_list is not a ASTList");
-      for(int i = 0; i < GetSizeOfASTList(arg_list); i++){
+      if (!arg_list) Error("arg_list is not a ASTList");
+      for (int i = 0; i < GetSizeOfASTList(arg_list); i++) {
         ASTNode *node = GetASTNodeAt(arg_list, i);
         int dst = GetRegNumber();
         int il_arg = GenerateIL(il, node);
-        ASTNode *il_op = AllocateASTNodeAsILOp(kILOpCallParam, dst, il_arg, REG_NULL, node);
+        Error("IMPL param");
+        /*
+        ASTNode *il_op =
+            AllocateASTNodeAsILOp(kILOpCallParam, dst, il_arg, REG_NULL, node);
         PushASTNodeToList(call_params, il_op);
+        */
       }
     }
     int il_target = GenerateIL(il, bin_op->left);
-    for(int i = 0; i < GetSizeOfASTList(call_params); i++){
+    for (int i = 0; i < GetSizeOfASTList(call_params); i++) {
       PushASTNodeToList(il, GetASTNodeAt(call_params, i));
     }
     dst = GetRegNumber();
-    ASTNode *il_op_call = AllocateASTNodeAsILOp(kILOpCall, dst, il_target, REG_NULL, node);
+    ASTNode *il_op_call =
+        AllocateASTNodeAsILOp(kILOpCall, dst, il_target, REG_NULL, node);
     PushASTNodeToList(il, il_op_call);
     /*
     Error("func %s", ident->token->str);
@@ -108,7 +133,7 @@ int GenerateILForConstant(ASTList *il, ASTNode *node) {
 int GenerateILForIdent(ASTList *il, ASTNode *node) {
   int dst = GetRegNumber();
   ASTNode *il_op =
-      AllocateASTNodeAsILOp(kILOpLoadImm, dst, REG_NULL, REG_NULL, node);
+      AllocateASTNodeAsILOp(kILOpLoadIdent, dst, REG_NULL, REG_NULL, node);
   PushASTNodeToList(il, il_op);
   return dst;
 }
@@ -237,14 +262,45 @@ void GenerateCode(FILE *fp, ASTList *il) {
       case kILOpLoadImm: {
         const char *dst_name = ScratchRegNames[op->dst_reg];
         //
-        char *p;
         ASTConstant *val = ToASTConstant(op->ast_node);
-        const char *s = val->token->str;
-        int n = strtol(s, &p, 0);
-        if (!(s[0] != 0 && *p == 0)) {
-          Error("%s is not valid as integer.", s);
+        switch (val->token->type) {
+          case kInteger: {
+            char *p;
+            const char *s = val->token->str;
+            int n = strtol(s, &p, 0);
+            if (!(s[0] != 0 && *p == 0)) {
+              Error("%s is not valid as integer.", s);
+            }
+            fprintf(fp, "mov %s, %d\n", dst_name, n);
+
+          } break;
+          case kStringLiteral: {
+            int label_for_skip = GetLabelNumber();
+            int label_str = GetLabelNumber();
+            fprintf(fp, "jmp L%d\n", label_for_skip);
+            fprintf(fp, "L%d:\n", label_str);
+            fprintf(fp, ".asciz  \"%s\"\n", val->token->str);
+            fprintf(fp, "L%d:\n", label_for_skip);
+            fprintf(fp, "lea     %s, [rip + L%d]\n", dst_name, label_str);
+          } break;
+          default:
+            Error("kILOpLoadImm: not implemented for token type %d",
+                  val->token->type);
         }
-        fprintf(fp, "mov %s, %d\n", dst_name, n);
+      } break;
+      case kILOpLoadIdent: {
+        const char *dst_name = ScratchRegNames[op->dst_reg];
+        //
+        ASTIdent *ident = ToASTIdent(op->ast_node);
+        switch (ident->token->type) {
+          case kIdentifier: {
+            fprintf(fp, "lea     %s, [rip + _%s]\n", dst_name,
+                    ident->token->str);
+          } break;
+          default:
+            Error("kILOpLoadIdent: not implemented for token type %d",
+                  ident->token->type);
+        }
       } break;
       case kILOpAdd:
       case kILOpSub:
@@ -274,9 +330,8 @@ void GenerateCode(FILE *fp, ASTList *il) {
         fprintf(fp, "mov rax, %s\n", left);
       } break;
       default:
-        PrintASTNode(node, 0);
-        putchar('\n');
-        Error("Not implemented code generation for the node shown above");
+        Error("Not implemented code generation for ILOp%s",
+              GetILOpTypeName(op->op));
     }
   }
 }

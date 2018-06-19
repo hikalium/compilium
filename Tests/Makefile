@@ -22,7 +22,7 @@ FORCE:
 
 %.compilium.S : %.c Makefile ../compilium FORCE
 	@ rm $@ $*.compilium.log; \
-		../compilium $*.c $@ > $*.compilium.log
+		../compilium $*.c $@ &> $*.compilium.log || { echo "FAIL"; cat $*.compilium.log; false; }
 
 %.bin : %.S Makefile FORCE
 	@ clang -o $@ $*.S

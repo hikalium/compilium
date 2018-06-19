@@ -42,10 +42,10 @@ typedef enum {
   kILOpSub,
   kILOpMul,
   kILOpLoadImm,
+  kILOpLoadIdent,
   kILOpFuncBegin,
   kILOpFuncEnd,
   kILOpReturn,
-  kILOpCallParam,
   kILOpCall,
   //
   kNumOfILOpFunc
@@ -173,7 +173,6 @@ typedef struct {
 // @st.c
 void InitASTTypeName();
 const char *GetASTTypeName(ASTNode *node);
-void InitILOpTypeName();
 
 ASTNode *ToASTNode(void *node);
 #define DefToAST(type) AST##type *ToAST##type(ASTNode *node)
@@ -215,7 +214,7 @@ DefAllocAST(ParamDecl);
 DefAllocAST(Pointer);
 
 ASTNode *AllocAndInitASTConstant(const Token *token);
-ASTIdent* AllocAndInitASTIdent(const Token* token);
+ASTIdent *AllocAndInitASTIdent(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
 
@@ -237,6 +236,8 @@ ASTNode *GetLastASTNode(const ASTList *list);
 void Error(const char *fmt, ...);
 
 // @generate.c
+void InitILOpTypeName();
+const char *GetILOpTypeName(ILOpType type);
 void Generate(FILE *fp, ASTNode *root);
 
 // @parser.c
