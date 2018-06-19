@@ -2,7 +2,8 @@ TESTS = simple_return \
 		simple_return_with_bin_op_plus \
 		simple_return_with_bin_op_minus \
 		simple_return_with_bin_op_mul \
-		simple_return_with_bin_op_mixed_priority
+		simple_return_with_bin_op_mixed_priority \
+		hello_world
 
 default: $(addsuffix .test, $(TESTS))
 
@@ -29,7 +30,13 @@ FORCE:
 
 %.test : %.clang.bin %.compilium.bin Makefile FORCE
 	@ rm $*.clang.bin.stdout $*.compilium.bin.stdout; \
-		./$*.clang.bin > $*.clang.bin.stdout; \
-		./$*.compilium.bin > $*.compilium.bin.stdout; \
-		diff -u $*.clang.bin.stdout $*.compilium.bin.stdout
-	@ ./$*.clang.bin; ./check_exit_code.sh ./$*.compilium.bin $$?
+		./$*.clang.bin > $*.clang.bin.stdout; expected=$$?; \
+		./$*.compilium.bin > $*.compilium.bin.stdout; actual=$$?; \
+		if [ $$expected = $$actual ]; then \
+		{ diff -u $*.clang.bin.stdout $*.compilium.bin.stdout \
+		&& echo "PASS $*" \
+		|| echo "FAIL $*: text diff";\
+		} else \
+		echo "FAIL $*: expected $$expected but got $$actual"; \
+		fi
+

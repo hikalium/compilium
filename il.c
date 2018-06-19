@@ -64,43 +64,28 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
     return il_op;
   } else if (IsEqualToken(bin_op->op, "(")) {
     // func_call
+    // call_params = [func_addr: ILOp, arg1: ILOp, arg2: ILOp, ...]
     ASTList *call_params = AllocASTList(8);
+
+    // func_addr
+    if(bin_op->left->type == kASTIdent){
+      PushASTNodeToList(call_params, bin_op->left);
+    } else{
+      Error("Calling non-labeled function is not implemented.");
+    }
+
+    // args
     if (bin_op->right) {
       ASTList *arg_list = ToASTList(bin_op->right);
-      if (!arg_list) Error("arg_list is not a ASTList");
+      if (!arg_list) Error("arg_list is not an ASTList");
       for (int i = 0; i < GetSizeOfASTList(arg_list); i++) {
-        //ASTNode *node = GetASTNodeAt(arg_list, i);
-        //int dst = GetRegNumber();
-        //int il_arg = GenerateIL(il, node);
-        Error("IMPL param");
-        /*
-        ASTNode *il_op =
-            AllocAndInitASTILOp(kILOpCallParam, dst, il_arg, REG_NULL, node);
-        PushASTNodeToList(call_params, il_op);
-        */
+        ASTNode *node = GetASTNodeAt(arg_list, i);
+        PushASTNodeToList(call_params, ToASTNode(GenerateIL(il, node)));
       }
     }
-    int il_target = GenerateIL(il, bin_op->left)->dst_reg;
-    for (int i = 0; i < GetSizeOfASTList(call_params); i++) {
-      PushASTNodeToList(il, GetASTNodeAt(call_params, i));
-    }
-    dst = GetRegNumber();
     ASTILOp *il_op_call =
-        AllocAndInitASTILOp(kILOpCall, dst, il_target, REG_NULL, node);
+        AllocAndInitASTILOp(kILOpCall, GetRegNumber(), REG_NULL, REG_NULL, ToASTNode(call_params));
     PushASTNodeToList(il, ToASTNode(il_op_call));
-    /*
-    Error("func %s", ident->token->str);
-    int label_for_skip = GetLabelNumber();
-    int label_str = GetLabelNumber();
-    fprintf(fp, "jmp L%d\n", label_for_skip);
-    fprintf(fp, "L%d:\n", label_str);
-    fprintf(fp, ".asciz  \"%s\"\n", token_list->tokens[2]->str);
-    fprintf(fp, "L%d:\n", label_for_skip);
-    fprintf(fp, "sub     rsp, 16\n");
-    fprintf(fp, "lea     rdi, [rip + L%d]\n", label_str);
-    fprintf(fp, "call    _%s\n", token_list->tokens[0]->str);
-    fprintf(fp, "add     rsp, 16\n");
-    */
     return il_op_call;
   }
   Error("Not implemented GenerateILForExprBinOp (op: %s)", bin_op->op->str);
