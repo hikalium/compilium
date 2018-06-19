@@ -3,6 +3,7 @@
 ASTExprStmt *ParseExprStmt(TokenList *tokens, int index, int *after_index);
 ASTList *ParseDeclSpecs(TokenList *tokens, int index, int *after_index);
 ASTDecltor *ParseDecltor(TokenList *tokens, int index, int *after_index);
+ASTDecl *ParseDecl(TokenList *tokens, int index, int *after_index);
 
 #define MAX_NUM_OF_NODES_IN_COMMA_SEPARATED_LIST 8
 ASTList *ParseCommaSeparatedList(TokenList *tokens, int index, int *after_index,
@@ -30,6 +31,9 @@ ASTNode *ParsePrimaryExpr(TokenList *tokens, int index, int *after_index) {
   if (token->type == kInteger) {
     *after_index = index;
     return AllocAndInitASTConstant(token);
+  } else if(token->type == kIdentifier) {
+    *after_index = index;
+    return ToASTNode(AllocASTIdent(token));
   }
   return NULL;
 }
@@ -90,13 +94,36 @@ ASTNode *ParseAdditiveExpr(TokenList *tokens, int index, int *after_index) {
   return last;
 }
 
+ASTNode *ParseAssignExpr(TokenList *tokens, int index, int *after_index) {
+  // assignment-expression
+  ASTNode *last = NULL;
+  ASTNode *node = NULL;
+  const Token *op = NULL;
+  // TODO: ParseAdditiveExpr -> ParseCondExpr
+  while ((node = ParseAdditiveExpr(tokens, index, &index))) {
+    if (!last) {
+      last = node;
+    } else {
+      last = AllocAndInitASTExprBinOp(op, last, node);
+    }
+    op = GetTokenAt(tokens, index);
+    if (!IsEqualToken(op, "=") && !IsEqualToken(op, "*=")) {
+      break;
+    }
+    index++;
+  }
+  *after_index = index;
+  return last;
+}
+
+
 #define MAX_NODES_IN_EXPR 64
 ASTNode *ParseExpression(TokenList *tokens, int index, int *after_index) {
   // expression
   ASTNode *last = NULL;
   ASTNode *node = NULL;
   const Token *op = NULL;
-  while ((node = ParseAdditiveExpr(tokens, index, &index))) {
+  while ((node = ParseAssignExpr(tokens, index, &index))) {
     if (!last) {
       last = node;
     } else {
@@ -197,8 +224,10 @@ ASTCompStmt *ParseCompStmt(TokenList *tokens, int index, int *after_index) {
   //
   ASTList *stmt_list = AllocASTList(MAX_NUM_OF_STATEMENTS_IN_BLOCK);
   ASTNode *stmt;
-  while (!IsEqualToken(GetTokenAt(tokens, index), "}") &&
-         (stmt = ParseStmt(tokens, index, &index))) {
+  while (!IsEqualToken(GetTokenAt(tokens, index), "}")) {
+    stmt = ToASTNode(ParseDecl(tokens, index, &index));
+    if(!stmt)  stmt = ParseStmt(tokens, index, &index);
+    if(!stmt) break;
     PushASTNodeToList(stmt_list, stmt);
   }
   ASTCompStmt *comp_stmt = AllocASTCompStmt();
