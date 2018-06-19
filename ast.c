@@ -35,20 +35,23 @@ const char* GetASTTypeName(ASTNode* node) {
   return ASTTypeName[node->type];
 }
 
-const char* ILOpTypeStr[kNumOfILOpFunc];
+const char* ILOpTypeName[kNumOfILOpFunc];
 
-const char* InternalGetILOpTypeStr(ILOpType type) {
-  if (!ILOpTypeStr[0]) {
-    ILOpTypeStr[kILOpAdd] = "Add";
-    ILOpTypeStr[kILOpSub] = "Sub";
-    ILOpTypeStr[kILOpMul] = "Mul";
-    ILOpTypeStr[kILOpLoadImm] = "LoadImm";
-    ILOpTypeStr[kILOpFuncBegin] = "FuncBegin";
-    ILOpTypeStr[kILOpFuncEnd] = "FuncEnd";
-    ILOpTypeStr[kILOpReturn] = "Return";
-  }
+void InitILOpTypeName() {
+    ILOpTypeName[kILOpAdd] = "Add";
+    ILOpTypeName[kILOpSub] = "Sub";
+    ILOpTypeName[kILOpMul] = "Mul";
+    ILOpTypeName[kILOpLoadImm] = "LoadImm";
+    ILOpTypeName[kILOpFuncBegin] = "FuncBegin";
+    ILOpTypeName[kILOpFuncEnd] = "FuncEnd";
+    ILOpTypeName[kILOpReturn] = "Return";
+    ILOpTypeName[kILOpCallParam] = "CallParam";
+    ILOpTypeName[kILOpCall] = "Call";
+}
+
+const char* InternalGetILOpTypeName(ILOpType type) {
   if (kNumOfILOpFunc <= type) return "?";
-  return ILOpTypeStr[type];
+  return ILOpTypeName[type];
 }
 
 ASTNode* ToASTNode(void* node) { return (ASTNode*)node; }
@@ -113,6 +116,12 @@ ASTNode* AllocAndInitASTConstant(const Token* token) {
   ASTConstant* node = AllocASTConstant();
   node->token = token;
   return ToASTNode(node);
+}
+
+ASTIdent* AllocAndInitASTIdent(const Token* token) {
+  ASTIdent* node = AllocASTIdent();
+  node->token = token;
+  return node;
 }
 
 ASTNode* AllocAndInitASTExprBinOp(const Token* op, ASTNode* left,
@@ -239,11 +248,11 @@ void PrintASTNode(ASTNode* node, int depth) {
                          "body_comp_stmt=", for_stmt->body_comp_stmt);
   } else if (node->type == kASTILOp) {
     ASTILOp* il_op = ToASTILOp(node);
-    PrintfWithPadding(depth + 1, "op=%s", InternalGetILOpTypeStr(il_op->op));
+    PrintfWithPadding(depth + 1, "op=%s", InternalGetILOpTypeName(il_op->op));
     PrintfWithPadding(depth + 1, "dst=%d", il_op->dst_reg);
     PrintfWithPadding(depth + 1, "left=%d", il_op->left_reg);
     PrintfWithPadding(depth + 1, "right=%d", il_op->right_reg);
-    PrintASTNodeWithName(depth + 1, "ast_node=", il_op->ast_node);
+    //PrintASTNodeWithName(depth + 1, "ast_node=", il_op->ast_node);
   } else if (node->type == kASTKeyword) {
     ASTKeyword* kw = ToASTKeyword(node);
     PrintTokenWithName(depth + 1, "token=", kw->token);

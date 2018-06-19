@@ -14,15 +14,6 @@ typedef enum {
   kPunctuator,
 } TokenType;
 
-typedef struct {
-  char str[MAX_TOKEN_LEN + 1];
-  TokenType type;
-  const char *filename;
-  int line;
-} Token;
-
-typedef struct TOKEN_LIST TokenList;
-
 typedef enum {
   kASTFuncDecl,
   kASTFuncDef,
@@ -45,7 +36,30 @@ typedef enum {
   kNumOfASTType
 } ASTType;
 
+typedef enum {
+  kILOpNop,
+  kILOpAdd,
+  kILOpSub,
+  kILOpMul,
+  kILOpLoadImm,
+  kILOpFuncBegin,
+  kILOpFuncEnd,
+  kILOpReturn,
+  kILOpCallParam,
+  kILOpCall,
+  //
+  kNumOfILOpFunc
+} ILOpType;
+
+typedef struct TOKEN_LIST TokenList;
 typedef struct AST_LIST ASTList;
+
+typedef struct {
+  char str[MAX_TOKEN_LEN + 1];
+  TokenType type;
+  const char *filename;
+  int line;
+} Token;
 
 typedef struct {
   ASTType type;
@@ -103,18 +117,6 @@ typedef struct {
   ASTNode *body_comp_stmt;
 } ASTForStmt;
 
-typedef enum {
-  kILOpAdd,
-  kILOpSub,
-  kILOpMul,
-  kILOpLoadImm,
-  kILOpFuncBegin,
-  kILOpFuncEnd,
-  kILOpReturn,
-  //
-  kNumOfILOpFunc
-} ILOpType;
-
 typedef struct {
   ASTType type;
   ILOpType op;
@@ -171,6 +173,7 @@ typedef struct {
 // @st.c
 void InitASTTypeName();
 const char *GetASTTypeName(ASTNode *node);
+void InitILOpTypeName();
 
 ASTNode *ToASTNode(void *node);
 #define DefToAST(type) AST##type *ToAST##type(ASTNode *node)
@@ -212,6 +215,7 @@ DefAllocAST(ParamDecl);
 DefAllocAST(Pointer);
 
 ASTNode *AllocAndInitASTConstant(const Token *token);
+ASTIdent* AllocAndInitASTIdent(const Token* token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
 

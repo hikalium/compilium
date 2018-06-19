@@ -41,21 +41,56 @@ void GenerateILForFuncDef(ASTList *il, ASTNode *node) {
 }
 
 int GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
+  int dst = REG_NULL;
   ASTExprBinOp *bin_op = ToASTExprBinOp(node);
-  int il_left = GenerateIL(il, bin_op->left);
-  int il_right = GenerateIL(il, bin_op->right);
-  int dst = GetRegNumber();
-
-  ASTNode *il_op;
+  ILOpType il_op_type = kILOpNop;
   if (IsEqualToken(bin_op->op, "+")) {
-    il_op = AllocateASTNodeAsILOp(kILOpAdd, dst, il_left, il_right, node);
-    PushASTNodeToList(il, il_op);
+    il_op_type = kILOpAdd;
   } else if (IsEqualToken(bin_op->op, "-")) {
-    il_op = AllocateASTNodeAsILOp(kILOpSub, dst, il_left, il_right, node);
-    PushASTNodeToList(il, il_op);
+    il_op_type = kILOpSub;
   } else if (IsEqualToken(bin_op->op, "*")) {
-    il_op = AllocateASTNodeAsILOp(kILOpMul, dst, il_left, il_right, node);
+    il_op_type = kILOpMul;
+  }
+  if(il_op_type != kILOpNop){
+    dst = GetRegNumber();
+    int il_left = GenerateIL(il, bin_op->left);
+    int il_right = GenerateIL(il, bin_op->right);
+    ASTNode *il_op = AllocateASTNodeAsILOp(il_op_type, dst, il_left, il_right, node);
     PushASTNodeToList(il, il_op);
+  } else if(IsEqualToken(bin_op->op, "(")){
+    // func_call
+    ASTList *call_params = AllocASTList(8);
+    if(bin_op->right) {
+      ASTList *arg_list = ToASTList(bin_op->right);
+      if(!arg_list) Error("arg_list is not a ASTList");
+      for(int i = 0; i < GetSizeOfASTList(arg_list); i++){
+        ASTNode *node = GetASTNodeAt(arg_list, i);
+        int dst = GetRegNumber();
+        int il_arg = GenerateIL(il, node);
+        ASTNode *il_op = AllocateASTNodeAsILOp(kILOpCallParam, dst, il_arg, REG_NULL, node);
+        PushASTNodeToList(call_params, il_op);
+      }
+    }
+    int il_target = GenerateIL(il, bin_op->left);
+    for(int i = 0; i < GetSizeOfASTList(call_params); i++){
+      PushASTNodeToList(il, GetASTNodeAt(call_params, i));
+    }
+    dst = GetRegNumber();
+    ASTNode *il_op_call = AllocateASTNodeAsILOp(kILOpCall, dst, il_target, REG_NULL, node);
+    PushASTNodeToList(il, il_op_call);
+    /*
+    Error("func %s", ident->token->str);
+    int label_for_skip = GetLabelNumber();
+    int label_str = GetLabelNumber();
+    fprintf(fp, "jmp L%d\n", label_for_skip);
+    fprintf(fp, "L%d:\n", label_str);
+    fprintf(fp, ".asciz  \"%s\"\n", token_list->tokens[2]->str);
+    fprintf(fp, "L%d:\n", label_for_skip);
+    fprintf(fp, "sub     rsp, 16\n");
+    fprintf(fp, "lea     rdi, [rip + L%d]\n", label_str);
+    fprintf(fp, "call    _%s\n", token_list->tokens[0]->str);
+    fprintf(fp, "add     rsp, 16\n");
+    */
   } else {
     Error("Not implemented GenerateILForExprBinOp (op: %s)", bin_op->op->str);
   }
@@ -63,6 +98,14 @@ int GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
 }
 
 int GenerateILForConstant(ASTList *il, ASTNode *node) {
+  int dst = GetRegNumber();
+  ASTNode *il_op =
+      AllocateASTNodeAsILOp(kILOpLoadImm, dst, REG_NULL, REG_NULL, node);
+  PushASTNodeToList(il, il_op);
+  return dst;
+}
+
+int GenerateILForIdent(ASTList *il, ASTNode *node) {
   int dst = GetRegNumber();
   ASTNode *il_op =
       AllocateASTNodeAsILOp(kILOpLoadImm, dst, REG_NULL, REG_NULL, node);
@@ -143,7 +186,10 @@ int GenerateIL(ASTList *il, ASTNode *node) {
     return GenerateILForConstant(il, node);
   } else if (node->type == kASTExprStmt) {
     return GenerateILForExprStmt(il, node);
+  } else if (node->type == kASTIdent) {
+    return GenerateILForIdent(il, node);
   } else {
+    PrintASTNode(node, 0);
     Error("Generation for AST%s is not implemented.", GetASTTypeName(node));
   }
   return -1;

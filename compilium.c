@@ -6,6 +6,9 @@ int main(int argc, char *argv[]) {
     Error("Usage: %s <src_c_file> <dst_S_file>", argv[0]);
   }
 
+  InitASTTypeName();
+  InitILOpTypeName();
+
   const char *filename = argv[1];
   char *input = ReadFile(filename);
   TokenList *tokens = AllocateTokenList(MAX_TOKENS);
@@ -16,7 +19,6 @@ int main(int argc, char *argv[]) {
   PrintTokenList(tokens);
   putchar('\n');
 
-  InitASTTypeName();
   ASTNode *ast = Parse(tokens);
 
   puts("\nAST:");

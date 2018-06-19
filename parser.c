@@ -34,7 +34,7 @@ ASTNode *ParsePrimaryExpr(TokenList *tokens, int index, int *after_index) {
     return AllocAndInitASTConstant(token);
   } else if (token->type == kIdentifier) {
     *after_index = index;
-    return ToASTNode(AllocASTIdent(token));
+    return ToASTNode(AllocAndInitASTIdent(token));
   }
   return NULL;
 }
