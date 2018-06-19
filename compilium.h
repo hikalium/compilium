@@ -218,7 +218,7 @@ ASTIdent *AllocAndInitASTIdent(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
 
-ASTNode *AllocateASTNodeAsILOp(ILOpType op, int dst_reg, int left_reg,
+ASTILOp *AllocAndInitASTILOp(ILOpType op, int dst_reg, int left_reg,
                                int right_reg, ASTNode *ast_node);
 
 const char *GetIdentStrFromDecltor(ASTDecltor *decltor);
@@ -241,7 +241,7 @@ const char *GetILOpTypeName(ILOpType type);
 void Generate(FILE *fp, ASTNode *root);
 
 // @il.c
-int GenerateIL(ASTList *il, ASTNode *node);
+ASTILOp *GenerateIL(ASTList *il, ASTNode *node);
 
 // @parser.c
 ASTNode *Parse(TokenList *tokens);

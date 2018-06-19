@@ -114,7 +114,7 @@ ASTNode* AllocAndInitASTExprBinOp(const Token* op, ASTNode* left,
   return ToASTNode(node);
 }
 
-ASTNode* AllocateASTNodeAsILOp(ILOpType op, int dst_reg, int left_reg,
+ASTILOp* AllocAndInitASTILOp(ILOpType op, int dst_reg, int left_reg,
                                int right_reg, ASTNode* ast_node) {
   ASTILOp* node = AllocASTILOp();
   node->op = op;
@@ -122,7 +122,7 @@ ASTNode* AllocateASTNodeAsILOp(ILOpType op, int dst_reg, int left_reg,
   node->left_reg = left_reg;
   node->right_reg = right_reg;
   node->ast_node = ast_node;
-  return ToASTNode(node);
+  return node;
 }
 
 const char* GetIdentStrFromDirectDecltor(ASTDirectDecltor* direct_decltor) {

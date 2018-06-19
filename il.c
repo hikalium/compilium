@@ -36,14 +36,14 @@ void GenerateILForCompStmt(ASTList *il, ASTNode *node) {
 
 void GenerateILForFuncDef(ASTList *il, ASTNode *node) {
   ASTFuncDef *def = ToASTFuncDef(node);
-  PushASTNodeToList(il, AllocateASTNodeAsILOp(kILOpFuncBegin, REG_NULL,
-                                              REG_NULL, REG_NULL, node));
+  PushASTNodeToList(il, ToASTNode(AllocAndInitASTILOp(kILOpFuncBegin, REG_NULL,
+                                              REG_NULL, REG_NULL, node)));
   GenerateILForCompStmt(il, ToASTNode(def->comp_stmt));
-  PushASTNodeToList(il, AllocateASTNodeAsILOp(kILOpFuncEnd, REG_NULL, REG_NULL,
-                                              REG_NULL, node));
+  PushASTNodeToList(il, ToASTNode(AllocAndInitASTILOp(kILOpFuncEnd, REG_NULL, REG_NULL,
+                                              REG_NULL, node)));
 }
 
-int GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
+ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
   int dst = REG_NULL;
   ASTExprBinOp *bin_op = ToASTExprBinOp(node);
   ILOpType il_op_type = kILOpNop;
@@ -56,11 +56,12 @@ int GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
   }
   if (il_op_type != kILOpNop) {
     dst = GetRegNumber();
-    int il_left = GenerateIL(il, bin_op->left);
-    int il_right = GenerateIL(il, bin_op->right);
-    ASTNode *il_op =
-        AllocateASTNodeAsILOp(il_op_type, dst, il_left, il_right, node);
-    PushASTNodeToList(il, il_op);
+    int il_left = GenerateIL(il, bin_op->left)->dst_reg;
+    int il_right = GenerateIL(il, bin_op->right)->dst_reg;
+    ASTILOp *il_op =
+        AllocAndInitASTILOp(il_op_type, dst, il_left, il_right, node);
+    PushASTNodeToList(il, ToASTNode(il_op));
+    return il_op;
   } else if (IsEqualToken(bin_op->op, "(")) {
     // func_call
     ASTList *call_params = AllocASTList(8);
@@ -74,19 +75,19 @@ int GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
         Error("IMPL param");
         /*
         ASTNode *il_op =
-            AllocateASTNodeAsILOp(kILOpCallParam, dst, il_arg, REG_NULL, node);
+            AllocAndInitASTILOp(kILOpCallParam, dst, il_arg, REG_NULL, node);
         PushASTNodeToList(call_params, il_op);
         */
       }
     }
-    int il_target = GenerateIL(il, bin_op->left);
+    int il_target = GenerateIL(il, bin_op->left)->dst_reg;
     for (int i = 0; i < GetSizeOfASTList(call_params); i++) {
       PushASTNodeToList(il, GetASTNodeAt(call_params, i));
     }
     dst = GetRegNumber();
-    ASTNode *il_op_call =
-        AllocateASTNodeAsILOp(kILOpCall, dst, il_target, REG_NULL, node);
-    PushASTNodeToList(il, il_op_call);
+    ASTILOp *il_op_call =
+        AllocAndInitASTILOp(kILOpCall, dst, il_target, REG_NULL, node);
+    PushASTNodeToList(il, ToASTNode(il_op_call));
     /*
     Error("func %s", ident->token->str);
     int label_for_skip = GetLabelNumber();
@@ -100,29 +101,29 @@ int GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
     fprintf(fp, "call    _%s\n", token_list->tokens[0]->str);
     fprintf(fp, "add     rsp, 16\n");
     */
-  } else {
-    Error("Not implemented GenerateILForExprBinOp (op: %s)", bin_op->op->str);
+    return il_op_call;
   }
-  return dst;
+  Error("Not implemented GenerateILForExprBinOp (op: %s)", bin_op->op->str);
+  return NULL;
 }
 
-int GenerateILForConstant(ASTList *il, ASTNode *node) {
+ASTILOp *GenerateILForConstant(ASTList *il, ASTNode *node) {
   int dst = GetRegNumber();
-  ASTNode *il_op =
-      AllocateASTNodeAsILOp(kILOpLoadImm, dst, REG_NULL, REG_NULL, node);
-  PushASTNodeToList(il, il_op);
-  return dst;
+  ASTILOp *il_op =
+      AllocAndInitASTILOp(kILOpLoadImm, dst, REG_NULL, REG_NULL, node);
+  PushASTNodeToList(il, ToASTNode(il_op));
+  return il_op;
 }
 
-int GenerateILForIdent(ASTList *il, ASTNode *node) {
+ASTILOp *GenerateILForIdent(ASTList *il, ASTNode *node) {
   int dst = GetRegNumber();
-  ASTNode *il_op =
-      AllocateASTNodeAsILOp(kILOpLoadIdent, dst, REG_NULL, REG_NULL, node);
-  PushASTNodeToList(il, il_op);
-  return dst;
+  ASTILOp *il_op =
+      AllocAndInitASTILOp(kILOpLoadIdent, dst, REG_NULL, REG_NULL, node);
+  PushASTNodeToList(il, ToASTNode(il_op));
+  return il_op;
 }
 
-int GenerateILForExprStmt(ASTList *il, ASTNode *node) {
+ASTILOp *GenerateILForExprStmt(ASTList *il, ASTNode *node) {
   // https://wiki.osdev.org/System_V_ABI
   const ASTExprStmt *expr_stmt = ToASTExprStmt(node);
   return GenerateIL(il, expr_stmt->expr);
@@ -160,22 +161,21 @@ int GenerateILForExprStmt(ASTList *il, ASTNode *node) {
   */
 }
 
-int GenerateILForJumpStmt(ASTList *il, ASTNode *node) {
+ASTILOp *GenerateILForJumpStmt(ASTList *il, ASTNode *node) {
   ASTJumpStmt *jump_stmt = ToASTJumpStmt(node);
   if (IsEqualToken(jump_stmt->kw->token, "return")) {
-    int expr_reg = GenerateILForExprStmt(il, jump_stmt->param);
+    int expr_reg = GenerateILForExprStmt(il, jump_stmt->param)->dst_reg;
 
-    ASTNode *il_op =
-        AllocateASTNodeAsILOp(kILOpReturn, REG_NULL, expr_reg, REG_NULL, node);
-    PushASTNodeToList(il, il_op);
-  } else {
-    Error("Not implemented JumpStmt (%s)", jump_stmt->kw->token->str);
+    ASTILOp *il_op =
+        AllocAndInitASTILOp(kILOpReturn, REG_NULL, expr_reg, REG_NULL, node);
+    PushASTNodeToList(il, ToASTNode(il_op));
+    return il_op;
   }
-
-  return REG_NULL;
+  Error("Not implemented JumpStmt (%s)", jump_stmt->kw->token->str);
+  return NULL;
 }
 
-int GenerateIL(ASTList *il, ASTNode *node) {
+ASTILOp *GenerateIL(ASTList *il, ASTNode *node) {
   printf("GenerateIL: AST%s...\n", GetASTTypeName(node));
   if (node->type == kASTList) {
     // translation-unit
@@ -186,7 +186,7 @@ int GenerateIL(ASTList *il, ASTNode *node) {
         GenerateILForFuncDef(il, child_node);
       }
     }
-    return -1;
+    return NULL;
   } else if (node->type == kASTJumpStmt) {
     return GenerateILForJumpStmt(il, node);
   } else if (node->type == kASTExprBinOp) {
@@ -197,9 +197,8 @@ int GenerateIL(ASTList *il, ASTNode *node) {
     return GenerateILForExprStmt(il, node);
   } else if (node->type == kASTIdent) {
     return GenerateILForIdent(il, node);
-  } else {
-    PrintASTNode(node, 0);
-    Error("Generation for AST%s is not implemented.", GetASTTypeName(node));
   }
-  return -1;
+  PrintASTNode(node, 0);
+  Error("Generation for AST%s is not implemented.", GetASTTypeName(node));
+  return NULL;
 }
