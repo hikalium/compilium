@@ -26,6 +26,8 @@ void InitASTTypeName() {
   ASTTypeName[kASTDecltor] = "Decltor";
   ASTTypeName[kASTDirectDecltor] = "DirectDecltor";
   ASTTypeName[kASTIdent] = "Ident";
+  ASTTypeName[kASTDecl] = "Decl";
+  ASTTypeName[kASTParamDecl] = "ParamDecl";
 }
 
 const char* ILOpTypeStr[kNumOfILOpFunc];
@@ -68,6 +70,7 @@ GenToAST(DirectDecltor);
 GenToAST(Ident);
 GenToAST(Decl);
 GenToAST(ParamDecl);
+GenToAST(Pointer);
 
 #define GenAllocAST(Type) \
   AST##Type* AllocAST##Type() { \
@@ -91,6 +94,7 @@ GenAllocAST(DirectDecltor);
 GenAllocAST(Ident);
 GenAllocAST(Decl);
 GenAllocAST(ParamDecl);
+GenAllocAST(Pointer);
 
 ASTList* AllocASTList(int capacity) {
   ASTList* list = malloc(sizeof(ASTList) + sizeof(ASTNode*) * capacity);
@@ -250,6 +254,16 @@ void PrintASTNode(ASTNode* node, int depth) {
   } else if (node->type == kASTIdent) {
     ASTIdent* ident = ToASTIdent(node);
     PrintTokenWithName(depth + 1, "token=", ident->token);
+  } else if (node->type == kASTDecl) {
+    ASTDecl* decl = ToASTDecl(node);
+    PrintASTNodeWithName(depth + 1, "decl_specs=", ToASTNode(decl->decl_specs));
+    PrintASTNodeWithName(depth + 1,
+                         "init_decltors=", ToASTNode(decl->init_decltors));
+  } else if (node->type == kASTParamDecl) {
+    ASTParamDecl* param_decl = ToASTParamDecl(node);
+    PrintASTNodeWithName(depth + 1,
+                         "decl_specs=", ToASTNode(param_decl->decl_specs));
+    PrintASTNodeWithName(depth + 1, "decltor=", ToASTNode(param_decl->decltor));
   } else {
     Error("PrintASTNode not implemented for type %d (%s)", node->type,
           ASTTypeName[node->type] ? ASTTypeName[node->type] : "?");

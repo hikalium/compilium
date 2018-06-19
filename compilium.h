@@ -17,6 +17,8 @@ typedef enum {
 typedef struct {
   char str[MAX_TOKEN_LEN + 1];
   TokenType type;
+  const char *filename;
+  int line;
 } Token;
 
 typedef struct TOKEN_LIST TokenList;
@@ -38,6 +40,7 @@ typedef enum {
   kASTIdent,
   kASTDecl,
   kASTParamDecl,
+  kASTPointer,
   //
   kNumOfASTType
 } ASTType;
@@ -135,6 +138,26 @@ struct AST_DIRECT_DECLTOR {
 
 typedef struct {
   ASTType type;
+  ASTList *decl_specs;
+  ASTList *init_decltors;
+  ;
+} ASTDecl;
+
+typedef struct {
+  ASTType type;
+  ASTList *decl_specs;
+  ASTNode *decltor;
+} ASTParamDecl;
+
+typedef struct AST_POINTER ASTPointer;
+struct AST_POINTER {
+  ASTType type;
+  ASTPointer *pointer;
+};
+
+typedef struct {
+  ASTType type;
+  ASTPointer *pointer;
   ASTDirectDecltor *direct_decltor;
 } ASTDecltor;
 
@@ -144,18 +167,6 @@ typedef struct {
   ASTDecltor *decltor;
   ASTCompStmt *comp_stmt;
 } ASTFuncDef;
-
-typedef struct {
-  ASTType type;
-  ASTList *decl_specs;
-  ASTList *init_decltors;;
-} ASTDecl;
-
-typedef struct {
-  ASTType type;
-  ASTList *decl_specs;
-  ASTNode *decltor;
-} ASTParamDecl;
 
 // @st.c
 void InitASTTypeName();
@@ -178,6 +189,7 @@ DefToAST(DirectDecltor);
 DefToAST(Ident);
 DefToAST(Decl);
 DefToAST(ParamDecl);
+DefToAST(Pointer);
 
 #define DefAllocAST(type) AST##type *AllocAST##type()
 DefAllocAST(FuncDecl);
@@ -196,7 +208,7 @@ DefAllocAST(DirectDecltor);
 DefAllocAST(Ident);
 DefAllocAST(Decl);
 DefAllocAST(ParamDecl);
-
+DefAllocAST(Pointer);
 
 ASTNode *AllocAndInitASTConstant(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
@@ -228,7 +240,8 @@ ASTNode *Parse(TokenList *tokens);
 // @token.c
 Token *AllocateToken(const char *s, TokenType type);
 Token *AllocateTokenWithSubstring(const char *begin, const char *end,
-                                  TokenType type);
+                                  TokenType type, const char *filename,
+                                  int line);
 int IsEqualToken(const Token *token, const char *s);
 int IsKeyword(const Token *token);
 int IsTypeToken(const Token *token);
@@ -243,4 +256,4 @@ void PrintTokenList(const TokenList *list);
 
 // @tokenizer.c
 char *ReadFile(const char *file_name);
-void Tokenize(TokenList *tokens, const char *p);
+void Tokenize(TokenList *tokens, const char *p, const char *filename);

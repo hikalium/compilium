@@ -16,7 +16,6 @@ ASTList *ParseCommaSeparatedList(TokenList *tokens, int index, int *after_index,
     node = elem_parser(tokens, index, &index);
     if (!node) return NULL;
     PushASTNodeToList(list, node);
-    index++;
 
     token = GetTokenAt(tokens, index);
     if (!IsEqualToken(token, ",")) break;
@@ -293,12 +292,12 @@ ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index,
         //
         ASTList *list;
         list = ParseParamTypeList(tokens, index, &index);
-        if(!list) list = ParseIdentList(tokens, index, &index);
+        if (!list) list = ParseIdentList(tokens, index, &index);
         // Identlist can be null
         token = GetTokenAt(tokens, index);
         if (IsEqualToken(token, ")")) {
-          index++;
           if (!last_direct_decltor) break;
+          index++;
           //
           ASTDirectDecltor *direct_decltor = AllocASTDirectDecltor();
           direct_decltor->direct_decltor = last_direct_decltor;
@@ -310,19 +309,32 @@ ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index,
     }
     break;
   }
+  printf("ParseDirectDecltor: after_index = %d\n", index);
   *after_index = index;
   return last_direct_decltor;
 }
 
+ASTPointer *ParsePointer(TokenList *tokens, int index, int *after_index) {
+  const Token *token = GetTokenAt(tokens, index++);
+  if (!IsEqualToken(token, "*")) return NULL;
+  // TODO: impl type-qual-list(opt)
+  ASTPointer *pointer = AllocASTPointer();
+  pointer->pointer = ParsePointer(tokens, index, &index);
+  *after_index = index;
+  return pointer;
+}
+
 ASTDecltor *ParseDecltor(TokenList *tokens, int index, int *after_index) {
   // declarator
-  // TODO: Impl pointer(opt)
+  ASTPointer *pointer = ParsePointer(tokens, index, &index);  // optional
   ASTDirectDecltor *direct_decltor = ParseDirectDecltor(tokens, index, &index);
   if (!direct_decltor) {
     return NULL;
   }
   ASTDecltor *decltor = AllocASTDecltor();
+  decltor->pointer = pointer;
   decltor->direct_decltor = direct_decltor;
+  printf("ParseDecltor: after_index = %d\n", index);
   *after_index = index;
   return decltor;
 }
@@ -368,7 +380,7 @@ ASTList *ParseDeclSpecs(TokenList *tokens, int index, int *after_index) {
   ASTNode *node;
   for (;;) {
     node = ParseTypeSpec(tokens, index, &index);
-    if(!node) node = ToASTNode(ParseTypeQual(tokens, index, &index));
+    if (!node) node = ToASTNode(ParseTypeQual(tokens, index, &index));
     if (!node) break;
     PushASTNodeToList(list, node);
   }
@@ -411,8 +423,15 @@ ASTList *ParseInitDecltors(TokenList *tokens, int index, int *after_index) {
 
 ASTDecl *ParseDecl(TokenList *tokens, int index, int *after_index) {
   ASTList *decl_specs = ParseDeclSpecs(tokens, index, &index);
-  if (!decl_specs) return NULL;
+  if (!decl_specs) {
+    printf("decl_specs null");
+    return NULL;
+  }
   ASTList *init_decltors = ParseInitDecltors(tokens, index, &index);
+  // init_decltors is optional
+  if (!IsEqualToken(GetTokenAt(tokens, index++), ";")) {
+    return NULL;
+  }
   //
   *after_index = index;
   ASTDecl *decl = AllocASTDecl();
@@ -428,12 +447,17 @@ ASTNode *ParseTranslationUnit(TokenList *tokens, int index, int *after_index) {
   ASTNode *node;
   for (;;) {
     node = ParseFuncDef(tokens, index, &index);
+    if (!node) node = ToASTNode(ParseDecl(tokens, index, &index));
     if (node) {
+      printf("Read in TopLevel: ");
+      PrintASTNode(node, 0);
       PushASTNodeToList(list, node);
       continue;
     }
     if (index != GetSizeOfTokenList(tokens)) {
-      Error("Unexpected Token %s", GetTokenAt(tokens, index)->str);
+      const Token *token = GetTokenAt(tokens, index);
+      Error("Unexpected Token %s (%s:%d)", token->str, token->filename,
+            token->line);
     }
     break;
   }

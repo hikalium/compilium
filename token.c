@@ -19,10 +19,13 @@ Token *AllocateToken(const char *s, TokenType type) {
 }
 
 Token *AllocateTokenWithSubstring(const char *begin, const char *end,
-                                  TokenType type) {
+                                  TokenType type, const char *filename,
+                                  int line) {
   Token *token = malloc(sizeof(Token));
   InternalCopyTokenStr(token, begin, end - begin);
   token->type = type;
+  token->filename = filename;
+  token->line = line;
   return token;
 }
 

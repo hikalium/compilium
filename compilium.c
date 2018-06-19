@@ -6,9 +6,10 @@ int main(int argc, char *argv[]) {
     Error("Usage: %s <src_c_file> <dst_S_file>", argv[0]);
   }
 
-  char *input = ReadFile(argv[1]);
+  const char *filename = argv[1];
+  char *input = ReadFile(filename);
   TokenList *tokens = AllocateTokenList(MAX_TOKENS);
-  Tokenize(tokens, input);
+  Tokenize(tokens, input, argv[1]);
   free(input);
 
   puts("\nTokens:");
