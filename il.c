@@ -62,6 +62,9 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
         AllocAndInitASTILOp(il_op_type, dst, il_left, il_right, node);
     PushASTNodeToList(il, ToASTNode(il_op));
     return il_op;
+  } else if (IsEqualToken(bin_op->op, ",")) {
+    GenerateIL(il, bin_op->left);
+    return GenerateIL(il, bin_op->right);
   } else if (IsEqualToken(bin_op->op, "(")) {
     // func_call
     // call_params = [func_addr: ILOp, arg1: ILOp, arg2: ILOp, ...]

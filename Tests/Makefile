@@ -3,6 +3,7 @@ TESTS = simple_return \
 		simple_return_with_bin_op_minus \
 		simple_return_with_bin_op_mul \
 		simple_return_with_bin_op_mixed_priority \
+		simple_return_with_comma_op \
 		hello_world
 
 default: $(addsuffix .test, $(TESTS))
@@ -13,23 +14,23 @@ FORCE:
 .SECONDARY:
 
 %.clang.bin : %.c Makefile
-	@ clang -o $@ $*.c
-
-%.clang.S : %.c Makefile
-	@ clang -S -mllvm --x86-asm-syntax=intel -o $@ $*.c
+	@ rm $@ $*.compilium.log &> /dev/null; \
+		{ clang -o $@ $*.c &> $*.clang.log; } \
+		|| { echo "FAIL $@"; cat $*.clang.log; false; }
 
 ../compilium: FORCE
 	@ make -C ..
 
 %.compilium.S : %.c Makefile ../compilium FORCE
-	@ rm $@ $*.compilium.log; \
-		../compilium $*.c $@ &> $*.compilium.log || { echo "FAIL"; cat $*.compilium.log; false; }
+	@ rm $@ $*.compilium.log &> /dev/null; \
+		../compilium $*.c $@ &> $*.compilium.log \
+		|| { echo "FAIL $@"; cat $*.compilium.log; false; }
 
 %.bin : %.S Makefile FORCE
 	@ clang -o $@ $*.S
 
 %.test : %.clang.bin %.compilium.bin Makefile FORCE
-	@ rm $*.clang.bin.stdout $*.compilium.bin.stdout; \
+	@ rm $*.clang.bin.stdout $*.compilium.bin.stdout &> /dev/null; \
 		./$*.clang.bin > $*.clang.bin.stdout; expected=$$?; \
 		./$*.compilium.bin > $*.compilium.bin.stdout; actual=$$?; \
 		if [ $$expected = $$actual ]; then \
