@@ -240,6 +240,9 @@ void InitILOpTypeName();
 const char *GetILOpTypeName(ILOpType type);
 void Generate(FILE *fp, ASTNode *root);
 
+// @il.c
+int GenerateIL(ASTList *il, ASTNode *node);
+
 // @parser.c
 ASTNode *Parse(TokenList *tokens);
 

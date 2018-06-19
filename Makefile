@@ -1,5 +1,5 @@
 CFLAGS=-Wall -Wpedantic -std=c11 -Wno-extra-semi
-SRCS=ast.c error.c generate.c parser.c token.c tokenizer.c
+SRCS=ast.c error.c generate.c il.c parser.c token.c tokenizer.c
 MAIN_SRCS=compilium.c
 HEADERS=compilium.h
 
