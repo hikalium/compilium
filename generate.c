@@ -27,7 +27,7 @@ void GenerateCode(FILE *fp, ASTList *il) {
         Error("func_name is null");
       }
       fprintf(fp, ".global _%s\n", func_name);
-      printf("found func: %s\n", func_name);
+      fprintf(fp, ".global %s\n", func_name);
     }
   }
   // generate code
@@ -45,6 +45,7 @@ void GenerateCode(FILE *fp, ASTList *il) {
           Error("func_name is null");
         }
         fprintf(fp, "_%s:\n", func_name);
+        fprintf(fp, "%s:\n", func_name);
         fprintf(fp, "push    rbp\n");
         fprintf(fp, "mov     rbp, rsp\n");
       } break;

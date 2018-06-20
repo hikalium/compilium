@@ -15,7 +15,7 @@ FORCE:
 
 %.clang.bin : %.c Makefile
 	@ rm $@ $*.compilium.log &> /dev/null; \
-		{ clang -o $@ $*.c &> $*.clang.log; } \
+		{ gcc -o $@ $*.c &> $*.clang.log; } \
 		|| { echo "FAIL $@"; cat $*.clang.log; false; }
 
 ../compilium: FORCE
@@ -27,7 +27,7 @@ FORCE:
 		|| { echo "FAIL $@"; cat $*.compilium.log; false; }
 
 %.bin : %.S Makefile FORCE
-	@ clang -o $@ $*.S
+	@ gcc -o $@ $*.S
 
 %.test : %.clang.bin %.compilium.bin Makefile FORCE
 	@ rm $*.clang.bin.stdout $*.compilium.bin.stdout &> /dev/null; \
