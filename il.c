@@ -36,11 +36,12 @@ void GenerateILForCompStmt(ASTList *il, ASTNode *node) {
 
 void GenerateILForFuncDef(ASTList *il, ASTNode *node) {
   ASTFuncDef *def = ToASTFuncDef(node);
-  PushASTNodeToList(il, ToASTNode(AllocAndInitASTILOp(kILOpFuncBegin, REG_NULL,
-                                              REG_NULL, REG_NULL, node)));
+  PushASTNodeToList(
+      il, ToASTNode(AllocAndInitASTILOp(kILOpFuncBegin, REG_NULL, REG_NULL,
+                                        REG_NULL, node)));
   GenerateILForCompStmt(il, ToASTNode(def->comp_stmt));
-  PushASTNodeToList(il, ToASTNode(AllocAndInitASTILOp(kILOpFuncEnd, REG_NULL, REG_NULL,
-                                              REG_NULL, node)));
+  PushASTNodeToList(il, ToASTNode(AllocAndInitASTILOp(
+                            kILOpFuncEnd, REG_NULL, REG_NULL, REG_NULL, node)));
 }
 
 ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
@@ -71,9 +72,9 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
     ASTList *call_params = AllocASTList(8);
 
     // func_addr
-    if(bin_op->left->type == kASTIdent){
+    if (bin_op->left->type == kASTIdent) {
       PushASTNodeToList(call_params, bin_op->left);
-    } else{
+    } else {
       Error("Calling non-labeled function is not implemented.");
     }
 
@@ -86,8 +87,8 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
         PushASTNodeToList(call_params, ToASTNode(GenerateIL(il, node)));
       }
     }
-    ASTILOp *il_op_call =
-        AllocAndInitASTILOp(kILOpCall, GetRegNumber(), REG_NULL, REG_NULL, ToASTNode(call_params));
+    ASTILOp *il_op_call = AllocAndInitASTILOp(
+        kILOpCall, GetRegNumber(), REG_NULL, REG_NULL, ToASTNode(call_params));
     PushASTNodeToList(il, ToASTNode(il_op_call));
     return il_op_call;
   }

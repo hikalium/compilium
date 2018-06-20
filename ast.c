@@ -115,7 +115,7 @@ ASTNode* AllocAndInitASTExprBinOp(const Token* op, ASTNode* left,
 }
 
 ASTILOp* AllocAndInitASTILOp(ILOpType op, int dst_reg, int left_reg,
-                               int right_reg, ASTNode* ast_node) {
+                             int right_reg, ASTNode* ast_node) {
   ASTILOp* node = AllocASTILOp();
   node->op = op;
   node->dst_reg = dst_reg;

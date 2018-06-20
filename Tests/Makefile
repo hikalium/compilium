@@ -23,7 +23,7 @@ FORCE:
 
 %.compilium.S : %.c Makefile ../compilium FORCE
 	@ rm $@ $*.compilium.log &> /dev/null; \
-		../compilium $*.c $@ &> $*.compilium.log \
+		../compilium $*.c $@ `uname` &> $*.compilium.log \
 		|| { echo "FAIL $@"; cat $*.compilium.log; false; }
 
 %.bin : %.S Makefile FORCE

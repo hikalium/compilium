@@ -26,8 +26,8 @@ void GenerateCode(FILE *fp, ASTList *il) {
       if (!func_name) {
         Error("func_name is null");
       }
-      fprintf(fp, ".global _%s\n", func_name);
-      fprintf(fp, ".global %s\n", func_name);
+      fprintf(fp, ".global %s%s\n", kernel_type == kKernelDarwin ? "_" : "",
+              func_name);
     }
   }
   // generate code
@@ -44,8 +44,8 @@ void GenerateCode(FILE *fp, ASTList *il) {
         if (!func_name) {
           Error("func_name is null");
         }
-        fprintf(fp, "_%s:\n", func_name);
-        fprintf(fp, "%s:\n", func_name);
+        fprintf(fp, "%s%s:\n", kernel_type == kKernelDarwin ? "_" : "",
+                func_name);
         fprintf(fp, "push    rbp\n");
         fprintf(fp, "mov     rbp, rsp\n");
       } break;
@@ -89,8 +89,8 @@ void GenerateCode(FILE *fp, ASTList *il) {
         ASTIdent *ident = ToASTIdent(op->ast_node);
         switch (ident->token->type) {
           case kIdentifier: {
-            fprintf(fp, "lea     %s, [rip + _%s]\n", dst_name,
-                    ident->token->str);
+            fprintf(fp, "lea     %s, [rip + %s%s]\n", dst_name,
+                    kernel_type == kKernelDarwin ? "_" : "", ident->token->str);
           } break;
           default:
             Error("kILOpLoadIdent: not implemented for token type %d",
@@ -125,14 +125,16 @@ void GenerateCode(FILE *fp, ASTList *il) {
         fprintf(fp, "mov rax, %s\n", left);
       } break;
       case kILOpCall: {
-         ASTList *call_params = ToASTList(op->ast_node);
-         if(!call_params) Error("call_params is not an ASTList");
-         for(int i = 1; i < GetSizeOfASTList(call_params); i++){
-           fprintf(fp, "mov rdi, %s\n", ScratchRegNames[ToASTILOp(GetASTNodeAt(call_params, i))->dst_reg]);
-         }
-         ASTIdent *func_ident = ToASTIdent(GetASTNodeAt(call_params, 0));
-         if(!func_ident) Error("call_params[0] is not an ASTIdent");
-         fprintf(fp, "call _%s\n", func_ident->token->str);
+        ASTList *call_params = ToASTList(op->ast_node);
+        if (!call_params) Error("call_params is not an ASTList");
+        for (int i = 1; i < GetSizeOfASTList(call_params); i++) {
+          fprintf(fp, "mov rdi, %s\n",
+                  ScratchRegNames[ToASTILOp(GetASTNodeAt(call_params, i))
+                                      ->dst_reg]);
+        }
+        ASTIdent *func_ident = ToASTIdent(GetASTNodeAt(call_params, 0));
+        if (!func_ident) Error("call_params[0] is not an ASTIdent");
+        fprintf(fp, "call _%s\n", func_ident->token->str);
       } break;
       default:
         Error("Not implemented code generation for ILOp%s",

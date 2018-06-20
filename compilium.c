@@ -1,9 +1,19 @@
 #include "compilium.h"
 
+KernelType kernel_type = kKernelDarwin;
+
 #define MAX_TOKENS 2048
 int main(int argc, char *argv[]) {
   if (argc < 3) {
-    Error("Usage: %s <src_c_file> <dst_S_file>", argv[0]);
+    Error("Usage: %s <src_c_file> <dst_S_file> (<kernel_type>)", argv[0]);
+  }
+  if (argc >= 4) {
+    if (strcmp(argv[3], "Darwin") == 0)
+      kernel_type = kKernelDarwin;
+    else if (strcmp(argv[3], "Linux") == 0)
+      kernel_type = kKernelLinux;
+    else
+      Error("Unknown kernel type %s", argv[3]);
   }
 
   InitASTTypeName();

@@ -51,6 +51,11 @@ typedef enum {
   kNumOfILOpFunc
 } ILOpType;
 
+typedef enum {
+  kKernelDarwin,
+  kKernelLinux,
+} KernelType;
+
 typedef struct TOKEN_LIST TokenList;
 typedef struct AST_LIST ASTList;
 
@@ -170,7 +175,7 @@ typedef struct {
   ASTCompStmt *comp_stmt;
 } ASTFuncDef;
 
-// @st.c
+// @ast.c
 void InitASTTypeName();
 const char *GetASTTypeName(ASTNode *node);
 
@@ -219,7 +224,7 @@ ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
 
 ASTILOp *AllocAndInitASTILOp(ILOpType op, int dst_reg, int left_reg,
-                               int right_reg, ASTNode *ast_node);
+                             int right_reg, ASTNode *ast_node);
 
 const char *GetIdentStrFromDecltor(ASTDecltor *decltor);
 const char *GetIdentStrFromDecltor(ASTDecltor *decltor);
@@ -231,6 +236,9 @@ ASTNode *PopASTNodeFromList(ASTList *list);
 ASTNode *GetASTNodeAt(const ASTList *list, int index);
 int GetSizeOfASTList(const ASTList *list);
 ASTNode *GetLastASTNode(const ASTList *list);
+
+// @compilium.c
+extern KernelType kernel_type;
 
 // @error.c
 void Error(const char *fmt, ...);
