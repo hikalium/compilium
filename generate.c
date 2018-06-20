@@ -134,7 +134,8 @@ void GenerateCode(FILE *fp, ASTList *il) {
         }
         ASTIdent *func_ident = ToASTIdent(GetASTNodeAt(call_params, 0));
         if (!func_ident) Error("call_params[0] is not an ASTIdent");
-        fprintf(fp, "call _%s\n", func_ident->token->str);
+        fprintf(fp, ".global %s%s\n", kernel_type == kKernelDarwin ? "_" : "", func_ident->token->str);
+        fprintf(fp, "call %s%s\n", kernel_type == kKernelDarwin ? "_" : "", func_ident->token->str);
       } break;
       default:
         Error("Not implemented code generation for ILOp%s",

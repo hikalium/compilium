@@ -1,3 +1,4 @@
+SHELL=/bin/bash
 TESTS = simple_return \
 		simple_return_with_bin_op_plus \
 		simple_return_with_bin_op_minus \
@@ -30,8 +31,8 @@ FORCE:
 	@ gcc -o $@ $*.S
 
 %.test : %.clang.bin %.compilium.bin Makefile FORCE
-	@ rm $*.clang.bin.stdout $*.compilium.bin.stdout &> /dev/null; \
-		./$*.clang.bin > $*.clang.bin.stdout; expected=$$?; \
+	@ rm $*.clang.bin.stdout $*.compilium.bin.stdout &> /dev/null; true
+	@ ./$*.clang.bin > $*.clang.bin.stdout; expected=$$?; \
 		./$*.compilium.bin > $*.compilium.bin.stdout; actual=$$?; \
 		if [ $$expected = $$actual ]; then \
 		{ diff -u $*.clang.bin.stdout $*.compilium.bin.stdout \
@@ -40,4 +41,7 @@ FORCE:
 		} else \
 		echo "FAIL $*: expected $$expected but got $$actual"; \
 		fi
+
+clean:
+	-rm *.bin *.stdout *.S
 
