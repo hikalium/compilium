@@ -22,7 +22,7 @@ debug: compilium_dbg
 	lldb ./compilium_dbg Tests/sample.c Tests/sample.compilium.S
 
 test: compilium
-	@ make -C Tests/ > test_result.txt && ! grep FAIL test_result.txt  && echo "All tests passed"
+	@ make -C Tests/ | tee test_result.txt && ! grep FAIL test_result.txt  && echo "All tests passed"
 
 unittest: compilium_unittest
 	./compilium_unittest
