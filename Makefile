@@ -12,9 +12,6 @@ compilium: $(MAIN_SRCS) $(SRCS) $(HEADERS) Makefile
 compilium_dbg: $(MAIN_SRCS) $(SRCS) $(HEADERS) Makefile
 	$(CC) $(CFLAGS) -g -o $@ $(MAIN_SRCS) $(SRCS)
 
-compilium_unittest: unittest.c $(SRCS) $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -o $@ unittest.c $(SRCS)
-
 run: compilium
 	make -C $(dir $(RUN_TARGET)) $(notdir $(RUN_TARGET)).compilium.bin; \
 	cat $(RUN_TARGET).compilium.log
@@ -24,9 +21,6 @@ debug: compilium_dbg
 
 test: compilium
 	@ make -C Tests/ | tee test_result.txt && ! grep FAIL test_result.txt  && echo "All tests passed"
-
-unittest: compilium_unittest
-	./compilium_unittest
 
 clean:
 	-rm compilium
