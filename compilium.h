@@ -220,6 +220,7 @@ DefAllocAST(Pointer);
 
 ASTNode *AllocAndInitASTConstant(const Token *token);
 ASTIdent *AllocAndInitASTIdent(const Token *token);
+ASTKeyword *AllocAndInitASTKeyword(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
 

@@ -22,8 +22,8 @@ const char *GetILOpTypeName(ILOpType type) {
 }
 
 int GetRegNumber() {
-  static int num = 0;
-  return ++num;
+  static int num = 2;
+  return num++;
 }
 
 void GenerateILForCompStmt(ASTList *il, ASTNode *node) {

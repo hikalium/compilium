@@ -5,6 +5,7 @@ TESTS = simple_return \
 		simple_return_with_bin_op_mul \
 		simple_return_with_bin_op_mixed_priority \
 		simple_return_with_comma_op \
+		printf \
 		hello_world
 
 default: $(addsuffix .test, $(TESTS))

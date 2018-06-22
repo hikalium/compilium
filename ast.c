@@ -105,6 +105,12 @@ ASTIdent* AllocAndInitASTIdent(const Token* token) {
   return node;
 }
 
+ASTKeyword* AllocAndInitASTKeyword(const Token* token) {
+  ASTKeyword* node = AllocASTKeyword();
+  node->token = token;
+  return node;
+}
+
 ASTNode* AllocAndInitASTExprBinOp(const Token* op, ASTNode* left,
                                   ASTNode* right) {
   ASTExprBinOp* node = AllocASTExprBinOp();

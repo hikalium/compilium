@@ -16,14 +16,13 @@ ASTList *ParseCommaSeparatedList(TokenList *tokens, int index, int *after_index,
   const Token *token;
   for (;;) {
     node = elem_parser(tokens, index, &index);
-    if (!node) return NULL;
+    if (!node) break;
+    *after_index = index;
     PushASTNodeToList(list, node);
 
-    token = GetTokenAt(tokens, index);
+    token = GetTokenAt(tokens, index++);
     if (!IsEqualToken(token, ",")) break;
-    index++;
   }
-  *after_index = index;
   return list;
 }
 
@@ -310,7 +309,19 @@ ASTList *ParseParamList(TokenList *tokens, int index, int *after_index) {
 ASTList *ParseParamTypeList(TokenList *tokens, int index, int *after_index) {
   // parameter-type-list
   // TODO: Impl ", ..." case
-  return ParseParamList(tokens, index, after_index);
+  ASTList *list = ParseParamList(tokens, index, after_index);
+  index = *after_index;
+  //
+  const Token *token;
+  token = GetTokenAt(tokens, index++);
+  PrintToken(token);
+  if (!IsEqualToken(token, ",")) return list;
+  token = GetTokenAt(tokens, index++);
+  PrintToken(token);
+  if (!IsEqualToken(token, "...")) return list;
+  PushASTNodeToList(list, ToASTNode(AllocAndInitASTKeyword(token)));
+  *after_index = index;
+  return list;
 }
 
 ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index,
