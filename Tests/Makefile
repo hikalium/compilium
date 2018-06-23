@@ -6,7 +6,8 @@ TESTS = simple_return \
 		simple_return_with_bin_op_mixed_priority \
 		simple_return_with_comma_op \
 		printf \
-		hello_world
+		hello_world \
+		tokenize_tab
 
 default: $(addsuffix .test, $(TESTS))
 
