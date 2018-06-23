@@ -121,7 +121,7 @@ const char *CommonTokenizer(TokenList *tokens, const char *p,
 const char *Preprocess(TokenList *tokens, const char *p) {
   int org_num_of_token = GetSizeOfTokenList(tokens);
   do {
-    if (*p == ' ') {
+    if (*p == ' ' || *p == '\t') {
       p++;
     } else if (*p == '\n') {
       p++;
@@ -160,7 +160,7 @@ const char *Preprocess(TokenList *tokens, const char *p) {
 void Tokenize(TokenList *tokens, const char *p, const char *filename) {
   int line = 1;
   do {
-    if (*p == ' ') {
+    if (*p == ' ' || *p == '\t') {
       p++;
     } else if (*p == '\n') {
       p++;
