@@ -24,6 +24,9 @@ FORCE:
 ../compilium: FORCE
 	@ make -C ..
 
+%.clang.S : %.c Makefile FORCE
+	clang -O0 -S -o $*.clang.S $*.c
+
 %.compilium.S : %.c Makefile ../compilium FORCE
 	@ rm $@ $*.compilium.log &> /dev/null; \
 		../compilium $*.c $@ `uname` &> $*.compilium.log \
@@ -45,5 +48,5 @@ FORCE:
 		fi
 
 clean:
-	-rm *.bin *.stdout *.S
+	-rm *.bin *.stdout *.S *.s *.log
 
