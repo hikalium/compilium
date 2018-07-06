@@ -188,6 +188,7 @@ ASTILOp *GenerateIL(ASTList *il, ASTNode *node) {
     return GenerateILForIdent(il, node);
   }
   PrintASTNode(node, 0);
-  Error("Generation for AST%s is not implemented.", GetASTTypeName(node));
+  putchar('\n');
+  Error("IL Generation for AST%s is not implemented.", GetASTTypeName(node));
   return NULL;
 }

@@ -1,9 +1,8 @@
 #include "compilium.h"
 
-KernelType kernel_type = kKernelDarwin;
-
 #define MAX_TOKENS 2048
 int main(int argc, char *argv[]) {
+  KernelType kernel_type = kKernelDarwin;
   if (argc < 3) {
     Error("Usage: %s <src_c_file> <dst_S_file> (<kernel_type>)", argv[0]);
   }
@@ -40,7 +39,7 @@ int main(int argc, char *argv[]) {
   if (!dst_fp) {
     Error("Failed to open %s", argv[2]);
   }
-  Generate(dst_fp, ast);
+  Generate(dst_fp, ast, kernel_type);
   fclose(dst_fp);
 
   return 0;

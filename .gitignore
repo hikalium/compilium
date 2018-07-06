@@ -56,3 +56,4 @@ compilium
 compilium_dbg
 compilium_unittest
 *.txt
+*.unittest

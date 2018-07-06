@@ -160,7 +160,7 @@ const char *GetParamRegister(int param_index) {
   return ScratchRegNames[param_index];
 }
 
-void GenerateCode(FILE *fp, ASTList *il) {
+void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
   fputs(".intel_syntax noprefix\n", fp);
   // generate func symbol
   for (int i = 0; i < GetSizeOfASTList(il); i++) {
@@ -293,12 +293,12 @@ void GenerateCode(FILE *fp, ASTList *il) {
 }
 
 #define MAX_IL_NODES 2048
-void Generate(FILE *fp, ASTNode *root) {
+void Generate(FILE *fp, ASTNode *root, KernelType kernel_type) {
   ASTList *intermediate_code = AllocASTList(MAX_IL_NODES);
 
   GenerateIL(intermediate_code, root);
   PrintASTNode(ToASTNode(intermediate_code), 0);
   putchar('\n');
 
-  GenerateCode(fp, intermediate_code);
+  GenerateCode(fp, intermediate_code, kernel_type);
 }

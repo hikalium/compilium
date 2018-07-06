@@ -9,6 +9,18 @@ struct AST_LIST {
   ASTNode* nodes[];
 };
 
+typedef struct {
+  const char* key;
+  ASTNode* value;
+} ASTDictEntry;
+
+struct AST_DICT {
+  ASTType type;
+  int capacity;
+  int size;
+  ASTDictEntry entries[];
+};
+
 const char* ASTTypeName[kNumOfASTType];
 
 void InitASTTypeName() {
@@ -28,6 +40,7 @@ void InitASTTypeName() {
   ASTTypeName[kASTIdent] = "Ident";
   ASTTypeName[kASTDecl] = "Decl";
   ASTTypeName[kASTParamDecl] = "ParamDecl";
+  ASTTypeName[kASTDict] = "Dict";
 }
 
 const char* GetASTTypeName(ASTNode* node) {
@@ -60,6 +73,7 @@ GenToAST(Ident);
 GenToAST(Decl);
 GenToAST(ParamDecl);
 GenToAST(Pointer);
+GenToAST(Dict);
 
 #define GenAllocAST(Type) \
   AST##Type* AllocAST##Type() { \
@@ -91,6 +105,14 @@ ASTList* AllocASTList(int capacity) {
   list->capacity = capacity;
   list->size = 0;
   return list;
+}
+
+ASTDict* AllocASTDict(int capacity) {
+  ASTDict* dict = malloc(sizeof(ASTDict) + sizeof(ASTDictEntry*) * capacity);
+  dict->type = kASTDict;
+  dict->capacity = capacity;
+  dict->size = 0;
+  return dict;
 }
 
 ASTNode* AllocAndInitASTConstant(const Token* token) {
@@ -272,6 +294,8 @@ void PrintASTNode(ASTNode* node, int depth) {
   PrintfWithPadding(depth, ")");
 }
 
+// ASTList
+
 void PushASTNodeToList(ASTList* list, ASTNode* node) {
   if (list->size >= list->capacity) {
     Error("No more space in ASTList");
@@ -297,4 +321,22 @@ int GetSizeOfASTList(const ASTList* list) { return list->size; }
 
 ASTNode* GetLastASTNode(const ASTList* list) {
   return GetASTNodeAt(list, GetSizeOfASTList(list) - 1);
+}
+
+// ASTDict
+
+void AppendASTNodeToDict(ASTDict* dict, const char* key, ASTNode* node) {
+  if (dict->size >= dict->capacity) {
+    Error("No more space in ASTDict");
+  }
+  dict->entries[dict->size].key = key;
+  dict->entries[dict->size].value = node;
+  dict->size++;
+}
+
+ASTNode* FindASTNodeInDict(ASTDict* dict, const char* key) {
+  for (int i = 0; i < dict->size; i++) {
+    if (strcmp(key, dict->entries[i].key) == 0) return dict->entries[i].value;
+  }
+  return NULL;
 }

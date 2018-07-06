@@ -32,6 +32,7 @@ typedef enum {
   kASTDecl,
   kASTParamDecl,
   kASTPointer,
+  kASTDict,
   //
   kNumOfASTType
 } ASTType;
@@ -58,6 +59,7 @@ typedef enum {
 
 typedef struct TOKEN_LIST TokenList;
 typedef struct AST_LIST ASTList;
+typedef struct AST_DICT ASTDict;
 
 typedef struct {
   char str[MAX_TOKEN_LEN + 1];
@@ -198,6 +200,7 @@ DefToAST(Ident);
 DefToAST(Decl);
 DefToAST(ParamDecl);
 DefToAST(Pointer);
+DefToAST(Dict);
 
 #define DefAllocAST(type) AST##type *AllocAST##type()
 DefAllocAST(FuncDecl);
@@ -217,6 +220,7 @@ DefAllocAST(Ident);
 DefAllocAST(Decl);
 DefAllocAST(ParamDecl);
 DefAllocAST(Pointer);
+ASTDict *AllocASTDict(int capacity);
 
 ASTNode *AllocAndInitASTConstant(const Token *token);
 ASTIdent *AllocAndInitASTIdent(const Token *token);
@@ -238,6 +242,9 @@ ASTNode *GetASTNodeAt(const ASTList *list, int index);
 int GetSizeOfASTList(const ASTList *list);
 ASTNode *GetLastASTNode(const ASTList *list);
 
+void AppendASTNodeToDict(ASTDict *dict, const char *key, ASTNode *node);
+ASTNode *FindASTNodeInDict(ASTDict *dict, const char *key);
+
 // @compilium.c
 extern KernelType kernel_type;
 
@@ -247,7 +254,7 @@ void Error(const char *fmt, ...);
 // @generate.c
 void InitILOpTypeName();
 const char *GetILOpTypeName(ILOpType type);
-void Generate(FILE *fp, ASTNode *root);
+void Generate(FILE *fp, ASTNode *root, KernelType kernel_type);
 
 // @il.c
 ASTILOp *GenerateIL(ASTList *il, ASTNode *node);
