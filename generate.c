@@ -196,7 +196,6 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "mov     rbp, rsp\n");
       } break;
       case kILOpFuncEnd:
-        fprintf(fp, "mov     dword ptr [rbp - 4], 0\n");
         fprintf(fp, "pop     rbp\n");
         fprintf(fp, "ret\n");
         break;
