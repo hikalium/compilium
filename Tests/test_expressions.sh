@@ -1,15 +1,16 @@
 
 function test_expression() {
+  expression=$1
   expected=$2
-	echo "int main(){return $1;}" | ../compilium - out.S &> out.compilium.log \
-    || { cat out.compilium.log; echo "FAIL expression $1: Compilation failed." ; exit 1; }
+	echo "int main(){return $expression;}" | ../compilium - out.S `uname` &> out.compilium.log \
+    || { cat out.compilium.log; echo "FAIL expression $expression: Compilation failed." ; exit 1; }
 	gcc -o out.bin out.S
 	./out.bin
   actual=$?
   if [ $expected = $actual ]; then
-    echo "PASS expression $1 is $expected";
+    echo "PASS expression $expression is $expected";
   else
-    echo "FAIL expression $1: expected $expected but got $actual"; exit 1; 
+    echo "FAIL expression $expression: expected $expected but got $actual"; exit 1; 
   fi
 }
 
