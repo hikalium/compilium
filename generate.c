@@ -185,6 +185,9 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
     }
     switch (op->op) {
       case kILOpFuncBegin: {
+        // nth local variable can be accessed as [rbp - 4 * n] (n is one based)
+        // push dword: SS[rsp -= 4] = data32;
+        // pop dword: data32 = SS[rsp]; rsp += 4;
         const char *func_name =
             GetFuncNameStrFromFuncDef(ToASTFuncDef(op->ast_node));
         if (!func_name) {
@@ -196,6 +199,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "mov     rbp, rsp\n");
       } break;
       case kILOpFuncEnd:
+        fprintf(fp, "mov     rsp, rbp\n");
         fprintf(fp, "pop     rbp\n");
         fprintf(fp, "ret\n");
         break;
@@ -283,6 +287,20 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "call %s%s\n", kernel_type == kKernelDarwin ? "_" : "",
                 func_ident->token->str);
       } break;
+      case kILOpWriteLocalVar: {
+        const char *right = AssignRegister(fp, op->right_reg);
+        ASTLocalVar *var = ToASTLocalVar(op->ast_node);
+        if (!var) Error("var is not an ASTLocalVar");
+        int byte_ofs = 8 * var->ofs_in_stack;
+        fprintf(fp, "mov [rbp - %d], %s\n", byte_ofs, right);
+      } break;
+      case kILOpReadLocalVar: {
+        const char *dst = AssignRegister(fp, op->dst_reg);
+        ASTLocalVar *var = ToASTLocalVar(op->ast_node);
+        if (!var) Error("var is not an ASTLocalVar");
+        int byte_ofs = 8 * var->ofs_in_stack;
+        fprintf(fp, "mov %s, [rbp - %d]\n", dst, byte_ofs);
+      } break;
       default:
         Error("Not implemented code generation for ILOp%s",
               GetILOpTypeName(op->op));
@@ -295,7 +313,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
 void Generate(FILE *fp, ASTNode *root, KernelType kernel_type) {
   ASTList *intermediate_code = AllocASTList(MAX_IL_NODES);
 
-  GenerateIL(intermediate_code, root);
+  GenerateIL(intermediate_code, root, NULL);
   PrintASTNode(ToASTNode(intermediate_code), 0);
   putchar('\n');
 

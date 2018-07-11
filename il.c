@@ -14,6 +14,8 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpFuncEnd] = "FuncEnd";
   ILOpTypeName[kILOpReturn] = "Return";
   ILOpTypeName[kILOpCall] = "Call";
+  ILOpTypeName[kILOpWriteLocalVar] = "WriteLocalVar";
+  ILOpTypeName[kILOpReadLocalVar] = "ReadLocalVar";
 }
 
 const char *GetILOpTypeName(ILOpType type) {
@@ -26,11 +28,11 @@ int GetRegNumber() {
   return num++;
 }
 
-void GenerateILForCompStmt(ASTList *il, ASTNode *node) {
+void GenerateILForCompStmt(ASTList *il, ASTNode *node, ASTDict *stack_vars) {
   ASTCompStmt *comp = ToASTCompStmt(node);
   ASTList *stmt_list = comp->stmt_list;
   for (int i = 0; i < GetSizeOfASTList(stmt_list); i++) {
-    GenerateIL(il, GetASTNodeAt(stmt_list, i));
+    GenerateIL(il, GetASTNodeAt(stmt_list, i), stack_vars);
   }
 }
 
@@ -39,12 +41,14 @@ void GenerateILForFuncDef(ASTList *il, ASTNode *node) {
   PushASTNodeToList(
       il, ToASTNode(AllocAndInitASTILOp(kILOpFuncBegin, REG_NULL, REG_NULL,
                                         REG_NULL, node)));
-  GenerateILForCompStmt(il, ToASTNode(def->comp_stmt));
+  ASTDict *stack_vars = AllocASTDict(8);
+  GenerateILForCompStmt(il, ToASTNode(def->comp_stmt), stack_vars);
   PushASTNodeToList(il, ToASTNode(AllocAndInitASTILOp(
                             kILOpFuncEnd, REG_NULL, REG_NULL, REG_NULL, node)));
 }
 
-ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
+ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node,
+                                ASTDict *stack_vars) {
   int dst = REG_NULL;
   ASTExprBinOp *bin_op = ToASTExprBinOp(node);
   ILOpType il_op_type = kILOpNop;
@@ -57,15 +61,31 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
   }
   if (il_op_type != kILOpNop) {
     dst = GetRegNumber();
-    int il_left = GenerateIL(il, bin_op->left)->dst_reg;
-    int il_right = GenerateIL(il, bin_op->right)->dst_reg;
+    int il_left = GenerateIL(il, bin_op->left, stack_vars)->dst_reg;
+    int il_right = GenerateIL(il, bin_op->right, stack_vars)->dst_reg;
     ASTILOp *il_op =
         AllocAndInitASTILOp(il_op_type, dst, il_left, il_right, node);
     PushASTNodeToList(il, ToASTNode(il_op));
     return il_op;
+  } else if (IsEqualToken(bin_op->op, "=")) {
+    ASTIdent *left_ident = ToASTIdent(bin_op->left);
+    if (left_ident) {
+      ASTLocalVar *local_var =
+          ToASTLocalVar(FindASTNodeInDict(stack_vars, left_ident->token->str));
+      if (local_var) {
+        int il_right = GenerateIL(il, bin_op->right, stack_vars)->dst_reg;
+        ASTILOp *il_op =
+            AllocAndInitASTILOp(kILOpWriteLocalVar, il_right, REG_NULL,
+                                il_right, ToASTNode(local_var));
+        PushASTNodeToList(il, ToASTNode(il_op));
+        return il_op;
+      }
+      Error("local variable %s not defined here.", left_ident->token->str);
+    }
+    Error("Left operand of assignment should be an lvalue");
   } else if (IsEqualToken(bin_op->op, ",")) {
-    GenerateIL(il, bin_op->left);
-    return GenerateIL(il, bin_op->right);
+    GenerateIL(il, bin_op->left, stack_vars);
+    return GenerateIL(il, bin_op->right, stack_vars);
   } else if (IsEqualToken(bin_op->op, "(")) {
     // func_call
     // call_params = [func_addr: ILOp, arg1: ILOp, arg2: ILOp, ...]
@@ -84,7 +104,8 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
       if (!arg_list) Error("arg_list is not an ASTList");
       for (int i = 0; i < GetSizeOfASTList(arg_list); i++) {
         ASTNode *node = GetASTNodeAt(arg_list, i);
-        PushASTNodeToList(call_params, ToASTNode(GenerateIL(il, node)));
+        PushASTNodeToList(call_params,
+                          ToASTNode(GenerateIL(il, node, stack_vars)));
       }
     }
     ASTILOp *il_op_call = AllocAndInitASTILOp(
@@ -96,7 +117,8 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node) {
   return NULL;
 }
 
-ASTILOp *GenerateILForConstant(ASTList *il, ASTNode *node) {
+ASTILOp *GenerateILForConstant(ASTList *il, ASTNode *node,
+                               ASTDict *stack_vars) {
   int dst = GetRegNumber();
   ASTILOp *il_op =
       AllocAndInitASTILOp(kILOpLoadImm, dst, REG_NULL, REG_NULL, node);
@@ -104,18 +126,24 @@ ASTILOp *GenerateILForConstant(ASTList *il, ASTNode *node) {
   return il_op;
 }
 
-ASTILOp *GenerateILForIdent(ASTList *il, ASTNode *node) {
+ASTILOp *GenerateILForIdent(ASTList *il, ASTNode *node, ASTDict *stack_vars) {
   int dst = GetRegNumber();
+  ASTLocalVar *local_var = ToASTLocalVar(
+      FindASTNodeInDict(stack_vars, ToASTIdent(node)->token->str));
   ASTILOp *il_op =
-      AllocAndInitASTILOp(kILOpLoadIdent, dst, REG_NULL, REG_NULL, node);
+      local_var
+          ? AllocAndInitASTILOp(kILOpReadLocalVar, dst, REG_NULL, REG_NULL,
+                                ToASTNode(local_var))
+          : AllocAndInitASTILOp(kILOpLoadIdent, dst, REG_NULL, REG_NULL, node);
   PushASTNodeToList(il, ToASTNode(il_op));
   return il_op;
 }
 
-ASTILOp *GenerateILForExprStmt(ASTList *il, ASTNode *node) {
+ASTILOp *GenerateILForExprStmt(ASTList *il, ASTNode *node,
+                               ASTDict *stack_vars) {
   // https://wiki.osdev.org/System_V_ABI
   const ASTExprStmt *expr_stmt = ToASTExprStmt(node);
-  return GenerateIL(il, expr_stmt->expr);
+  return GenerateIL(il, expr_stmt->expr, stack_vars);
   /*
   const TokenList *token_list = expr_stmt->expr;
   if (token_list->used == 1 && token_list->tokens[0]->type == kInteger) {
@@ -150,10 +178,12 @@ ASTILOp *GenerateILForExprStmt(ASTList *il, ASTNode *node) {
   */
 }
 
-ASTILOp *GenerateILForJumpStmt(ASTList *il, ASTNode *node) {
+ASTILOp *GenerateILForJumpStmt(ASTList *il, ASTNode *node,
+                               ASTDict *stack_vars) {
   ASTJumpStmt *jump_stmt = ToASTJumpStmt(node);
   if (IsEqualToken(jump_stmt->kw->token, "return")) {
-    int expr_reg = GenerateILForExprStmt(il, jump_stmt->param)->dst_reg;
+    int expr_reg =
+        GenerateILForExprStmt(il, jump_stmt->param, stack_vars)->dst_reg;
 
     ASTILOp *il_op =
         AllocAndInitASTILOp(kILOpReturn, REG_NULL, expr_reg, REG_NULL, node);
@@ -164,7 +194,22 @@ ASTILOp *GenerateILForJumpStmt(ASTList *il, ASTNode *node) {
   return NULL;
 }
 
-ASTILOp *GenerateIL(ASTList *il, ASTNode *node) {
+void GenerateILForDecl(ASTList *il, ASTNode *node, ASTDict *stack_vars) {
+  ASTDecl *decl = ToASTDecl(node);
+  if (!decl) Error("node is not a Decl");
+  PrintASTNode(ToASTNode(decl->decl_specs), 0);
+  putchar('\n');
+  for (int i = 0; i < GetSizeOfASTList(decl->init_decltors); i++) {
+    ASTDecltor *decltor = ToASTDecltor(GetASTNodeAt(decl->init_decltors, i));
+    const char *ident_str = GetIdentStrFromDecltor(decltor);
+    printf("ident: %s\n", ident_str);
+    AppendASTNodeToDict(
+        stack_vars, ident_str,
+        ToASTNode(AllocASTLocalVar(GetSizeOfASTDict(stack_vars) + 1)));
+  }
+}
+
+ASTILOp *GenerateIL(ASTList *il, ASTNode *node, ASTDict *stack_vars) {
   printf("GenerateIL: AST%s...\n", GetASTTypeName(node));
   if (node->type == kASTList) {
     // translation-unit
@@ -177,15 +222,18 @@ ASTILOp *GenerateIL(ASTList *il, ASTNode *node) {
     }
     return NULL;
   } else if (node->type == kASTJumpStmt) {
-    return GenerateILForJumpStmt(il, node);
+    return GenerateILForJumpStmt(il, node, stack_vars);
   } else if (node->type == kASTExprBinOp) {
-    return GenerateILForExprBinOp(il, node);
+    return GenerateILForExprBinOp(il, node, stack_vars);
   } else if (node->type == kASTConstant) {
-    return GenerateILForConstant(il, node);
+    return GenerateILForConstant(il, node, stack_vars);
   } else if (node->type == kASTExprStmt) {
-    return GenerateILForExprStmt(il, node);
+    return GenerateILForExprStmt(il, node, stack_vars);
   } else if (node->type == kASTIdent) {
-    return GenerateILForIdent(il, node);
+    return GenerateILForIdent(il, node, stack_vars);
+  } else if (node->type == kASTDecl) {
+    GenerateILForDecl(il, node, stack_vars);
+    return NULL;
   }
   PrintASTNode(node, 0);
   putchar('\n');

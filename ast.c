@@ -74,6 +74,7 @@ GenToAST(Decl);
 GenToAST(ParamDecl);
 GenToAST(Pointer);
 GenToAST(Dict);
+GenToAST(LocalVar);
 
 #define GenAllocAST(Type) \
   AST##Type* AllocAST##Type() { \
@@ -91,13 +92,6 @@ GenAllocAST(ExprStmt);
 GenAllocAST(JumpStmt);
 GenAllocAST(ForStmt);
 GenAllocAST(ILOp);
-GenAllocAST(Keyword);
-GenAllocAST(Decltor);
-GenAllocAST(DirectDecltor);
-GenAllocAST(Ident);
-GenAllocAST(Decl);
-GenAllocAST(ParamDecl);
-GenAllocAST(Pointer);
 
 ASTList* AllocASTList(int capacity) {
   ASTList* list = malloc(sizeof(ASTList) + sizeof(ASTNode*) * capacity);
@@ -107,12 +101,27 @@ ASTList* AllocASTList(int capacity) {
   return list;
 }
 
+GenAllocAST(Keyword);
+GenAllocAST(Decltor);
+GenAllocAST(DirectDecltor);
+GenAllocAST(Ident);
+GenAllocAST(Decl);
+GenAllocAST(ParamDecl);
+GenAllocAST(Pointer);
+
 ASTDict* AllocASTDict(int capacity) {
   ASTDict* dict = malloc(sizeof(ASTDict) + sizeof(ASTDictEntry*) * capacity);
   dict->type = kASTDict;
   dict->capacity = capacity;
   dict->size = 0;
   return dict;
+}
+
+ASTLocalVar* AllocASTLocalVar(int ofs_in_stack) {
+  ASTLocalVar* var = malloc(sizeof(ASTLocalVar));
+  var->type = kASTLocalVar;
+  var->ofs_in_stack = ofs_in_stack;
+  return var;
 }
 
 ASTNode* AllocAndInitASTConstant(const Token* token) {
@@ -340,3 +349,5 @@ ASTNode* FindASTNodeInDict(ASTDict* dict, const char* key) {
   }
   return NULL;
 }
+
+int GetSizeOfASTDict(const ASTDict* dict) { return dict->size; }

@@ -7,6 +7,7 @@ TESTS = simple_return \
 		simple_return_with_comma_op \
 		printf \
 		hello_world \
+		local_variable_def_assign_ref \
 		tokenize_tab
 
 default: $(addsuffix .test, $(TESTS))
