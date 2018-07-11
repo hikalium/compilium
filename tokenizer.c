@@ -5,6 +5,9 @@ const char *Preprocess(TokenList *tokens, const char *p);
 char *ReadFile(const char *file_name) {
   // file_buf is allocated here.
   FILE *fp = fopen(file_name, "rb");
+  if(!fp && strcmp(file_name, "-") == 0){
+    fp = stdin;
+  }
   if (!fp) {
     Error("Failed to open: %s", file_name);
   }

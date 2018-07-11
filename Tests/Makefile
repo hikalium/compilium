@@ -1,28 +1,26 @@
 SHELL=/bin/bash
 TESTS = simple_return \
-		simple_return_with_bin_op_plus \
-		simple_return_with_bin_op_minus \
-		simple_return_with_bin_op_mul \
-		simple_return_with_bin_op_mixed_priority \
-		simple_return_with_comma_op \
 		printf \
 		hello_world \
 		local_variable_def_assign_ref \
 		tokenize_tab
 
-default: $(addsuffix .test, $(TESTS))
+default: expr_test $(addsuffix .test, $(TESTS))
 
 FORCE:
 .PHONY: FORCE
 
 .SECONDARY:
 
+expr_test : FORCE
+	@./test_expressions.sh
+
 %.clang.bin : %.c Makefile
 	@ rm $@ $*.compilium.log &> /dev/null; \
 		{ gcc -o $@ $*.c &> $*.clang.log; } \
 		|| { echo "FAIL $@"; cat $*.clang.log; false; }
 
-../compilium: FORCE
+../compilium : FORCE
 	@ make -C ..
 
 %.clang.S : %.c Makefile FORCE
