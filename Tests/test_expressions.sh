@@ -2,7 +2,7 @@
 function test_expression() {
   expression=$1
   expected=$2
-	echo "int main(){return $expression;}" | ../compilium -o out.s --prefix_type `uname` - &> out.compilium.log \
+	echo "int main(){return $expression;}" | ../compilium -o out.S --prefix_type `uname` - &> out.compilium.log \
     || { cat out.compilium.log; echo "FAIL expression $expression: Compilation failed." ; exit 1; }
 	gcc -o out.bin out.S
 	./out.bin
@@ -17,7 +17,7 @@ function test_expression() {
 function test_expression_gcc() {
   expression=$1
   expected=$2
-	echo "int main(){return $expression;}" | ../compilium -o out.s --prefix_type `uname` - &> out.compilium.log \
+	echo "int main(){return $expression;}" | ../compilium -o out.S --prefix_type `uname` - &> out.compilium.log \
     || { cat out.clang.log; echo "FAIL expression $expression: Compilation failed." ; exit 1; }
 	gcc -o out.bin out.S
 	./out.bin
