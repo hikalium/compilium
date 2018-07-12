@@ -9,9 +9,11 @@ Just `make`.
 
 ## Usage
 ```
-./compilium <src_c_file> <dst_S_file> (<kernel_type>)
+./compilium -o dst.S src.c
 ```
 Assembly source (.S) will be generated. You need to assemble it to get an executable binary.
+
+You can specify `--prefix_type type` to change symbol prefixes (`type` can be `Darwin` or `Linux`).
 
 ## License
 MIT

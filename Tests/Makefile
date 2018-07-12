@@ -28,7 +28,7 @@ expr_test : FORCE
 
 %.compilium.S : %.c Makefile ../compilium FORCE
 	@ rm $@ $*.compilium.log &> /dev/null; \
-		../compilium $*.c $@ `uname` &> $*.compilium.log \
+		../compilium -o $@ --prefix_type `uname` $*.c &> $*.compilium.log \
 		|| { echo "FAIL $@"; cat $*.compilium.log; false; }
 
 %.bin : %.S Makefile FORCE

@@ -3,25 +3,34 @@
 #define MAX_TOKENS 2048
 int main(int argc, char *argv[]) {
   KernelType kernel_type = kKernelDarwin;
-  if (argc < 3) {
-    Error("Usage: %s <src_c_file> <dst_S_file> (<kernel_type>)", argv[0]);
+  const char *src_file = NULL;
+  const char *dst_file = NULL;
+  for(int i = 1; i < argc; i++){
+    if (strcmp(argv[i], "--prefix_type") == 0){
+      i++;
+      if (strcmp(argv[i], "Darwin") == 0){
+        kernel_type = kKernelDarwin;
+      } else if (strcmp(argv[i], "Linux") == 0){
+        kernel_type = kKernelLinux;
+      } else{
+        Error("Unknown kernel type %s", argv[i]);
+      }
+    } else if(strcmp(argv[i], "-o") == 0){
+      dst_file = argv[i];
+    } else{
+      src_file = argv[i];
+    }
   }
-  if (argc >= 4) {
-    if (strcmp(argv[3], "Darwin") == 0)
-      kernel_type = kKernelDarwin;
-    else if (strcmp(argv[3], "Linux") == 0)
-      kernel_type = kKernelLinux;
-    else
-      Error("Unknown kernel type %s", argv[3]);
+  if (!src_file || !dst_file) {
+    Error("Usage: %s -o <dst_file> <src_file>", argv[0]);
   }
 
   InitASTTypeName();
   InitILOpTypeName();
 
-  const char *filename = argv[1];
-  char *input = ReadFile(filename);
+  char *input = ReadFile(src_file);
   TokenList *tokens = AllocateTokenList(MAX_TOKENS);
-  Tokenize(tokens, input, argv[1]);
+  Tokenize(tokens, input, src_file);
   free(input);
 
   puts("\nTokens:");
@@ -37,7 +46,7 @@ int main(int argc, char *argv[]) {
   puts("\nCode generation:");
   FILE *dst_fp = fopen(argv[2], "wb");
   if (!dst_fp) {
-    Error("Failed to open %s", argv[2]);
+    Error("Failed to open %s", dst_file);
   }
   Generate(dst_fp, ast, kernel_type);
   fclose(dst_fp);
