@@ -119,8 +119,8 @@ void AssignVirtualRegToRealReg(FILE *fp, int virtual_reg, int real_reg) {
   if (info->real_reg) {
     printf("\tvirtual_reg[%d] is stored on %s, moving...\n", virtual_reg,
            ScratchRegNames[info->real_reg]);
-    fprintf(fp, "mov %s, %s\n", ScratchRegNames[real_reg],
-            ScratchRegNames[info->real_reg]);
+    fprintf(fp, "mov %s, %s # vreg %d\n", ScratchRegNames[real_reg],
+            ScratchRegNames[info->real_reg], virtual_reg);
     RealRegAssignTable[info->real_reg] = 0;
   } else if (info->save_label_num) {
     printf("\tvirtual_reg[%d] is stored at label %d, restoring...\n",
@@ -131,8 +131,6 @@ void AssignVirtualRegToRealReg(FILE *fp, int virtual_reg, int real_reg) {
   RealRegAssignTable[real_reg] = virtual_reg;
   RealRegRefOrder[real_reg] = order_count++;
   info->real_reg = real_reg;
-  if (info->save_label_num) {
-  }
   printf("\tvirtual_reg[%d] => %s\n", virtual_reg, ScratchRegNames[real_reg]);
 }
 
@@ -248,19 +246,29 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
       } break;
       case kILOpAdd:
       case kILOpSub:
-      case kILOpMul: {
-        const char *dst = AssignRegister(fp, op->dst_reg);
-        const char *left = AssignRegister(fp, op->left_reg);
-        const char *right = AssignRegister(fp, op->right_reg);
-        //
+      case kILOpMul:
+      case kILOpDiv:
+      case kILOpMod: {
         if (op->op == kILOpAdd) {
+          const char *dst = AssignRegister(fp, op->dst_reg);
+          const char *left = AssignRegister(fp, op->left_reg);
+          const char *right = AssignRegister(fp, op->right_reg);
+          //
           fprintf(fp, "add %s, %s\n", left, right);
           fprintf(fp, "mov %s, %s\n", dst, left);
         } else if (op->op == kILOpSub) {
+          const char *dst = AssignRegister(fp, op->dst_reg);
+          const char *left = AssignRegister(fp, op->left_reg);
+          const char *right = AssignRegister(fp, op->right_reg);
+          //
           fprintf(fp, "sub %s, %s\n", left, right);
           fprintf(fp, "mov %s, %s\n", dst, left);
         } else if (op->op == kILOpMul) {
-          // eDX: eAX <- eAX * r/m
+          const char *dst = AssignRegister(fp, op->dst_reg);
+          const char *left = AssignRegister(fp, op->left_reg);
+          const char *right = AssignRegister(fp, op->right_reg);
+          //
+          // rdx:rax <- rax * r/m
           fprintf(fp, "push rax\n");
           fprintf(fp, "mov rax, %s\n", left);
           fprintf(fp, "push rdx\n");
@@ -268,6 +276,24 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
           fprintf(fp, "pop rdx\n");
           fprintf(fp, "mov %s, rax\n", dst);
           fprintf(fp, "pop rax\n");
+        } else if (op->op == kILOpDiv) {
+          // rax <- rdx:rax / r/m
+          AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
+          AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
+          AssignVirtualRegToRealReg(fp, op->right_reg, REAL_REG_RCX);
+          SpillRealRegister(fp, REAL_REG_RDX);
+          fprintf(fp, "mov rdx, 0\n");
+          fprintf(fp, "idiv rcx\n");
+        } else if (op->op == kILOpMod) {
+          // rdx <- rdx:rax % r/m
+          AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
+          AssignVirtualRegToRealReg(fp, op->right_reg, REAL_REG_RCX);
+          SpillRealRegister(fp, REAL_REG_RDX);
+          fprintf(fp, "mov rdx, 0\n");
+          fprintf(fp, "idiv rcx\n");
+          AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RDX);
+        } else {
+          Error("ILBinOp: Not implemented BinOp %d", op->op);
         }
       } break;
       case kILOpReturn: {
