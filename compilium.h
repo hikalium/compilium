@@ -133,9 +133,9 @@ typedef struct {
 typedef struct {
   ASTType type;
   ILOpType op;
-  int dst_reg;  // 0: unused
-  int left_reg;  // 0: unused
-  int right_reg;  // 0: unused
+  int dst_reg;
+  int left_reg;
+  int right_reg;
   ASTNode *ast_node;
 } ASTILOp;
 

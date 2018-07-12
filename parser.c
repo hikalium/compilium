@@ -159,32 +159,6 @@ ASTNode *ParseExpression(TokenList *tokens, int index, int *after_index) {
   return last;
 }
 
-/*
-ASTNode *TryReadForStatement(TokenList *tokens, int index, int *after_index) {
-  // 6.8.5.3
-  // for ( expression(opt) ; expression(opt) ; expression(opt) ) statement:
-
-  if (!IsEqualToken(GetTokenAt(tokens, index++), "for")) return NULL;
-  if (!IsEqualToken(GetTokenAt(tokens, index++), "(")) return NULL;
-  ASTNode *init_expr = ReadExpression(tokens, index, &index);
-  if (!IsEqualToken(GetTokenAt(tokens, index++), ";")) return NULL;
-  ASTNode *cond_expr = ReadExpression(tokens, index, &index);
-  if (!IsEqualToken(GetTokenAt(tokens, index++), ";")) return NULL;
-  ASTNode *updt_expr = ReadExpression(tokens, index, &index);
-  if (!IsEqualToken(GetTokenAt(tokens, index++), ")")) return NULL;
-  ASTNode *body_comp_stmt = TryReadCompoundStatement(tokens, index, &index);
-  if (!body_comp_stmt) {
-    Error("TryReadForStatement: body_comp_stmt is null");
-  }
-  ASTForStmt *for_stmt = AllocASTForStmt();
-  for_stmt->init_expr = init_expr;
-  for_stmt->cond_expr = cond_expr;
-  for_stmt->updt_expr = updt_expr;
-  for_stmt->body_comp_stmt = body_comp_stmt;
-  *after_index = index;
-  return ToASTNode(for_stmt);
-}
-*/
 ASTNode *ParseJumpStmt(TokenList *tokens, int index, int *after_index) {
   const Token *token;
   token = GetTokenAt(tokens, index);
@@ -214,7 +188,6 @@ ASTNode *ParseStmt(TokenList *tokens, int index, int *after_index) {
   //   jump-statement
   ASTNode *statement;
   if ((statement = ParseJumpStmt(tokens, index, after_index)) ||
-      //(statement = TryReadForStatement(tokens, index, after_index)) ||
       (statement = ToASTNode(ParseExprStmt(tokens, index, after_index))))
     return statement;
   return NULL;
@@ -241,7 +214,6 @@ ASTCompStmt *ParseCompStmt(TokenList *tokens, int index, int *after_index) {
   //   declaration
   //   statement
   if (!IsEqualToken(GetTokenAt(tokens, index++), "{")) return NULL;
-  //
   ASTList *stmt_list = AllocASTList(MAX_NUM_OF_STATEMENTS_IN_BLOCK);
   ASTNode *stmt;
   while (!IsEqualToken(GetTokenAt(tokens, index), "}")) {
@@ -252,12 +224,10 @@ ASTCompStmt *ParseCompStmt(TokenList *tokens, int index, int *after_index) {
   }
   ASTCompStmt *comp_stmt = AllocASTCompStmt();
   comp_stmt->stmt_list = stmt_list;
-  //
   if (!IsEqualToken(GetTokenAt(tokens, index), "}")) {
     Error("Expected } but got %s", GetTokenAt(tokens, index)->str);
   }
   index++;
-  //
   *after_index = index;
   return comp_stmt;
 }
@@ -314,7 +284,6 @@ ASTList *ParseParamTypeList(TokenList *tokens, int index, int *after_index) {
   // TODO: Impl ", ..." case
   ASTList *list = ParseParamList(tokens, index, after_index);
   index = *after_index;
-  //
   const Token *token;
   token = GetTokenAt(tokens, index++);
   PrintToken(token);
@@ -336,21 +305,17 @@ ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index,
     if (!token) break;
     if (token->type == kIdentifier) {
       if (last_direct_decltor) break;
-      //
       ASTIdent *ident = AllocASTIdent();
       ident->token = token;
-      //
       ASTDirectDecltor *direct_decltor = AllocASTDirectDecltor();
       direct_decltor->direct_decltor = last_direct_decltor;
       direct_decltor->data = ToASTNode(ident);
       last_direct_decltor = direct_decltor;
-      //
       index++;
       continue;
     } else if (token->type == kPunctuator) {
       if (IsEqualToken(token, "(")) {
         index++;
-        //
         ASTList *list;
         list = ParseParamTypeList(tokens, index, &index);
         if (!list) list = ParseIdentList(tokens, index, &index);
@@ -359,7 +324,6 @@ ASTDirectDecltor *ParseDirectDecltor(TokenList *tokens, int index,
         if (IsEqualToken(token, ")")) {
           if (!last_direct_decltor) break;
           index++;
-          //
           ASTDirectDecltor *direct_decltor = AllocASTDirectDecltor();
           direct_decltor->direct_decltor = last_direct_decltor;
           direct_decltor->data = ToASTNode(list);
@@ -410,7 +374,6 @@ ASTNode *ParseTypeSpec(TokenList *tokens, int index, int *after_index) {
   if (IsEqualToken(token, "int") || IsEqualToken(token, "char")) {
     ASTKeyword *kw = AllocASTKeyword();
     kw->token = token;
-
     *after_index = index;
     return ToASTNode(kw);
   }
@@ -424,7 +387,6 @@ ASTKeyword *ParseTypeQual(TokenList *tokens, int index, int *after_index) {
   if (IsEqualToken(token, "const")) {
     ASTKeyword *kw = AllocASTKeyword();
     kw->token = token;
-
     *after_index = index;
     return kw;
   }
@@ -453,17 +415,14 @@ ASTNode *ParseFuncDef(TokenList *tokens, int index, int *after_index) {
   if (!decl_specs) {
     return NULL;
   }
-
   ASTDecltor *decltor = ParseDecltor(tokens, index, &index);
   if (!decltor) {
     return NULL;
   }
-
   ASTCompStmt *comp_stmt = ParseCompStmt(tokens, index, &index);
   if (!comp_stmt) {
     return NULL;
   }
-
   ASTFuncDef *func_def = AllocASTFuncDef();
   func_def->decl_specs = decl_specs;
   func_def->decltor = decltor;
@@ -489,7 +448,6 @@ ASTDecl *ParseDecl(TokenList *tokens, int index, int *after_index) {
   if (!IsEqualToken(GetTokenAt(tokens, index++), ";")) {
     return NULL;
   }
-  //
   *after_index = index;
   ASTDecl *decl = AllocASTDecl();
   decl->decl_specs = decl_specs;

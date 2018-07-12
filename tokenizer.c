@@ -144,15 +144,6 @@ const char *Preprocess(TokenList *tokens, const char *p) {
   const Token *directive = GetTokenAt(tokens, org_num_of_token);
   if (IsEqualToken(directive, "include")) {
     Error("#include not implemented");
-    /*
-    const Token *file_name = GetTokenAt(tokens, org_num_of_token + 1);
-    if (!file_name || file_name->type != kStringLiteral) {
-      Error("Expected string literal but got %s",
-            file_name ? file_name->str : "(null)");
-    }
-    SetSizeOfTokenList(tokens, org_num_of_token);
-    Tokenize(tokens, file_name->str);
-    */
   } else {
     Error("Unknown preprocessor directive '%s'",
           directive ? directive->str : "(null)");

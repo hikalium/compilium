@@ -270,7 +270,6 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintfWithPadding(depth + 1, "dst=%d", il_op->dst_reg);
     PrintfWithPadding(depth + 1, "left=%d", il_op->left_reg);
     PrintfWithPadding(depth + 1, "right=%d", il_op->right_reg);
-    // PrintASTNodeWithName(depth + 1, "ast_node=", il_op->ast_node);
   } else if (node->type == kASTKeyword) {
     ASTKeyword* kw = ToASTKeyword(node);
     PrintTokenWithName(depth + 1, "token=", kw->token);
