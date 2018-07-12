@@ -5,7 +5,14 @@
 C compiler + hikalium
 
 ## Build
-Just `make`.
+```
+make
+```
+
+## Test
+```
+make test
+```
 
 ## Usage
 ```
@@ -13,7 +20,8 @@ Just `make`.
 ```
 Assembly source (.S) will be generated. You need to assemble it to get an executable binary.
 
-You can specify `--prefix_type type` to change symbol prefixes (`type` can be `Darwin` or `Linux`).
+### Options
+- `--prefix_type <type>` : Specify symbol prefixes (`<type>` can be `Darwin` or `Linux`).
 
 ## License
 MIT
