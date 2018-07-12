@@ -61,6 +61,9 @@ ASTNode *ParsePostExpr(TokenList *tokens, int index, int *after_index) {
 }
 
 ASTNode *ParseUnaryExpr(TokenList *tokens, int index, int *after_index) {
+  ASTNode *node = ParsePostExpr(tokens, index, after_index);
+  if (!node) {
+  }
   return ParsePostExpr(tokens, index, after_index);
 }
 

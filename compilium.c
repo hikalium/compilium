@@ -5,19 +5,19 @@ int main(int argc, char *argv[]) {
   KernelType kernel_type = kKernelDarwin;
   const char *src_file = NULL;
   const char *dst_file = NULL;
-  for(int i = 1; i < argc; i++){
-    if (strcmp(argv[i], "--prefix_type") == 0){
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "--prefix_type") == 0) {
       i++;
-      if (strcmp(argv[i], "Darwin") == 0){
+      if (strcmp(argv[i], "Darwin") == 0) {
         kernel_type = kKernelDarwin;
-      } else if (strcmp(argv[i], "Linux") == 0){
+      } else if (strcmp(argv[i], "Linux") == 0) {
         kernel_type = kKernelLinux;
-      } else{
+      } else {
         Error("Unknown kernel type %s", argv[i]);
       }
-    } else if(strcmp(argv[i], "-o") == 0){
+    } else if (strcmp(argv[i], "-o") == 0) {
       dst_file = argv[i];
-    } else{
+    } else {
       src_file = argv[i];
     }
   }

@@ -147,41 +147,8 @@ ASTILOp *GenerateILForIdent(ASTList *il, ASTNode *node, ASTDict *stack_vars) {
 
 ASTILOp *GenerateILForExprStmt(ASTList *il, ASTNode *node,
                                ASTDict *stack_vars) {
-  // https://wiki.osdev.org/System_V_ABI
   const ASTExprStmt *expr_stmt = ToASTExprStmt(node);
   return GenerateIL(il, expr_stmt->expr, stack_vars);
-  /*
-  const TokenList *token_list = expr_stmt->expr;
-  if (token_list->used == 1 && token_list->tokens[0]->type == kInteger) {
-    char *p;
-    const char *s = token_list->tokens[0]->str;
-    int var = strtol(s, &p, 0);
-    if (!(s[0] != 0 && *p == 0)) {
-      Error("%s is not valid as integer.", s);
-    }
-    fprintf(fp, "mov     rax, %d\n", var);
-  } else if (token_list->used == 4 &&
-             IsEqualToken(token_list->tokens[0], "puts") &&
-             IsEqualToken(token_list->tokens[1], "(") &&
-             token_list->tokens[2]->type == kStringLiteral &&
-             IsEqualToken(token_list->tokens[3], ")")) {
-    int label_for_skip = GetLabelNumber();
-    int label_str = GetLabelNumber();
-    fprintf(fp, "jmp L%d\n", label_for_skip);
-    fprintf(fp, "L%d:\n", label_str);
-    fprintf(fp, ".asciz  \"%s\"\n", token_list->tokens[2]->str);
-    fprintf(fp, "L%d:\n", label_for_skip);
-    fprintf(fp, "sub     rsp, 16\n");
-    fprintf(fp, "lea     rdi, [rip + L%d]\n", label_str);
-    fprintf(fp, "call    _%s\n", token_list->tokens[0]->str);
-    fprintf(fp, "add     rsp, 16\n");
-    //Error("GenerateILForExprStmt: puts case ");
-
-
-  } else {
-    Error("GenerateILForExprStmt: Not implemented ");
-  }
-  */
 }
 
 ASTILOp *GenerateILForJumpStmt(ASTList *il, ASTNode *node,
