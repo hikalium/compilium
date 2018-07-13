@@ -334,14 +334,3 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
   }
   GenerateSpillData(fp);
 }
-
-#define MAX_IL_NODES 2048
-void Generate(FILE *fp, ASTNode *root, KernelType kernel_type) {
-  ASTList *intermediate_code = AllocASTList(MAX_IL_NODES);
-
-  GenerateIL(intermediate_code, root, NULL);
-  PrintASTNode(ToASTNode(intermediate_code), 0);
-  putchar('\n');
-
-  GenerateCode(fp, intermediate_code, kernel_type);
-}

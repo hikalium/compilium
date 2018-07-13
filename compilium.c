@@ -43,12 +43,18 @@ int main(int argc, char *argv[]) {
   PrintASTNode(ast, 0);
   putchar('\n');
 
+  ASTList *il = GenerateIL(ast);
+
+  puts("\nIL:");
+  PrintASTNode(ToASTNode(il), 0);
+  putchar('\n');
+
   puts("\nCode generation:");
   FILE *dst_fp = fopen(argv[2], "wb");
   if (!dst_fp) {
     Error("Failed to open %s", dst_file);
   }
-  Generate(dst_fp, ast, kernel_type);
+  GenerateCode(dst_fp, il, kernel_type);
   fclose(dst_fp);
 
   return 0;

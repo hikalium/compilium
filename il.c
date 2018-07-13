@@ -2,6 +2,19 @@
 
 #define REG_NULL 0
 
+typedef struct CONTEXT Context;
+struct CONTEXT {
+  const Context *parent;
+  ASTDict *dict;
+};
+
+Context *AllocContext(const Context *parent) {
+  Context *ctx = malloc(sizeof(Context));
+  ctx->parent = parent;
+  ctx->dict = AllocASTDict(8);
+  return ctx;
+}
+
 const char *ILOpTypeName[kNumOfILOpFunc];
 
 void InitILOpTypeName() {
@@ -30,11 +43,14 @@ int GetRegNumber() {
   return num++;
 }
 
+// generators
+ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, ASTDict *stack_vars);
+
 void GenerateILForCompStmt(ASTList *il, ASTNode *node, ASTDict *stack_vars) {
   ASTCompStmt *comp = ToASTCompStmt(node);
   ASTList *stmt_list = comp->stmt_list;
   for (int i = 0; i < GetSizeOfASTList(stmt_list); i++) {
-    GenerateIL(il, GetASTNodeAt(stmt_list, i), stack_vars);
+    GenerateILFor(il, GetASTNodeAt(stmt_list, i), stack_vars);
   }
 }
 
@@ -67,8 +83,8 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node,
   }
   if (il_op_type != kILOpNop) {
     dst = GetRegNumber();
-    int il_left = GenerateIL(il, bin_op->left, stack_vars)->dst_reg;
-    int il_right = GenerateIL(il, bin_op->right, stack_vars)->dst_reg;
+    int il_left = GenerateILFor(il, bin_op->left, stack_vars)->dst_reg;
+    int il_right = GenerateILFor(il, bin_op->right, stack_vars)->dst_reg;
     ASTILOp *il_op =
         AllocAndInitASTILOp(il_op_type, dst, il_left, il_right, node);
     PushASTNodeToList(il, ToASTNode(il_op));
@@ -79,7 +95,7 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node,
       ASTLocalVar *local_var =
           ToASTLocalVar(FindASTNodeInDict(stack_vars, left_ident->token->str));
       if (local_var) {
-        int il_right = GenerateIL(il, bin_op->right, stack_vars)->dst_reg;
+        int il_right = GenerateILFor(il, bin_op->right, stack_vars)->dst_reg;
         ASTILOp *il_op =
             AllocAndInitASTILOp(kILOpWriteLocalVar, il_right, REG_NULL,
                                 il_right, ToASTNode(local_var));
@@ -90,8 +106,8 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node,
     }
     Error("Left operand of assignment should be an lvalue");
   } else if (IsEqualToken(bin_op->op, ",")) {
-    GenerateIL(il, bin_op->left, stack_vars);
-    return GenerateIL(il, bin_op->right, stack_vars);
+    GenerateILFor(il, bin_op->left, stack_vars);
+    return GenerateILFor(il, bin_op->right, stack_vars);
   } else if (IsEqualToken(bin_op->op, "(")) {
     // func_call
     // call_params = [func_addr: ILOp, arg1: ILOp, arg2: ILOp, ...]
@@ -111,7 +127,7 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node,
       for (int i = 0; i < GetSizeOfASTList(arg_list); i++) {
         ASTNode *node = GetASTNodeAt(arg_list, i);
         PushASTNodeToList(call_params,
-                          ToASTNode(GenerateIL(il, node, stack_vars)));
+                          ToASTNode(GenerateILFor(il, node, stack_vars)));
       }
     }
     ASTILOp *il_op_call = AllocAndInitASTILOp(
@@ -148,7 +164,7 @@ ASTILOp *GenerateILForIdent(ASTList *il, ASTNode *node, ASTDict *stack_vars) {
 ASTILOp *GenerateILForExprStmt(ASTList *il, ASTNode *node,
                                ASTDict *stack_vars) {
   const ASTExprStmt *expr_stmt = ToASTExprStmt(node);
-  return GenerateIL(il, expr_stmt->expr, stack_vars);
+  return GenerateILFor(il, expr_stmt->expr, stack_vars);
 }
 
 ASTILOp *GenerateILForJumpStmt(ASTList *il, ASTNode *node,
@@ -182,7 +198,7 @@ void GenerateILForDecl(ASTList *il, ASTNode *node, ASTDict *stack_vars) {
   }
 }
 
-ASTILOp *GenerateIL(ASTList *il, ASTNode *node, ASTDict *stack_vars) {
+ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, ASTDict *stack_vars) {
   printf("GenerateIL: AST%s...\n", GetASTTypeName(node));
   if (node->type == kASTList) {
     // translation-unit
@@ -212,4 +228,11 @@ ASTILOp *GenerateIL(ASTList *il, ASTNode *node, ASTDict *stack_vars) {
   putchar('\n');
   Error("IL Generation for AST%s is not implemented.", GetASTTypeName(node));
   return NULL;
+}
+
+#define MAX_IL_NODES 2048
+ASTList *GenerateIL(ASTNode *root) {
+  ASTList *il = AllocASTList(MAX_IL_NODES);
+  GenerateILFor(il, root, NULL);
+  return il;
 }

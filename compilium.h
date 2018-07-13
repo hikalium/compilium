@@ -269,10 +269,10 @@ void Error(const char *fmt, ...);
 // @generate.c
 void InitILOpTypeName();
 const char *GetILOpTypeName(ILOpType type);
-void Generate(FILE *fp, ASTNode *root, KernelType kernel_type);
+void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type);
 
 // @il.c
-ASTILOp *GenerateIL(ASTList *il, ASTNode *node, ASTDict *stack_vars);
+ASTList *GenerateIL(ASTNode *root);
 
 // @parser.c
 ASTNode *Parse(TokenList *tokens);
