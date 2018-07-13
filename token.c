@@ -54,6 +54,8 @@ int IsTypeToken(const Token *token) {
   return IsEqualToken(token, "int") || IsEqualToken(token, "char");
 }
 
+// TokenList
+
 struct TOKEN_LIST {
   int capacity;
   int size;
@@ -77,7 +79,7 @@ void AppendTokenToList(TokenList *list, const Token *token) {
   list->tokens[list->size++] = token;
 }
 
-const Token *GetTokenAt(TokenList *list, int index) {
+const Token *GetTokenAt(const TokenList *list, int index) {
   if (!list || index < 0 || list->size <= index) return NULL;
   return list->tokens[index];
 }
@@ -96,4 +98,36 @@ void PrintTokenList(const TokenList *list) {
     if (i) putchar(' ');
     PrintToken(list->tokens[i]);
   }
+}
+
+// TokenStream
+
+struct TOKEN_STREAM {
+  const TokenList *list;
+  int pos;
+};
+
+TokenStream *AllocAndInitTokenStream(const TokenList *list) {
+  TokenStream *stream = malloc(sizeof(TokenStream));
+  stream->list = list;
+  stream->pos = 0;
+  return stream;
+}
+
+const Token *PopToken(TokenStream *stream) {
+  if (stream->pos >= stream->list->size) return NULL;
+  return GetTokenAt(stream->list, stream->pos++);
+}
+
+const Token *PeekToken(TokenStream *stream) {
+  return GetTokenAt(stream->list, stream->pos);
+}
+
+int IsNextToken(TokenStream *stream, const char *str) {
+  return IsEqualToken(GetTokenAt(stream->list, stream->pos), str);
+}
+
+const Token *ConsumeToken(TokenStream *stream, const char *str) {
+  if (!IsNextToken(stream, str)) return NULL;
+  return PopToken(stream);
 }

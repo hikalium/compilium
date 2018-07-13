@@ -3,7 +3,7 @@ SRCS=ast.c error.c generate.c il.c parser.c token.c tokenizer.c
 MAIN_SRCS=compilium.c
 HEADERS=compilium.h
 RUN_TARGET ?= Tests/sample
-UNIT_TESTS ?= ast
+UNIT_TESTS ?= ast token
 
 UNIT_TEST_TARGETS = $(addsuffix .unittest, $(UNIT_TESTS))
 

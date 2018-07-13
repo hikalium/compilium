@@ -64,6 +64,7 @@ typedef enum {
 } KernelType;
 
 typedef struct TOKEN_LIST TokenList;
+typedef struct TOKEN_STREAM TokenStream;
 typedef struct AST_LIST ASTList;
 typedef struct AST_DICT ASTDict;
 
@@ -155,7 +156,6 @@ typedef struct {
   ASTType type;
   ASTList *decl_specs;
   ASTList *init_decltors;
-  ;
 } ASTDecl;
 
 typedef struct {
@@ -285,14 +285,20 @@ int IsEqualToken(const Token *token, const char *s);
 int IsKeyword(const Token *token);
 int IsTypeToken(const Token *token);
 void SetNumOfTokens(int num_of_tokens);
-TokenList *AllocateTokenList();
+TokenList *AllocateTokenList(int capacity);
 void AppendTokenToList(TokenList *list, const Token *token);
-const Token *GetTokenAt(TokenList *list, int index);
+const Token *GetTokenAt(const TokenList *list, int index);
 int GetSizeOfTokenList(const TokenList *list);
 void SetSizeOfTokenList(TokenList *list, int size);
 void DebugPrintToken(const Token *token);
 void PrintToken(const Token *token);
 void PrintTokenList(const TokenList *list);
+
+TokenStream *AllocAndInitTokenStream(const TokenList *list);
+const Token *PopToken(TokenStream *stream);
+const Token *PeekToken(TokenStream *stream);
+int IsNextToken(TokenStream *stream, const char *str);
+const Token *ConsumeToken(TokenStream *stream, const char *str);
 
 // @tokenizer.c
 char *ReadFile(const char *file_name);
