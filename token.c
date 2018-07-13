@@ -85,6 +85,10 @@ const Token *GetTokenAt(TokenList *list, int index) {
 int GetSizeOfTokenList(const TokenList *list) { return list->size; }
 void SetSizeOfTokenList(TokenList *list, int size) { list->size = size; }
 
+void DebugPrintToken(const Token *token) {
+  printf("(Token: '%s' type %d at %s:%d)\n", token->str, token->type,
+         token->filename, token->line);
+}
 void PrintToken(const Token *token) { printf("%s", token->str); }
 
 void PrintTokenList(const TokenList *list) {

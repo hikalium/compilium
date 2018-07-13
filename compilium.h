@@ -290,6 +290,7 @@ void AppendTokenToList(TokenList *list, const Token *token);
 const Token *GetTokenAt(TokenList *list, int index);
 int GetSizeOfTokenList(const TokenList *list);
 void SetSizeOfTokenList(TokenList *list, int size);
+void DebugPrintToken(const Token *token);
 void PrintToken(const Token *token);
 void PrintTokenList(const TokenList *list);
 
