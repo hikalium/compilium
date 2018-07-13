@@ -92,6 +92,12 @@ void SpillRealRegister(FILE *fp, int rreg) {
   }
 }
 
+void SpillAllRealRegisters(FILE *fp) {
+  for (int i = 1; i < 1 + NUM_OF_SCRATCH_REGS; i++) {
+    SpillRealRegister(fp, i);
+  }
+}
+
 int FindFreeRealReg(FILE *fp) {
   for (int i = 1; i < NUM_OF_SCRATCH_REGS + 1; i++) {
     if (!RealRegAssignTable[i]) return i;
@@ -310,8 +316,10 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         if (!func_ident) Error("call_params[0] is not an ASTIdent");
         fprintf(fp, ".global %s%s\n", kernel_type == kKernelDarwin ? "_" : "",
                 func_ident->token->str);
+        SpillAllRealRegisters(fp);
         fprintf(fp, "call %s%s\n", kernel_type == kKernelDarwin ? "_" : "",
                 func_ident->token->str);
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
       } break;
       case kILOpWriteLocalVar: {
         const char *right = AssignRegister(fp, op->right_reg);
