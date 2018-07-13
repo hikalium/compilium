@@ -29,7 +29,7 @@ int main(int argc, char *argv[]) {
   InitILOpTypeName();
 
   char *input = ReadFile(src_file);
-  TokenList *tokens = AllocateTokenList(MAX_TOKENS);
+  TokenList *tokens = AllocTokenList(MAX_TOKENS);
   Tokenize(tokens, input, src_file);
   free(input);
 

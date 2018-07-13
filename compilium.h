@@ -277,15 +277,14 @@ ASTILOp *GenerateIL(ASTList *il, ASTNode *node, ASTDict *stack_vars);
 ASTNode *Parse(TokenList *tokens);
 
 // @token.c
-Token *AllocateToken(const char *s, TokenType type);
-Token *AllocateTokenWithSubstring(const char *begin, const char *end,
-                                  TokenType type, const char *filename,
-                                  int line);
+Token *AllocToken(const char *s, TokenType type);
+Token *AllocTokenWithSubstring(const char *begin, const char *end,
+                               TokenType type, const char *filename, int line);
 int IsEqualToken(const Token *token, const char *s);
 int IsKeyword(const Token *token);
 int IsTypeToken(const Token *token);
 void SetNumOfTokens(int num_of_tokens);
-TokenList *AllocateTokenList(int capacity);
+TokenList *AllocTokenList(int capacity);
 void AppendTokenToList(TokenList *list, const Token *token);
 const Token *GetTokenAt(const TokenList *list, int index);
 int GetSizeOfTokenList(const TokenList *list);

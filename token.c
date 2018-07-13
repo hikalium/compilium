@@ -8,7 +8,7 @@ void InternalCopyTokenStr(Token *token, const char *s, size_t len) {
   token->str[len] = 0;
 }
 
-Token *AllocateToken(const char *s, TokenType type) {
+Token *AllocToken(const char *s, TokenType type) {
   if (!s) {
     Error("Trying to allocate a token with a null string");
   }
@@ -18,9 +18,8 @@ Token *AllocateToken(const char *s, TokenType type) {
   return token;
 }
 
-Token *AllocateTokenWithSubstring(const char *begin, const char *end,
-                                  TokenType type, const char *filename,
-                                  int line) {
+Token *AllocTokenWithSubstring(const char *begin, const char *end,
+                               TokenType type, const char *filename, int line) {
   Token *token = malloc(sizeof(Token));
   InternalCopyTokenStr(token, begin, end - begin);
   token->type = type;
@@ -54,6 +53,13 @@ int IsTypeToken(const Token *token) {
   return IsEqualToken(token, "int") || IsEqualToken(token, "char");
 }
 
+void DebugPrintToken(const Token *token) {
+  printf("(Token: '%s' type %d at %s:%d)\n", token->str, token->type,
+         token->filename, token->line);
+}
+
+void PrintToken(const Token *token) { printf("%s", token->str); }
+
 // TokenList
 
 struct TOKEN_LIST {
@@ -62,7 +68,7 @@ struct TOKEN_LIST {
   const Token *tokens[];
 };
 
-TokenList *AllocateTokenList(int capacity) {
+TokenList *AllocTokenList(int capacity) {
   TokenList *list =
       malloc(sizeof(TokenList) + sizeof(const Token *) * capacity);
   list->capacity = capacity;
@@ -85,13 +91,8 @@ const Token *GetTokenAt(const TokenList *list, int index) {
 }
 
 int GetSizeOfTokenList(const TokenList *list) { return list->size; }
-void SetSizeOfTokenList(TokenList *list, int size) { list->size = size; }
 
-void DebugPrintToken(const Token *token) {
-  printf("(Token: '%s' type %d at %s:%d)\n", token->str, token->type,
-         token->filename, token->line);
-}
-void PrintToken(const Token *token) { printf("%s", token->str); }
+void SetSizeOfTokenList(TokenList *list, int size) { list->size = size; }
 
 void PrintTokenList(const TokenList *list) {
   for (int i = 0; i < list->size; i++) {

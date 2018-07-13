@@ -15,9 +15,9 @@ void ExpectExactASTNode(ASTNode *actual, ASTNode *expected) {
 
 void TestASTDict() {
   ASTDict *dict = AllocASTDict(5);
-  Token *token_one = AllocateToken("one", kIdentifier);
-  Token *token_two = AllocateToken("2", kIdentifier);
-  Token *token_three = AllocateToken("III", kIdentifier);
+  Token *token_one = AllocToken("one", kIdentifier);
+  Token *token_two = AllocToken("2", kIdentifier);
+  Token *token_three = AllocToken("III", kIdentifier);
   AppendASTNodeToDict(dict, "one", ToASTNode(AllocAndInitASTIdent(token_one)));
   AppendASTNodeToDict(dict, "two", ToASTNode(AllocAndInitASTIdent(token_two)));
   AppendASTNodeToDict(dict, "three",

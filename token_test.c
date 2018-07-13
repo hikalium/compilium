@@ -1,10 +1,10 @@
 #include "compilium.h"
 
 void TestTokenStream() {
-  TokenList *list = AllocateTokenList(3);
-  AppendTokenToList(list, AllocateToken("one", kIdentifier));
-  AppendTokenToList(list, AllocateToken("two", kIdentifier));
-  AppendTokenToList(list, AllocateToken("three", kIdentifier));
+  TokenList *list = AllocTokenList(3);
+  AppendTokenToList(list, AllocToken("one", kIdentifier));
+  AppendTokenToList(list, AllocToken("two", kIdentifier));
+  AppendTokenToList(list, AllocToken("three", kIdentifier));
 
   TokenStream *stream = AllocAndInitTokenStream(list);
 
