@@ -49,6 +49,7 @@ typedef enum {
   kILOpMod,
   kILOpLoadImm,
   kILOpLoadIdent,
+  kILOpLoadArg,
   kILOpFuncBegin,
   kILOpFuncEnd,
   kILOpReturn,

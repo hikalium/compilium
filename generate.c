@@ -244,6 +244,9 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
                   ident->token->type);
         }
       } break;
+      case kILOpLoadArg: {
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RDI + op->left_reg);
+      } break;
       case kILOpAdd:
       case kILOpSub:
       case kILOpMul:
@@ -264,18 +267,15 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
           fprintf(fp, "sub %s, %s\n", left, right);
           fprintf(fp, "mov %s, %s\n", dst, left);
         } else if (op->op == kILOpMul) {
+          AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
           const char *dst = AssignRegister(fp, op->dst_reg);
-          const char *left = AssignRegister(fp, op->left_reg);
           const char *right = AssignRegister(fp, op->right_reg);
           //
           // rdx:rax <- rax * r/m
-          fprintf(fp, "push rax\n");
-          fprintf(fp, "mov rax, %s\n", left);
           fprintf(fp, "push rdx\n");
           fprintf(fp, "imul %s\n", right);
           fprintf(fp, "pop rdx\n");
           fprintf(fp, "mov %s, rax\n", dst);
-          fprintf(fp, "pop rax\n");
         } else if (op->op == kILOpDiv) {
           // rax <- rdx:rax / r/m
           AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);

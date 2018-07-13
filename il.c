@@ -22,11 +22,12 @@ ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident) {
   return FindIdentInContext(context->parent, ident);
 }
 
-void AppendLocalVarInContext(Context *context, const Token *token) {
+ASTLocalVar *AppendLocalVarInContext(Context *context, const Token *token) {
   int ofs = GetSizeOfASTDict(context->dict) + 1;
   printf("LocalVar[%d]: %s\n", ofs, token->str);
-  AppendASTNodeToDict(context->dict, token->str,
-                      ToASTNode(AllocASTLocalVar(ofs)));
+  ASTLocalVar *local_var = AllocASTLocalVar(ofs);
+  AppendASTNodeToDict(context->dict, token->str, ToASTNode(local_var));
+  return local_var;
 }
 
 const char *ILOpTypeName[kNumOfILOpFunc];
@@ -39,6 +40,7 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpMod] = "Mod";
   ILOpTypeName[kILOpLoadImm] = "LoadImm";
   ILOpTypeName[kILOpLoadIdent] = "LoadIdent";
+  ILOpTypeName[kILOpLoadArg] = "LoadArg";
   ILOpTypeName[kILOpFuncBegin] = "FuncBegin";
   ILOpTypeName[kILOpFuncEnd] = "FuncEnd";
   ILOpTypeName[kILOpReturn] = "Return";
@@ -69,10 +71,31 @@ void GenerateILForCompStmt(ASTList *il, ASTNode *node, Context *context) {
 }
 
 void GenerateILForFuncDef(ASTList *il, ASTNode *node, Context *context) {
-  ASTFuncDef *def = ToASTFuncDef(node);
   PushASTNodeToList(
       il, ToASTNode(AllocAndInitASTILOp(kILOpFuncBegin, REG_NULL, REG_NULL,
                                         REG_NULL, node)));
+  context = AllocContext(context);
+  ASTFuncDef *def = ToASTFuncDef(node);
+  ASTDirectDecltor *args_decltor = def->decltor->direct_decltor;
+  ASTList *param_decl_list = ToASTList(args_decltor->data);
+
+  if (param_decl_list) {
+    PrintASTNode(ToASTNode(param_decl_list), 0);
+    for (int i = 0; i < GetSizeOfASTList(param_decl_list); i++) {
+      ASTParamDecl *param_decl =
+          ToASTParamDecl(GetASTNodeAt(param_decl_list, i));
+      ASTDecltor *param_decltor = ToASTDecltor(param_decl->decltor);
+      const Token *ident_token = GetIdentTokenFromDecltor(param_decltor);
+      printf("param: %s\n", ident_token->str);
+      ASTLocalVar *local_var = AppendLocalVarInContext(context, ident_token);
+      ASTILOp *il_op =
+          AllocAndInitASTILOp(kILOpLoadArg, GetRegNumber(), i, REG_NULL, node);
+      PushASTNodeToList(il, ToASTNode(il_op));
+      PushASTNodeToList(il, ToASTNode(AllocAndInitASTILOp(
+                                kILOpWriteLocalVar, il_op->dst_reg, REG_NULL,
+                                il_op->dst_reg, ToASTNode(local_var))));
+    }
+  }
   GenerateILForCompStmt(il, ToASTNode(def->comp_stmt), AllocContext(context));
   PushASTNodeToList(il, ToASTNode(AllocAndInitASTILOp(
                             kILOpFuncEnd, REG_NULL, REG_NULL, REG_NULL, node)));
