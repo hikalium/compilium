@@ -33,27 +33,15 @@ int IsEqualToken(const Token *token, const char *s) {
   return strcmp(token->str, s) == 0;
 }
 
-static const char *keyword_list[] = {
-    "auto",       "break",    "case",     "char",   "const",   "continue",
-    "default",    "do",       "double",   "else",   "enum",    "extern",
-    "float",      "for",      "goto",     "if",     "inline",  "int",
-    "long",       "register", "restrict", "return", "short",   "signed",
-    "sizeof",     "static",   "struct",   "switch", "typedef", "union",
-    "unsigned",   "void",     "volatile", "while",  "_Bool",   "_Complex",
-    "_Imaginary", NULL};
-
-int IsKeyword(const Token *token) {
-  for (int i = 0; keyword_list[i]; i++) {
-    if (IsEqualToken(token, keyword_list[i])) return 1;
-  }
-  return 0;
-}
-
 int IsTypeToken(const Token *token) {
   return IsEqualToken(token, "int") || IsEqualToken(token, "char");
 }
 
 void DebugPrintToken(const Token *token) {
+  if (!token) {
+    printf("(Token: NULL)\n");
+    return;
+  }
   printf("(Token: '%s' type %d at %s:%d)\n", token->str, token->type,
          token->filename, token->line);
 }
@@ -118,6 +106,20 @@ TokenStream *AllocAndInitTokenStream(const TokenList *list) {
 const Token *PopToken(TokenStream *stream) {
   if (stream->pos >= stream->list->size) return NULL;
   return GetTokenAt(stream->list, stream->pos++);
+}
+
+void UnpopToken(TokenStream *stream) {
+  stream->pos--;
+  if (stream->pos < 0) stream->pos = 0;
+}
+
+int GetStreamPos(TokenStream *stream) { return stream->pos; }
+
+int SeekStream(TokenStream *stream, int pos) {
+  if (0 <= pos && pos <= stream->list->size) {
+    stream->pos = pos;
+  }
+  return stream->pos;
 }
 
 const Token *PeekToken(TokenStream *stream) {

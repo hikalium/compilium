@@ -12,6 +12,7 @@ typedef enum {
   kCharacterLiteral,
   kInteger,
   kPunctuator,
+  kKeyword,
 } TokenType;
 
 typedef enum {
@@ -281,7 +282,6 @@ Token *AllocToken(const char *s, TokenType type);
 Token *AllocTokenWithSubstring(const char *begin, const char *end,
                                TokenType type, const char *filename, int line);
 int IsEqualToken(const Token *token, const char *s);
-int IsKeyword(const Token *token);
 int IsTypeToken(const Token *token);
 void SetNumOfTokens(int num_of_tokens);
 TokenList *AllocTokenList(int capacity);
@@ -295,6 +295,9 @@ void PrintTokenList(const TokenList *list);
 
 TokenStream *AllocAndInitTokenStream(const TokenList *list);
 const Token *PopToken(TokenStream *stream);
+void UnpopToken(TokenStream *stream);
+int GetStreamPos(TokenStream *stream);
+int SeekStream(TokenStream *stream, int pos);
 const Token *PeekToken(TokenStream *stream);
 int IsNextToken(TokenStream *stream, const char *str);
 const Token *ConsumeToken(TokenStream *stream, const char *str);

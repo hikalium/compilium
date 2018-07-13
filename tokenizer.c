@@ -22,6 +22,22 @@ char *ReadFile(const char *file_name) {
   return file_buf;
 }
 
+static const char *keyword_list[] = {
+    "auto",       "break",    "case",     "char",   "const",   "continue",
+    "default",    "do",       "double",   "else",   "enum",    "extern",
+    "float",      "for",      "goto",     "if",     "inline",  "int",
+    "long",       "register", "restrict", "return", "short",   "signed",
+    "sizeof",     "static",   "struct",   "switch", "typedef", "union",
+    "unsigned",   "void",     "volatile", "while",  "_Bool",   "_Complex",
+    "_Imaginary", NULL};
+
+int IsKeywordStr(const char *str) {
+  for (int i = 0; keyword_list[i]; i++) {
+    if (strcmp(str, keyword_list[i]) == 0) return 1;
+  }
+  return 0;
+}
+
 #define IS_IDENT_NODIGIT(c) \
   ((c) == '_' || ('a' <= (c) && (c) <= 'z') || ('A' <= (c) && (c) <= 'Z'))
 #define IS_IDENT_DIGIT(c) (('0' <= (c) && (c) <= '9'))
@@ -34,8 +50,10 @@ const char *CommonTokenizer(TokenList *tokens, const char *p,
     while (IS_IDENT_NODIGIT(*p) || IS_IDENT_DIGIT(*p)) {
       p++;
     }
-    AppendTokenToList(
-        tokens, AllocTokenWithSubstring(begin, p, kIdentifier, filename, line));
+    Token *token =
+        AllocTokenWithSubstring(begin, p, kIdentifier, filename, line);
+    if (IsKeywordStr(token->str)) token->type = kKeyword;
+    AppendTokenToList(tokens, token);
   } else if (IS_IDENT_DIGIT(*p)) {
     begin = p++;
     while (IS_IDENT_DIGIT(*p)) {

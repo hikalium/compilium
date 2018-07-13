@@ -57,3 +57,4 @@ compilium_dbg
 compilium_unittest
 *.txt
 *.unittest
+.DS_Store

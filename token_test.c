@@ -11,6 +11,7 @@ void TestTokenStream() {
   const Token *token;
   token = PeekToken(stream);
   if (token != PeekToken(stream)) Error("PeekToken should not change pos");
+  if (GetStreamPos(stream) != 0) Error("GetStreamPos() should return 0");
   if (!IsNextToken(stream, "one")) Error("Next token should be 'one'");
   if (!IsNextToken(stream, "one")) Error("IsNextToken should not change pos");
   if (IsNextToken(stream, "two"))
@@ -24,6 +25,29 @@ void TestTokenStream() {
     Error("Token 'four' should not be consumed");
   if (PeekToken(stream)) Error("PeekToken should return NULL");
   if (PopToken(stream)) Error("PopToken should return NULL");
+  if (GetStreamPos(stream) != 3) Error("GetStreamPos() should return 3");
+  UnpopToken(stream);
+  if (!IsNextToken(stream, "three"))
+    Error("Next token should be 'three' after Unpop()");
+  UnpopToken(stream);
+  if (!IsNextToken(stream, "two"))
+    Error("Next token should be 'two' after Unpop()");
+  UnpopToken(stream);
+  if (!IsNextToken(stream, "one"))
+    Error("Next token should be 'one' after Unpop()");
+  UnpopToken(stream);
+  if (!IsNextToken(stream, "one"))
+    Error("Unpop() should not move pos before firste element");
+  if (GetStreamPos(stream) != 0) Error("GetStreamPos() should return 0");
+  if (SeekStream(stream, -1) != 0)
+    Error(
+        "SeekStream() should keep its pos when trying to seek out of "
+        "range(-1)");
+  if (SeekStream(stream, 1) != 1) Error("SeekStream() can set pos to 1");
+  if (SeekStream(stream, 3) != 3)
+    Error("SeekStream() can set pos after last element");
+  if (SeekStream(stream, 4) != 3)
+    Error("SeekStream() should keep pos when trying to seek out of range(4)");
 
   puts("PASS TestTokenStream");
 }

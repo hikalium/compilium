@@ -29,7 +29,7 @@ run: compilium
 	cat $(RUN_TARGET).compilium.log
 
 debug: compilium_dbg
-	lldb ./compilium_dbg Tests/sample.c Tests/sample.compilium.S
+	lldb -- ./compilium_dbg -o $(RUN_TARGET).compilium.S $(RUN_TARGET).c
 
 test: compilium
 	@ make unittest
