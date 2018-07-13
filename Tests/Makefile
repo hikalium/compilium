@@ -1,10 +1,5 @@
 SHELL=/bin/bash
-TESTS = simple_return \
-		printf \
-		hello_world \
-		local_variable_def_assign_ref \
-		nested_call \
-		tokenize_tab
+TESTS ?= $(basename $(wildcard *.c) simple_return)
 
 default: expr_test $(addsuffix .test, $(TESTS))
 
