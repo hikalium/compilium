@@ -3,6 +3,7 @@ TESTS = simple_return \
 		printf \
 		hello_world \
 		local_variable_def_assign_ref \
+		nested_call \
 		tokenize_tab
 
 default: expr_test $(addsuffix .test, $(TESTS))
