@@ -162,12 +162,15 @@ ASTILOp *GenerateILForConstant(ASTList *il, ASTNode *node, Context *context) {
 ASTILOp *GenerateILForIdent(ASTList *il, ASTNode *node, Context *context) {
   int dst = GetRegNumber();
   ASTNode *var = FindIdentInContext(context, ToASTIdent(node));
+  if (!var || (var->type != kASTLocalVar)) {
+    Error("Unknown identifier %s", ToASTIdent(node)->token->str);
+  }
   ASTLocalVar *local_var = ToASTLocalVar(var);
-  ASTILOp *il_op =
-      local_var
-          ? AllocAndInitASTILOp(kILOpReadLocalVar, dst, REG_NULL, REG_NULL,
-                                ToASTNode(local_var))
-          : AllocAndInitASTILOp(kILOpLoadIdent, dst, REG_NULL, REG_NULL, node);
+  ASTILOp *il_op = NULL;
+  if (local_var) {
+    il_op = AllocAndInitASTILOp(kILOpReadLocalVar, dst, REG_NULL, REG_NULL,
+                                ToASTNode(local_var));
+  }
   PushASTNodeToList(il, ToASTNode(il_op));
   return il_op;
 }
