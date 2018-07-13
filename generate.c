@@ -166,7 +166,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
     ASTILOp *op = ToASTILOp(node);
     if (op->op == kILOpFuncBegin) {
       const char *func_name =
-          GetFuncNameStrFromFuncDef(ToASTFuncDef(op->ast_node));
+          GetFuncNameTokenFromFuncDef(ToASTFuncDef(op->ast_node))->str;
       if (!func_name) {
         Error("func_name is null");
       }
@@ -187,7 +187,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         // push dword: SS[rsp -= 4] = data32;
         // pop dword: data32 = SS[rsp]; rsp += 4;
         const char *func_name =
-            GetFuncNameStrFromFuncDef(ToASTFuncDef(op->ast_node));
+            GetFuncNameTokenFromFuncDef(ToASTFuncDef(op->ast_node))->str;
         if (!func_name) {
           Error("func_name is null");
         }

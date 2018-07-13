@@ -162,23 +162,23 @@ ASTILOp* AllocAndInitASTILOp(ILOpType op, int dst_reg, int left_reg,
   return node;
 }
 
-const char* GetIdentStrFromDirectDecltor(ASTDirectDecltor* direct_decltor) {
+const Token* GetIdentTokenFromDirectDecltor(ASTDirectDecltor* direct_decltor) {
   if (!direct_decltor) return NULL;
   if (direct_decltor->direct_decltor)
-    return GetIdentStrFromDirectDecltor(direct_decltor->direct_decltor);
+    return GetIdentTokenFromDirectDecltor(direct_decltor->direct_decltor);
   ASTIdent* ident = ToASTIdent(direct_decltor->data);
   if (!ident) return NULL;
-  return ident->token->str;
+  return ident->token;
 }
 
-const char* GetIdentStrFromDecltor(ASTDecltor* decltor) {
+const Token* GetIdentTokenFromDecltor(ASTDecltor* decltor) {
   if (!decltor) return NULL;
-  return GetIdentStrFromDirectDecltor(decltor->direct_decltor);
+  return GetIdentTokenFromDirectDecltor(decltor->direct_decltor);
 }
 
-const char* GetFuncNameStrFromFuncDef(ASTFuncDef* func_def) {
+const Token* GetFuncNameTokenFromFuncDef(ASTFuncDef* func_def) {
   if (!func_def) return NULL;
-  return GetIdentStrFromDecltor(func_def->decltor);
+  return GetIdentTokenFromDecltor(func_def->decltor);
 }
 
 void PrintASTNodePadding(int depth) {

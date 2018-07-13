@@ -245,9 +245,9 @@ ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
 ASTILOp *AllocAndInitASTILOp(ILOpType op, int dst_reg, int left_reg,
                              int right_reg, ASTNode *ast_node);
 
-const char *GetIdentStrFromDecltor(ASTDecltor *decltor);
-const char *GetIdentStrFromDecltor(ASTDecltor *decltor);
-const char *GetFuncNameStrFromFuncDef(ASTFuncDef *func_def);
+const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
+const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
+const Token *GetFuncNameTokenFromFuncDef(ASTFuncDef *func_def);
 
 void PrintASTNode(ASTNode *node, int depth);
 void PushASTNodeToList(ASTList *list, ASTNode *node);
