@@ -6,6 +6,8 @@ ASTDecltor *ParseDecltor(TokenStream *stream);
 ASTDecl *ParseDecl(TokenStream *stream);
 ASTNode *ParseAssignExpr(TokenStream *stream);
 
+// Utils
+
 #define MAX_NUM_OF_NODES_IN_COMMA_SEPARATED_LIST 8
 ASTList *ParseCommaSeparatedList(TokenStream *stream,
                                  ASTNode *(elem_parser)(TokenStream *stream)) {
@@ -25,6 +27,26 @@ ASTList *ParseCommaSeparatedList(TokenStream *stream,
   }
   return list;
 }
+
+ASTNode *ParseLeftAssocBinOp(TokenStream *stream,
+                             ASTNode *(sub_parser)(TokenStream *stream),
+                             const char *ops[]) {
+  ASTNode *last = sub_parser(stream);
+  while (last) {
+    int i;
+    for (i = 0; ops[i]; i++) {
+      if (IsNextToken(stream, ops[i])) break;
+    }
+    if (!ops[i]) break;
+    const Token *op = PopToken(stream);
+    ASTNode *node = sub_parser(stream);
+    if (!node) Error("node should not be NULL");
+    last = AllocAndInitASTExprBinOp(op, last, node);
+  }
+  return last;
+}
+
+// Parser
 
 ASTNode *ParsePrimaryExpr(TokenStream *stream) {
   const Token *token = PeekToken(stream);
@@ -65,34 +87,13 @@ ASTNode *ParseUnaryExpr(TokenStream *stream) { return ParsePostExpr(stream); }
 ASTNode *ParseCastExpr(TokenStream *stream) { return ParseUnaryExpr(stream); }
 
 ASTNode *ParseMultiplicativeExpr(TokenStream *stream) {
-  // multiplicative-expression:
-  //   cast-expression
-  //   multiplicative-expression [* / %] cast-expression
-  ASTNode *last = ParseCastExpr(stream);
-  if (!last) return NULL;
-  // TODO: Impl simplified matcher
-  while (IsNextToken(stream, "*") || IsNextToken(stream, "/") ||
-         IsNextToken(stream, "%")) {
-    const Token *op = PopToken(stream);
-    ASTNode *node = ParseCastExpr(stream);
-    if (!node) Error("node should not be NULL");
-    last = AllocAndInitASTExprBinOp(op, last, node);
-  }
-  return last;
+  const static char *ops[] = {"*", "/", "%", NULL};
+  return ParseLeftAssocBinOp(stream, ParseCastExpr, ops);
 }
 
 ASTNode *ParseAdditiveExpr(TokenStream *stream) {
-  // additive-expression
-  DebugPrintTokenStream(__func__, stream);
-  ASTNode *last = ParseMultiplicativeExpr(stream);
-  if (!last) return NULL;
-  while (IsNextToken(stream, "+") || IsNextToken(stream, "-")) {
-    const Token *op = PopToken(stream);
-    ASTNode *node = ParseMultiplicativeExpr(stream);
-    if (!node) Error("node should not be NULL");
-    last = AllocAndInitASTExprBinOp(op, last, node);
-  }
-  return last;
+  const static char *ops[] = {"+", "-", NULL};
+  return ParseLeftAssocBinOp(stream, ParseMultiplicativeExpr, ops);
 }
 
 ASTNode *ParseShiftExpr(TokenStream *stream) {
@@ -142,18 +143,8 @@ ASTNode *ParseAssignExpr(TokenStream *stream) {
 
 #define MAX_NODES_IN_EXPR 64
 ASTNode *ParseExpression(TokenStream *stream) {
-  // expression:
-  //   assignment-expression
-  //   expression , assignment-expression
-  DebugPrintTokenStream(__func__, stream);
-  ASTNode *last = ParseAssignExpr(stream);
-  if (!last) return NULL;
-  while (IsNextToken(stream, ",")) {
-    const Token *op = PopToken(stream);
-    ASTNode *node = ParseAssignExpr(stream);
-    last = AllocAndInitASTExprBinOp(op, last, node);
-  }
-  return last;
+  const static char *ops[] = {",", NULL};
+  return ParseLeftAssocBinOp(stream, ParseAssignExpr, ops);
 }
 
 ASTNode *ParseJumpStmt(TokenStream *stream) {
