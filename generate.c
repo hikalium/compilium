@@ -164,6 +164,12 @@ const char *GetParamRegister(int param_index) {
   return ScratchRegNames[param_index];
 }
 
+void GenerateFuncEpilogue(FILE *fp) {
+  fprintf(fp, "mov     rsp, rbp\n");
+  fprintf(fp, "pop     rbp\n");
+  fprintf(fp, "ret\n");
+}
+
 void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
   fputs(".intel_syntax noprefix\n", fp);
   // generate func symbol
@@ -203,9 +209,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "mov     rbp, rsp\n");
       } break;
       case kILOpFuncEnd:
-        fprintf(fp, "mov     rsp, rbp\n");
-        fprintf(fp, "pop     rbp\n");
-        fprintf(fp, "ret\n");
+        GenerateFuncEpilogue(fp);
         break;
       case kILOpLoadImm: {
         const char *dst_name = AssignRegister(fp, op->dst_reg);
@@ -404,9 +408,10 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "cmp %s, %s\n", left, right);
         fprintf(fp, "setne al\n");
       } break;
-      case kILOpReturn: {
+      case kILOpReturn:
         AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
-      } break;
+        GenerateFuncEpilogue(fp);
+        break;
       case kILOpCall: {
         ASTList *call_params = ToASTList(op->ast_node);
         if (!call_params) Error("call_params is not an ASTList");

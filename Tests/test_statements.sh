@@ -8,6 +8,7 @@ function test_statements() {
 
 test_statements "return 0;" 0
 test_statements "return 5;" 5
+test_statements "return 3; return 5;" 3
 
 test_statements "int foo; foo = 5; return foo;" 5
 test_statements "int foo; foo = 5; return foo * foo;" 25
