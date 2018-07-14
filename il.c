@@ -40,7 +40,8 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpMod] = "Mod";
   ILOpTypeName[kILOpAnd] = "And";
   ILOpTypeName[kILOpXor] = "Xor";
-  ILOpTypeName[kILOpOr] = "Xor";
+  ILOpTypeName[kILOpOr] = "Or";
+  ILOpTypeName[kILOpLogicalAnd] = "LogicalAnd";
   ILOpTypeName[kILOpCmpG] = "CmpG";
   ILOpTypeName[kILOpCmpGE] = "CmpGE";
   ILOpTypeName[kILOpCmpL] = "CmpL";
@@ -118,12 +119,12 @@ typedef struct {
 } PairOfStrAndILOpType;
 
 PairOfStrAndILOpType bin_op_list[] = {
-    {"+", kILOpAdd},         {"-", kILOpSub},    {"*", kILOpMul},
-    {"/", kILOpDiv},         {"%", kILOpMod},    {"<<", kILOpShiftLeft},
-    {">>", kILOpShiftRight}, {">", kILOpCmpG},   {">=", kILOpCmpGE},
-    {"<", kILOpCmpL},        {"<=", kILOpCmpLE}, {"==", kILOpCmpE},
-    {"!=", kILOpCmpNE},      {"&", kILOpAnd},    {"^", kILOpXor},
-    {"|", kILOpOr},          {NULL, kILOpNop},
+    {"+", kILOpAdd},         {"-", kILOpSub},         {"*", kILOpMul},
+    {"/", kILOpDiv},         {"%", kILOpMod},         {"<<", kILOpShiftLeft},
+    {">>", kILOpShiftRight}, {">", kILOpCmpG},        {">=", kILOpCmpGE},
+    {"<", kILOpCmpL},        {"<=", kILOpCmpLE},      {"==", kILOpCmpE},
+    {"!=", kILOpCmpNE},      {"&", kILOpAnd},         {"^", kILOpXor},
+    {"|", kILOpOr},          {"&&", kILOpLogicalAnd}, {NULL, kILOpNop},
 };
 
 ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {

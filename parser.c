@@ -127,8 +127,10 @@ ASTNode *ParseInclusiveOrExpr(TokenStream *stream) {
 }
 
 ASTNode *ParseLogicalAndExpr(TokenStream *stream) {
-  return ParseInclusiveOrExpr(stream);
+  const static char *ops[] = {"&&", NULL};
+  return ParseLeftAssocBinOp(stream, ParseInclusiveOrExpr, ops);
 }
+
 ASTNode *ParseLogicalOrExpr(TokenStream *stream) {
   return ParseLogicalAndExpr(stream);
 }
