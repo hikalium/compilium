@@ -36,6 +36,7 @@ typedef enum {
   //
   kASTDict,
   kASTLocalVar,
+  kASTLabel,
   //
   kNumOfASTType
 } ASTType;
@@ -51,6 +52,7 @@ typedef enum {
   kILOpXor,
   kILOpOr,
   kILOpLogicalAnd,
+  kILOpLogicalOr,
   kILOpShiftLeft,
   kILOpShiftRight,
   kILOpCmpG,
@@ -68,6 +70,10 @@ typedef enum {
   kILOpCall,
   kILOpWriteLocalVar,
   kILOpReadLocalVar,
+  kILOpLabel,
+  kILOpJmpIfZero,
+  kILOpJmpIfNotZero,
+  kILOpSetLogicalValue,
   //
   kNumOfILOpFunc
 } ILOpType;
@@ -202,6 +208,11 @@ typedef struct {
   int ofs_in_stack;
 } ASTLocalVar;
 
+typedef struct {
+  ASTType type;
+  int label_number;
+} ASTLabel;
+
 // @ast.c
 void InitASTTypeName();
 const char *GetASTTypeName(ASTNode *node);
@@ -227,6 +238,7 @@ DefToAST(ParamDecl);
 DefToAST(Pointer);
 DefToAST(Dict);
 DefToAST(LocalVar);
+DefToAST(Label);
 
 #define DefAllocAST(type) AST##type *AllocAST##type()
 DefAllocAST(FuncDecl);
@@ -248,6 +260,7 @@ DefAllocAST(ParamDecl);
 DefAllocAST(Pointer);
 ASTDict *AllocASTDict(int capacity);
 ASTLocalVar *AllocASTLocalVar(int ofs_in_stack);
+DefAllocAST(Label);
 
 ASTNode *AllocAndInitASTConstant(const Token *token);
 ASTIdent *AllocAndInitASTIdent(const Token *token);

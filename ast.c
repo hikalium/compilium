@@ -41,6 +41,8 @@ void InitASTTypeName() {
   ASTTypeName[kASTDecl] = "Decl";
   ASTTypeName[kASTParamDecl] = "ParamDecl";
   ASTTypeName[kASTDict] = "Dict";
+  ASTTypeName[kASTLocalVar] = "LocalVar";
+  ASTTypeName[kASTLabel] = "Label";
 }
 
 const char* GetASTTypeName(ASTNode* node) {
@@ -75,6 +77,7 @@ GenToAST(ParamDecl);
 GenToAST(Pointer);
 GenToAST(Dict);
 GenToAST(LocalVar);
+GenToAST(Label);
 
 #define GenAllocAST(Type) \
   AST##Type* AllocAST##Type() { \
@@ -122,6 +125,13 @@ ASTLocalVar* AllocASTLocalVar(int ofs_in_stack) {
   var->type = kASTLocalVar;
   var->ofs_in_stack = ofs_in_stack;
   return var;
+}
+
+ASTLabel* AllocASTLabel() {
+  ASTLabel* label = malloc(sizeof(ASTLabel));
+  label->type = kASTLabel;
+  label->label_number = 0;
+  return label;
 }
 
 ASTNode* AllocAndInitASTConstant(const Token* token) {

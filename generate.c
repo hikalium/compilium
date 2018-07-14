@@ -321,8 +321,17 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
         const char *left = AssignRegister(fp, op->left_reg);
         const char *right = AssignRegister(fp, op->right_reg);
+        fprintf(fp, "cmp %s, 0\n", left);
+        fprintf(fp, " %s, %s\n", left, right);
+        fprintf(fp, "setnz al\n");
+      } break;
+      case kILOpLogicalOr: {
+        // TODO: dst can be any registers which can access as a byte reg
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
+        const char *left = AssignRegister(fp, op->left_reg);
+        const char *right = AssignRegister(fp, op->right_reg);
         fprintf(fp, "xor rax, rax\n");
-        fprintf(fp, "and %s, %s\n", left, right);
+        fprintf(fp, "or %s, %s\n", left, right);
         fprintf(fp, "setnz al\n");
       } break;
       case kILOpShiftLeft: {
@@ -427,6 +436,37 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         if (!var) Error("var is not an ASTLocalVar");
         int byte_ofs = 8 * var->ofs_in_stack;
         fprintf(fp, "mov %s, [rbp - %d]\n", dst, byte_ofs);
+      } break;
+      case kILOpLabel: {
+        ASTLabel *label = ToASTLabel(op->ast_node);
+        if (!label) Error("Label is null");
+        if (!label->label_number) label->label_number = GetLabelNumber();
+        fprintf(fp, "L%d:\n", label->label_number);
+        SpillAllRealRegisters(fp);
+      } break;
+      case kILOpJmpIfZero: {
+        const char *left = AssignRegister(fp, op->left_reg);
+        ASTLabel *label = ToASTLabel(op->ast_node);
+        if (!label) Error("Label is null");
+        if (!label->label_number) label->label_number = GetLabelNumber();
+        fprintf(fp, "cmp %s, 0\n", left);
+        fprintf(fp, "je L%d\n", label->label_number);
+      } break;
+      case kILOpJmpIfNotZero: {
+        const char *left = AssignRegister(fp, op->left_reg);
+        ASTLabel *label = ToASTLabel(op->ast_node);
+        if (!label) Error("Label is null");
+        if (!label->label_number) label->label_number = GetLabelNumber();
+        fprintf(fp, "cmp %s, 0\n", left);
+        fprintf(fp, "jne L%d\n", label->label_number);
+      } break;
+      case kILOpSetLogicalValue: {
+        // TODO: dst can be any registers which can access as a byte reg
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
+        const char *left = AssignRegister(fp, op->left_reg);
+        fprintf(fp, "xor rax, rax\n");
+        fprintf(fp, "cmp %s, 0\n", left);
+        fprintf(fp, "setne al\n");
       } break;
       default:
         Error("Not implemented code generation for ILOp%s",

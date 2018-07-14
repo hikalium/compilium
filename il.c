@@ -42,6 +42,7 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpXor] = "Xor";
   ILOpTypeName[kILOpOr] = "Or";
   ILOpTypeName[kILOpLogicalAnd] = "LogicalAnd";
+  ILOpTypeName[kILOpLogicalOr] = "LogicalOr";
   ILOpTypeName[kILOpCmpG] = "CmpG";
   ILOpTypeName[kILOpCmpGE] = "CmpGE";
   ILOpTypeName[kILOpCmpL] = "CmpL";
@@ -59,6 +60,10 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpCall] = "Call";
   ILOpTypeName[kILOpWriteLocalVar] = "WriteLocalVar";
   ILOpTypeName[kILOpReadLocalVar] = "ReadLocalVar";
+  ILOpTypeName[kILOpLabel] = "Label";
+  ILOpTypeName[kILOpJmpIfZero] = "JmpIfZero";
+  ILOpTypeName[kILOpJmpIfNotZero] = "JmpIfZero";
+  ILOpTypeName[kILOpSetLogicalValue] = "SetLogicalValue";
 }
 
 const char *GetILOpTypeName(ILOpType type) {
@@ -119,16 +124,15 @@ typedef struct {
 } PairOfStrAndILOpType;
 
 PairOfStrAndILOpType bin_op_list[] = {
-    {"+", kILOpAdd},         {"-", kILOpSub},         {"*", kILOpMul},
-    {"/", kILOpDiv},         {"%", kILOpMod},         {"<<", kILOpShiftLeft},
-    {">>", kILOpShiftRight}, {">", kILOpCmpG},        {">=", kILOpCmpGE},
-    {"<", kILOpCmpL},        {"<=", kILOpCmpLE},      {"==", kILOpCmpE},
-    {"!=", kILOpCmpNE},      {"&", kILOpAnd},         {"^", kILOpXor},
-    {"|", kILOpOr},          {"&&", kILOpLogicalAnd}, {NULL, kILOpNop},
+    {"+", kILOpAdd},         {"-", kILOpSub},    {"*", kILOpMul},
+    {"/", kILOpDiv},         {"%", kILOpMod},    {"<<", kILOpShiftLeft},
+    {">>", kILOpShiftRight}, {">", kILOpCmpG},   {">=", kILOpCmpGE},
+    {"<", kILOpCmpL},        {"<=", kILOpCmpLE}, {"==", kILOpCmpE},
+    {"!=", kILOpCmpNE},      {"&", kILOpAnd},    {"^", kILOpXor},
+    {"|", kILOpOr},          {NULL, kILOpNop},
 };
 
 ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
-  int dst = REG_NULL;
   ASTExprBinOp *bin_op = ToASTExprBinOp(node);
   ILOpType il_op_type = kILOpNop;
   for (int i = 0; bin_op_list[i].str; i++) {
@@ -138,13 +142,52 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
     }
   }
   if (il_op_type != kILOpNop) {
-    dst = GetRegNumber();
     int il_left = GenerateILFor(il, bin_op->left, context)->dst_reg;
     int il_right = GenerateILFor(il, bin_op->right, context)->dst_reg;
-    ASTILOp *il_op =
-        AllocAndInitASTILOp(il_op_type, dst, il_left, il_right, node);
+    ASTILOp *il_op = AllocAndInitASTILOp(il_op_type, GetRegNumber(), il_left,
+                                         il_right, node);
     PushASTNodeToList(il, ToASTNode(il_op));
     return il_op;
+  } else if (IsEqualToken(bin_op->op, "&&")) {
+    int dst = GetRegNumber();
+    ASTLabel *label = AllocASTLabel();
+    ASTILOp *il_op_label = AllocAndInitASTILOp(kILOpLabel, dst, REG_NULL,
+                                               REG_NULL, ToASTNode(label));
+    ASTILOp *il_op_jmp = AllocAndInitASTILOp(kILOpJmpIfZero, REG_NULL, REG_NULL,
+                                             REG_NULL, ToASTNode(label));
+
+    int il_left = GenerateILFor(il, bin_op->left, context)->dst_reg;
+    il_op_jmp->left_reg = il_left;
+    PushASTNodeToList(
+        il, ToASTNode(AllocAndInitASTILOp(kILOpSetLogicalValue, dst, il_left,
+                                          REG_NULL, REG_NULL)));
+    PushASTNodeToList(il, ToASTNode(il_op_jmp));
+    int il_right = GenerateILFor(il, bin_op->right, context)->dst_reg;
+    PushASTNodeToList(
+        il, ToASTNode(AllocAndInitASTILOp(kILOpSetLogicalValue, dst, il_right,
+                                          REG_NULL, REG_NULL)));
+    PushASTNodeToList(il, ToASTNode(il_op_label));
+    return il_op_label;
+  } else if (IsEqualToken(bin_op->op, "||")) {
+    int dst = GetRegNumber();
+    ASTLabel *label = AllocASTLabel();
+    ASTILOp *il_op_label = AllocAndInitASTILOp(kILOpLabel, dst, REG_NULL,
+                                               REG_NULL, ToASTNode(label));
+    ASTILOp *il_op_jmp = AllocAndInitASTILOp(
+        kILOpJmpIfNotZero, REG_NULL, REG_NULL, REG_NULL, ToASTNode(label));
+
+    int il_left = GenerateILFor(il, bin_op->left, context)->dst_reg;
+    il_op_jmp->left_reg = il_left;
+    PushASTNodeToList(
+        il, ToASTNode(AllocAndInitASTILOp(kILOpSetLogicalValue, dst, il_left,
+                                          REG_NULL, REG_NULL)));
+    PushASTNodeToList(il, ToASTNode(il_op_jmp));
+    int il_right = GenerateILFor(il, bin_op->right, context)->dst_reg;
+    PushASTNodeToList(
+        il, ToASTNode(AllocAndInitASTILOp(kILOpSetLogicalValue, dst, il_right,
+                                          REG_NULL, REG_NULL)));
+    PushASTNodeToList(il, ToASTNode(il_op_label));
+    return il_op_label;
   } else if (IsEqualToken(bin_op->op, "=")) {
     ASTIdent *left_ident = ToASTIdent(bin_op->left);
     if (left_ident) {

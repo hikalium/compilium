@@ -92,6 +92,13 @@ test_expression "1 && 1" 1
 
 test_expression "10 && 6" 1
 
+test_expression "0 || 0" 0
+test_expression "0 || 1" 1
+test_expression "1 || 0" 1
+test_expression "1 || 1" 1
+
+test_expression "10 || 6" 1
+
 test_expression "2 + 3 * 5" 17
 test_expression "2 * 3 + 5" 11
 test_expression "2 * 3 + 5 * 7" 41
