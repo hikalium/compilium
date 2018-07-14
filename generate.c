@@ -196,11 +196,11 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
     }
     switch (op->op) {
       case kILOpFuncBegin: {
-        // nth local variable can be accessed as [rbp - 4 * n] (n is one based)
-        // push dword: SS[rsp -= 4] = data32;
-        // pop dword: data32 = SS[rsp]; rsp += 4;
-        const char *func_name =
-            GetFuncNameTokenFromFuncDef(ToASTFuncDef(op->ast_node))->str;
+        // nth local variable can be accessed as [rbp - 8 * n] (n is one based)
+        // push qword: SS[rsp -= 8] = data64;
+        // pop qword: data64 = SS[rsp]; rsp += 8;
+        ASTFuncDef *func_def = ToASTFuncDef(op->ast_node);
+        const char *func_name = GetFuncNameTokenFromFuncDef(func_def)->str;
         if (!func_name) {
           Error("func_name is null");
         }
@@ -208,6 +208,11 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
                 func_name);
         fprintf(fp, "push    rbp\n");
         fprintf(fp, "mov     rbp, rsp\n");
+        fprintf(fp, "mov     rax, 0xf\n");
+        fprintf(fp, "not     rax\n");
+        fprintf(fp, "sub     rsp, %d\n",
+                GetStackSizeForContext(func_def->context));
+        fprintf(fp, "and     rsp, rax\n");
       } break;
       case kILOpFuncEnd:
         GenerateFuncEpilogue(fp);

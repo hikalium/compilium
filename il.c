@@ -2,7 +2,6 @@
 
 #define REG_NULL 0
 
-typedef struct CONTEXT Context;
 struct CONTEXT {
   const Context *parent;
   ASTDict *dict;
@@ -28,6 +27,10 @@ ASTLocalVar *AppendLocalVarInContext(Context *context, const Token *token) {
   ASTLocalVar *local_var = AllocASTLocalVar(ofs);
   AppendASTNodeToDict(context->dict, token->str, ToASTNode(local_var));
   return local_var;
+}
+
+int GetStackSizeForContext(const Context *context) {
+  return GetSizeOfASTDict(context->dict) * 8;
 }
 
 const char *ILOpTypeName[kNumOfILOpFunc];
@@ -91,8 +94,9 @@ void GenerateILForFuncDef(ASTList *il, ASTNode *node, Context *context) {
   PushASTNodeToList(
       il, ToASTNode(AllocAndInitASTILOp(kILOpFuncBegin, REG_NULL, REG_NULL,
                                         REG_NULL, node)));
-  context = AllocContext(context);
   ASTFuncDef *def = ToASTFuncDef(node);
+  context = AllocContext(context);
+  def->context = context;
   ASTDirectDecltor *args_decltor = def->decltor->direct_decltor;
   ASTList *param_decl_list = ToASTList(args_decltor->data);
 

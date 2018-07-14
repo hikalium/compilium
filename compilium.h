@@ -88,6 +88,7 @@ typedef struct TOKEN_LIST TokenList;
 typedef struct TOKEN_STREAM TokenStream;
 typedef struct AST_LIST ASTList;
 typedef struct AST_DICT ASTDict;
+typedef struct CONTEXT Context;
 
 typedef struct {
   char str[MAX_TOKEN_LEN + 1];
@@ -208,6 +209,7 @@ typedef struct {
   ASTList *decl_specs;
   ASTDecltor *decltor;
   ASTCompStmt *comp_stmt;
+  Context *context;
 } ASTFuncDef;
 
 typedef struct {
@@ -307,6 +309,7 @@ const char *GetILOpTypeName(ILOpType type);
 void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type);
 
 // @il.c
+int GetStackSizeForContext(const Context *context);
 ASTList *GenerateIL(ASTNode *root);
 
 // @parser.c
