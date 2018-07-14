@@ -8,6 +8,7 @@ struct CONTEXT {
 };
 
 Context *AllocContext(const Context *parent) {
+  printf("AllocContext\n");
   Context *context = malloc(sizeof(Context));
   context->parent = parent;
   context->dict = AllocASTDict(8);
@@ -25,6 +26,7 @@ ASTLocalVar *AppendLocalVarInContext(Context *context, const Token *token) {
   int ofs = GetSizeOfASTDict(context->dict) + 1;
   printf("LocalVar[%d]: %s\n", ofs, token->str);
   ASTLocalVar *local_var = AllocASTLocalVar(ofs);
+  local_var->name = token->str;
   AppendASTNodeToDict(context->dict, token->str, ToASTNode(local_var));
   return local_var;
 }
@@ -135,7 +137,7 @@ void GenerateILForFuncDef(ASTList *il, ASTNode *node, Context *context) {
                ToASTNode(local_var));
     }
   }
-  GenerateILForCompStmt(il, ToASTNode(def->comp_stmt), AllocContext(context));
+  GenerateILForCompStmt(il, ToASTNode(def->comp_stmt), context);
   EmitILOp(il, kILOpFuncEnd, REG_NULL, REG_NULL, REG_NULL, node);
 }
 

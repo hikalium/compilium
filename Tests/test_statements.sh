@@ -21,3 +21,4 @@ test_statements "int foo; foo = 0; if(foo) return 3; return 5;" 5
 test_statements "int foo; foo = 1; if(foo) return 3; return 5;" 3
 test_statements "int foo; foo = 0; if(foo) foo = 2; return foo;" 0
 test_statements "int foo; foo = 1; if(foo) foo = 2; return foo;" 2
+test_statements "int foo; int bar; foo = 1; bar = foo + 1; bar = foo + 2; return foo;" 1

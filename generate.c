@@ -78,8 +78,12 @@ Register *SelectVirtualRegisterToSpill() {
 void SpillVirtualRegister(FILE *fp, Register *reg) {
   if (!reg->save_label_num) reg->save_label_num = GetSpillLabelNumber();
   //
+  /*
   fprintf(fp, "mov [rip + LSpill%d], %s\n", reg->save_label_num,
           ScratchRegNames[reg->real_reg]);
+          */
+  int byte_ofs = 8 * reg->save_label_num;
+  fprintf(fp, "mov [rbp - %d], %s\n", byte_ofs, ScratchRegNames[reg->real_reg]);
   //
   RealRegToVirtualReg[reg->real_reg] = NULL;
   reg->real_reg = 0;
@@ -131,8 +135,12 @@ void AssignVirtualRegToRealReg(FILE *fp, Register *reg, int real_reg) {
   } else if (reg->save_label_num) {
     printf("\tvreg[%d] is stored at label %d, restoring...\n", reg->vreg_id,
            reg->save_label_num);
+    /*
     fprintf(fp, "mov %s, [rip + LSpill%d]\n", ScratchRegNames[real_reg],
             reg->save_label_num);
+            */
+    int byte_ofs = 8 * reg->save_label_num;
+    fprintf(fp, "mov %s, [rbp - %d]\n", ScratchRegNames[real_reg], byte_ofs);
   }
   RealRegToVirtualReg[real_reg] = reg;
   RealRegRefOrder[real_reg] = order_count++;
@@ -167,6 +175,7 @@ void GenerateFuncEpilogue(FILE *fp) {
 }
 
 int func_param_requested = 0;
+int local_var_base_in_stack = 256;
 
 void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
   fputs(".intel_syntax noprefix\n", fp);
@@ -210,7 +219,8 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "mov     rax, 0xf\n");
         fprintf(fp, "not     rax\n");
         fprintf(fp, "sub     rsp, %d\n",
-                GetStackSizeForContext(func_def->context));
+                local_var_base_in_stack +
+                    GetStackSizeForContext(func_def->context));
         fprintf(fp, "and     rsp, rax\n");
       } break;
       case kILOpFuncEnd:
@@ -438,15 +448,17 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         const char *right = AssignRegister(fp, op->right);
         ASTLocalVar *var = ToASTLocalVar(op->ast_node);
         if (!var) Error("var is not an ASTLocalVar");
-        int byte_ofs = 8 * var->ofs_in_stack;
-        fprintf(fp, "mov [rbp - %d], %s\n", byte_ofs, right);
+        int byte_ofs = 8 * var->ofs_in_stack + local_var_base_in_stack;
+        fprintf(fp, "mov [rbp - %d], %s # local_var[%s] @ %d\n", byte_ofs,
+                right, var->name, var->ofs_in_stack);
       } break;
       case kILOpReadLocalVar: {
         const char *dst = AssignRegister(fp, op->dst);
         ASTLocalVar *var = ToASTLocalVar(op->ast_node);
         if (!var) Error("var is not an ASTLocalVar");
-        int byte_ofs = 8 * var->ofs_in_stack;
-        fprintf(fp, "mov %s, [rbp - %d]\n", dst, byte_ofs);
+        int byte_ofs = 8 * var->ofs_in_stack + local_var_base_in_stack;
+        fprintf(fp, "mov %s, [rbp - %d] # local_var[%s] @ %d\n", dst, byte_ofs,
+                var->name, var->ofs_in_stack);
       } break;
       case kILOpLabel: {
         ASTLabel *label = ToASTLabel(op->ast_node);

@@ -221,6 +221,7 @@ typedef struct {
 typedef struct {
   ASTType type;
   int ofs_in_stack;
+  const char *name;
 } ASTLocalVar;
 
 typedef struct {
