@@ -1,7 +1,7 @@
 SHELL=/bin/bash
-TESTS ?= $(basename $(wildcard *.c) simple_return)
+TESTS ?= $(basename $(wildcard *.c))
 
-default: expr_test $(addsuffix .test, $(TESTS))
+default: expr_test stmt_test $(addsuffix .test, $(TESTS))
 
 FORCE:
 .PHONY: FORCE
@@ -10,6 +10,9 @@ FORCE:
 
 expr_test : ../compilium FORCE
 	@./test_expressions.sh
+
+stmt_test : ../compilium FORCE
+	@./test_statements.sh
 
 %.clang.bin : %.c Makefile
 	@ rm $@ $*.compilium.log &> /dev/null; \

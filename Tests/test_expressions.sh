@@ -1,31 +1,9 @@
+source test_harness.sh
+
 function test_expression() {
   expression=$1
   expected=$2
-	echo "int main(){return $expression;}" | ../compilium -o out.S --prefix_type `uname` - &> out.compilium.log \
-    || { cat out.compilium.log; echo "FAIL expression $expression: Compilation failed." ; exit 1; }
-	gcc -o out.bin out.S
-	./out.bin
-  actual=$?
-  if [ $expected = $actual ]; then
-    echo "PASS expression $expression is $expected";
-  else
-    echo "FAIL expression $expression: expected $expected but got $actual"; exit 1; 
-  fi
-}
-
-function test_expression_gcc() {
-  expression=$1
-  expected=$2
-	echo "int main(){return $expression;}" | ../compilium -o out.S --prefix_type `uname` - &> out.compilium.log \
-    || { cat out.clang.log; echo "FAIL expression $expression: Compilation failed." ; exit 1; }
-	gcc -o out.bin out.S
-	./out.bin
-  actual=$?
-  if [ $expected = $actual ]; then
-    echo "(gcc)PASS expression $expression is $expected";
-  else
-    echo "(gcc)FAIL expression $expression: expected $expected but got $actual"; exit 1; 
-  fi
+	test_source "int main(){return $expression;}" $expected "expression $expression"
 }
 
 test_expression "0" 0
@@ -107,4 +85,3 @@ test_expression "1 + 2 * 3 / 4 - 5 + 6 * 7 - 8 + 9 + 10 % 11" 50
 
 test_expression "2, 3" 3
 test_expression "2 * 3, 5 + 7" 12
-
