@@ -26,6 +26,9 @@ int GetLabelNumber() {
   return num++;
 }
 
+int spill_label_num_next = 1;
+int GetSpillLabelNumber() { return spill_label_num_next++; }
+
 typedef struct {
   int save_label_num;
   int real_reg;
@@ -38,12 +41,22 @@ int RealRegAssignTable[NUM_OF_SCRATCH_REGS + 1];
 int RealRegRefOrder[NUM_OF_SCRATCH_REGS + 1];
 int order_count = 1;
 
+void ClearRegisterAllocation() {
+  for (int i = 0; i < NUM_OF_SCRATCH_REGS + 1; i++) {
+    RealRegAssignTable[i] = 0;
+    RealRegRefOrder[i] = 0;
+  }
+  order_count = 1;
+  for (int i = 0; i < NUM_OF_ASSIGN_INFOS; i++) {
+    reg_assign_infos[i].save_label_num = 0;
+    reg_assign_infos[i].real_reg = 0;
+  }
+}
+
 void GenerateSpillData(FILE *fp) {
   fprintf(fp, ".data\n");
-  for (int i = 0; i < NUM_OF_ASSIGN_INFOS; i++) {
-    if (reg_assign_infos[i].save_label_num) {
-      fprintf(fp, "L%d: .quad 0\n", reg_assign_infos[i].save_label_num);
-    }
+  for (int i = 1; i < spill_label_num_next; i++) {
+    fprintf(fp, "LSpill%d: .quad 0\n", i);
   }
 }
 
@@ -76,14 +89,14 @@ int SelectVirtualRegisterToSpill() {
 
 void SpillVirtualRegister(FILE *fp, int virtual_reg) {
   RegAssignInfo *info = &reg_assign_infos[virtual_reg];
-  if (!info->save_label_num) info->save_label_num = GetLabelNumber();
+  if (!info->save_label_num) info->save_label_num = GetSpillLabelNumber();
   //
-  fprintf(fp, "mov [rip + L%d], %s\n", info->save_label_num,
+  fprintf(fp, "mov [rip + LSpill%d], %s\n", info->save_label_num,
           ScratchRegNames[info->real_reg]);
   //
   RealRegAssignTable[info->real_reg] = 0;
   info->real_reg = 0;
-  printf("\tvirtual_reg[%d] is spilled to label %d\n", virtual_reg,
+  printf("\tvirtual_reg[%d] is spilled to LSpill%d\n", virtual_reg,
          info->save_label_num);
 }
 
@@ -132,7 +145,7 @@ void AssignVirtualRegToRealReg(FILE *fp, int virtual_reg, int real_reg) {
   } else if (info->save_label_num) {
     printf("\tvirtual_reg[%d] is stored at label %d, restoring...\n",
            virtual_reg, info->save_label_num);
-    fprintf(fp, "mov %s, [rip + L%d]\n", ScratchRegNames[real_reg],
+    fprintf(fp, "mov %s, [rip + LSpill%d]\n", ScratchRegNames[real_reg],
             info->save_label_num);
   }
   RealRegAssignTable[real_reg] = virtual_reg;
@@ -199,6 +212,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         // nth local variable can be accessed as [rbp - 8 * n] (n is one based)
         // push qword: SS[rsp -= 8] = data64;
         // pop qword: data64 = SS[rsp]; rsp += 8;
+        ClearRegisterAllocation();
         ASTFuncDef *func_def = ToASTFuncDef(op->ast_node);
         const char *func_name = GetFuncNameTokenFromFuncDef(func_def)->str;
         if (!func_name) {
