@@ -16,3 +16,8 @@ test_statements "int foo; int bar; foo = 3; bar = 7; return foo * bar;" 21
 test_statements "int foo; foo = 7; foo = foo + 5; foo = foo + foo; foo = 3 + foo; return foo;" 27
 test_statements "int foo; foo = 7; int bar; bar = 3; foo = bar; return bar;" 3
 test_statements "int foo; int bar; foo = bar = 3; bar = bar + 1; return foo * bar;" 12
+
+test_statements "int foo; foo = 0; if(foo) return 3; return 5;" 5
+test_statements "int foo; foo = 1; if(foo) return 3; return 5;" 3
+test_statements "int foo; foo = 0; if(foo) foo = 2; return foo;" 0
+test_statements "int foo; foo = 1; if(foo) foo = 2; return foo;" 2

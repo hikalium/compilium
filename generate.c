@@ -4,6 +4,7 @@
 // registers should be preserved: rbx, rsp, rbp, r12, r13, r14, and r15
 // scratch registers: rax, rdi, rsi, rdx, rcx, r8, r9, r10, r11
 // return value: rax
+// args: rax, rdi, rsi, rdx, rcx, r8, r9, r10, r11
 
 #define NUM_OF_SCRATCH_REGS 9
 

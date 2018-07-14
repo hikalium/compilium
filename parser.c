@@ -5,6 +5,7 @@ ASTList *ParseDeclSpecs(TokenStream *stream);
 ASTDecltor *ParseDecltor(TokenStream *stream);
 ASTDecl *ParseDecl(TokenStream *stream);
 ASTNode *ParseAssignExpr(TokenStream *stream);
+ASTNode *ParseStmt(TokenStream *stream);
 
 // Utils
 
@@ -185,6 +186,24 @@ ASTNode *ParseJumpStmt(TokenStream *stream) {
   return NULL;
 }
 
+ASTNode *ParseSelectionStmt(TokenStream *stream) {
+  DebugPrintTokenStream(__func__, stream);
+  const Token *token;
+  if ((token = ConsumeToken(stream, "if"))) {
+    if (!ConsumeToken(stream, "(")) Error("( is expected after if");
+    ASTNode *cond_expr = ParseExpression(stream);
+    if (!cond_expr) Error("expr is expected.");
+    if (!ConsumeToken(stream, ")")) Error(") is expected after expr");
+    ASTNode *body_stmt = ParseStmt(stream);
+    if (!body_stmt) Error("body_stmt is expected.");
+    ASTIfStmt *if_stmt = AllocASTIfStmt();
+    if_stmt->cond_expr = cond_expr;
+    if_stmt->body_stmt = body_stmt;
+    return ToASTNode(if_stmt);
+  }
+  return NULL;
+}
+
 ASTNode *ParseStmt(TokenStream *stream) {
   // 6.8
   // statement:
@@ -197,8 +216,10 @@ ASTNode *ParseStmt(TokenStream *stream) {
   DebugPrintTokenStream(__func__, stream);
   ASTNode *statement;
   if ((statement = ParseJumpStmt(stream)) ||
-      (statement = ToASTNode(ParseExprStmt(stream))))
+      (statement = ToASTNode(ParseExprStmt(stream))) ||
+      (statement = ParseSelectionStmt(stream))) {
     return statement;
+  }
   return NULL;
 }
 
