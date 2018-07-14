@@ -100,9 +100,12 @@ ASTNode *ParseShiftExpr(TokenStream *stream) {
   const static char *ops[] = {"<<", ">>", NULL};
   return ParseLeftAssocBinOp(stream, ParseAdditiveExpr, ops);
 }
+
 ASTNode *ParseRelationalExpr(TokenStream *stream) {
-  return ParseShiftExpr(stream);
+  const static char *ops[] = {"<", ">", "<=", ">=", NULL};
+  return ParseLeftAssocBinOp(stream, ParseShiftExpr, ops);
 }
+
 ASTNode *ParseEqualityExpr(TokenStream *stream) {
   return ParseRelationalExpr(stream);
 }

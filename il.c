@@ -38,6 +38,10 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpMul] = "Mul";
   ILOpTypeName[kILOpDiv] = "Div";
   ILOpTypeName[kILOpMod] = "Mod";
+  ILOpTypeName[kILOpCmpG] = "CmpG";
+  ILOpTypeName[kILOpCmpGE] = "CmpGE";
+  ILOpTypeName[kILOpCmpL] = "CmpL";
+  ILOpTypeName[kILOpCmpLE] = "CmpLE";
   ILOpTypeName[kILOpShiftLeft] = "ShiftLeft";
   ILOpTypeName[kILOpShiftRight] = "ShiftRight";
   ILOpTypeName[kILOpLoadImm] = "LoadImm";
@@ -103,24 +107,27 @@ void GenerateILForFuncDef(ASTList *il, ASTNode *node, Context *context) {
                             kILOpFuncEnd, REG_NULL, REG_NULL, REG_NULL, node)));
 }
 
+typedef struct {
+  const char *str;
+  ILOpType il_op_type;
+} PairOfStrAndILOpType;
+
+PairOfStrAndILOpType bin_op_list[] = {
+    {"+", kILOpAdd},         {"-", kILOpSub},    {"*", kILOpMul},
+    {"/", kILOpDiv},         {"%", kILOpMod},    {"<<", kILOpShiftLeft},
+    {">>", kILOpShiftRight}, {">", kILOpCmpG},   {">=", kILOpCmpGE},
+    {"<", kILOpCmpL},        {"<=", kILOpCmpLE}, {NULL, kILOpNop},
+};
+
 ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
   int dst = REG_NULL;
   ASTExprBinOp *bin_op = ToASTExprBinOp(node);
   ILOpType il_op_type = kILOpNop;
-  if (IsEqualToken(bin_op->op, "+")) {
-    il_op_type = kILOpAdd;
-  } else if (IsEqualToken(bin_op->op, "-")) {
-    il_op_type = kILOpSub;
-  } else if (IsEqualToken(bin_op->op, "*")) {
-    il_op_type = kILOpMul;
-  } else if (IsEqualToken(bin_op->op, "/")) {
-    il_op_type = kILOpDiv;
-  } else if (IsEqualToken(bin_op->op, "%")) {
-    il_op_type = kILOpMod;
-  } else if (IsEqualToken(bin_op->op, "<<")) {
-    il_op_type = kILOpShiftLeft;
-  } else if (IsEqualToken(bin_op->op, ">>")) {
-    il_op_type = kILOpShiftRight;
+  for (int i = 0; bin_op_list[i].str; i++) {
+    if (IsEqualToken(bin_op->op, bin_op_list[i].str)) {
+      il_op_type = bin_op_list[i].il_op_type;
+      break;
+    }
   }
   if (il_op_type != kILOpNop) {
     dst = GetRegNumber();

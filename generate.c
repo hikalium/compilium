@@ -257,7 +257,6 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         const char *dst = AssignRegister(fp, op->dst_reg);
         const char *left = AssignRegister(fp, op->left_reg);
         const char *right = AssignRegister(fp, op->right_reg);
-        //
         fprintf(fp, "add %s, %s\n", left, right);
         fprintf(fp, "mov %s, %s\n", dst, left);
       } break;
@@ -265,16 +264,14 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         const char *dst = AssignRegister(fp, op->dst_reg);
         const char *left = AssignRegister(fp, op->left_reg);
         const char *right = AssignRegister(fp, op->right_reg);
-        //
         fprintf(fp, "sub %s, %s\n", left, right);
         fprintf(fp, "mov %s, %s\n", dst, left);
       } break;
       case kILOpMul: {
+        // rdx:rax <- rax * r/m
         AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
         const char *dst = AssignRegister(fp, op->dst_reg);
         const char *right = AssignRegister(fp, op->right_reg);
-        //
-        // rdx:rax <- rax * r/m
         fprintf(fp, "push rdx\n");
         fprintf(fp, "imul %s\n", right);
         fprintf(fp, "pop rdx\n");
@@ -313,6 +310,42 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         AssignVirtualRegToRealReg(fp, op->right_reg, REAL_REG_RCX);
         fprintf(fp, "SAR rax, cl\n");
         AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
+      } break;
+      case kILOpCmpG: {
+        // TODO: dst can be any registers which can access as a byte reg
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
+        const char *left = AssignRegister(fp, op->left_reg);
+        const char *right = AssignRegister(fp, op->right_reg);
+        fprintf(fp, "xor rax, rax\n");
+        fprintf(fp, "cmp %s, %s\n", left, right);
+        fprintf(fp, "setg al\n");
+      } break;
+      case kILOpCmpGE: {
+        // TODO: dst can be any registers which can access as a byte reg
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
+        const char *left = AssignRegister(fp, op->left_reg);
+        const char *right = AssignRegister(fp, op->right_reg);
+        fprintf(fp, "xor rax, rax\n");
+        fprintf(fp, "cmp %s, %s\n", left, right);
+        fprintf(fp, "setge al\n");
+      } break;
+      case kILOpCmpL: {
+        // TODO: dst can be any registers which can access as a byte reg
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
+        const char *left = AssignRegister(fp, op->left_reg);
+        const char *right = AssignRegister(fp, op->right_reg);
+        fprintf(fp, "xor rax, rax\n");
+        fprintf(fp, "cmp %s, %s\n", left, right);
+        fprintf(fp, "setl al\n");
+      } break;
+      case kILOpCmpLE: {
+        // TODO: dst can be any registers which can access as a byte reg
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
+        const char *left = AssignRegister(fp, op->left_reg);
+        const char *right = AssignRegister(fp, op->right_reg);
+        fprintf(fp, "xor rax, rax\n");
+        fprintf(fp, "cmp %s, %s\n", left, right);
+        fprintf(fp, "setle al\n");
       } break;
       case kILOpReturn: {
         AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
