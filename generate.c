@@ -309,6 +309,13 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "xor %s, %s\n", left, right);
         fprintf(fp, "mov %s, %s\n", dst, left);
       } break;
+      case kILOpOr: {
+        const char *dst = AssignRegister(fp, op->dst_reg);
+        const char *left = AssignRegister(fp, op->left_reg);
+        const char *right = AssignRegister(fp, op->right_reg);
+        fprintf(fp, "or %s, %s\n", left, right);
+        fprintf(fp, "mov %s, %s\n", dst, left);
+      } break;
       case kILOpShiftLeft: {
         // r/m <<= CL
         // TODO: left and dst can be any register

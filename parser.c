@@ -120,9 +120,12 @@ ASTNode *ParseExclusiveOrExpr(TokenStream *stream) {
   const static char *ops[] = {"^", NULL};
   return ParseLeftAssocBinOp(stream, ParseAndExpr, ops);
 }
+
 ASTNode *ParseInclusiveOrExpr(TokenStream *stream) {
-  return ParseExclusiveOrExpr(stream);
+  const static char *ops[] = {"|", NULL};
+  return ParseLeftAssocBinOp(stream, ParseExclusiveOrExpr, ops);
 }
+
 ASTNode *ParseLogicalAndExpr(TokenStream *stream) {
   return ParseInclusiveOrExpr(stream);
 }

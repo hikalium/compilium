@@ -49,6 +49,7 @@ typedef enum {
   kILOpMod,
   kILOpAnd,
   kILOpXor,
+  kILOpOr,
   kILOpShiftLeft,
   kILOpShiftRight,
   kILOpCmpG,

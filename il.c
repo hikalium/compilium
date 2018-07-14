@@ -40,6 +40,7 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpMod] = "Mod";
   ILOpTypeName[kILOpAnd] = "And";
   ILOpTypeName[kILOpXor] = "Xor";
+  ILOpTypeName[kILOpOr] = "Xor";
   ILOpTypeName[kILOpCmpG] = "CmpG";
   ILOpTypeName[kILOpCmpGE] = "CmpGE";
   ILOpTypeName[kILOpCmpL] = "CmpL";
@@ -122,7 +123,7 @@ PairOfStrAndILOpType bin_op_list[] = {
     {">>", kILOpShiftRight}, {">", kILOpCmpG},   {">=", kILOpCmpGE},
     {"<", kILOpCmpL},        {"<=", kILOpCmpLE}, {"==", kILOpCmpE},
     {"!=", kILOpCmpNE},      {"&", kILOpAnd},    {"^", kILOpXor},
-    {NULL, kILOpNop},
+    {"|", kILOpOr},          {NULL, kILOpNop},
 };
 
 ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
