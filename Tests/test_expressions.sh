@@ -1,4 +1,3 @@
-
 function test_expression() {
   expression=$1
   expected=$2
@@ -36,6 +35,8 @@ test_expression "7 - 3" 4
 test_expression "2 * 3" 6
 test_expression "7 / 2" 3
 test_expression "7 % 2" 1
+test_expression "3 << 5" 96
+test_expression "5 >> 2" 1
 test_expression "2 + 3 * 5" 17
 test_expression "2 * 3 + 5" 11
 test_expression "2 * 3 + 5 * 7" 41

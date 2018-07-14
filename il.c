@@ -38,6 +38,8 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpMul] = "Mul";
   ILOpTypeName[kILOpDiv] = "Div";
   ILOpTypeName[kILOpMod] = "Mod";
+  ILOpTypeName[kILOpShiftLeft] = "ShiftLeft";
+  ILOpTypeName[kILOpShiftRight] = "ShiftRight";
   ILOpTypeName[kILOpLoadImm] = "LoadImm";
   ILOpTypeName[kILOpLoadIdent] = "LoadIdent";
   ILOpTypeName[kILOpLoadArg] = "LoadArg";
@@ -115,6 +117,10 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
     il_op_type = kILOpDiv;
   } else if (IsEqualToken(bin_op->op, "%")) {
     il_op_type = kILOpMod;
+  } else if (IsEqualToken(bin_op->op, "<<")) {
+    il_op_type = kILOpShiftLeft;
+  } else if (IsEqualToken(bin_op->op, ">>")) {
+    il_op_type = kILOpShiftRight;
   }
   if (il_op_type != kILOpNop) {
     dst = GetRegNumber();

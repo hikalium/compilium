@@ -253,54 +253,66 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
       case kILOpLoadArg: {
         AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RDI + op->left_reg);
       } break;
-      case kILOpAdd:
-      case kILOpSub:
-      case kILOpMul:
-      case kILOpDiv:
+      case kILOpAdd: {
+        const char *dst = AssignRegister(fp, op->dst_reg);
+        const char *left = AssignRegister(fp, op->left_reg);
+        const char *right = AssignRegister(fp, op->right_reg);
+        //
+        fprintf(fp, "add %s, %s\n", left, right);
+        fprintf(fp, "mov %s, %s\n", dst, left);
+      } break;
+      case kILOpSub: {
+        const char *dst = AssignRegister(fp, op->dst_reg);
+        const char *left = AssignRegister(fp, op->left_reg);
+        const char *right = AssignRegister(fp, op->right_reg);
+        //
+        fprintf(fp, "sub %s, %s\n", left, right);
+        fprintf(fp, "mov %s, %s\n", dst, left);
+      } break;
+      case kILOpMul: {
+        AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
+        const char *dst = AssignRegister(fp, op->dst_reg);
+        const char *right = AssignRegister(fp, op->right_reg);
+        //
+        // rdx:rax <- rax * r/m
+        fprintf(fp, "push rdx\n");
+        fprintf(fp, "imul %s\n", right);
+        fprintf(fp, "pop rdx\n");
+        fprintf(fp, "mov %s, rax\n", dst);
+      } break;
+      case kILOpDiv: {
+        // rax <- rdx:rax / r/m
+        AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
+        AssignVirtualRegToRealReg(fp, op->right_reg, REAL_REG_RCX);
+        SpillRealRegister(fp, REAL_REG_RDX);
+        fprintf(fp, "mov rdx, 0\n");
+        fprintf(fp, "idiv rcx\n");
+      } break;
       case kILOpMod: {
-        if (op->op == kILOpAdd) {
-          const char *dst = AssignRegister(fp, op->dst_reg);
-          const char *left = AssignRegister(fp, op->left_reg);
-          const char *right = AssignRegister(fp, op->right_reg);
-          //
-          fprintf(fp, "add %s, %s\n", left, right);
-          fprintf(fp, "mov %s, %s\n", dst, left);
-        } else if (op->op == kILOpSub) {
-          const char *dst = AssignRegister(fp, op->dst_reg);
-          const char *left = AssignRegister(fp, op->left_reg);
-          const char *right = AssignRegister(fp, op->right_reg);
-          //
-          fprintf(fp, "sub %s, %s\n", left, right);
-          fprintf(fp, "mov %s, %s\n", dst, left);
-        } else if (op->op == kILOpMul) {
-          AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
-          const char *dst = AssignRegister(fp, op->dst_reg);
-          const char *right = AssignRegister(fp, op->right_reg);
-          //
-          // rdx:rax <- rax * r/m
-          fprintf(fp, "push rdx\n");
-          fprintf(fp, "imul %s\n", right);
-          fprintf(fp, "pop rdx\n");
-          fprintf(fp, "mov %s, rax\n", dst);
-        } else if (op->op == kILOpDiv) {
-          // rax <- rdx:rax / r/m
-          AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
-          AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
-          AssignVirtualRegToRealReg(fp, op->right_reg, REAL_REG_RCX);
-          SpillRealRegister(fp, REAL_REG_RDX);
-          fprintf(fp, "mov rdx, 0\n");
-          fprintf(fp, "idiv rcx\n");
-        } else if (op->op == kILOpMod) {
-          // rdx <- rdx:rax % r/m
-          AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
-          AssignVirtualRegToRealReg(fp, op->right_reg, REAL_REG_RCX);
-          SpillRealRegister(fp, REAL_REG_RDX);
-          fprintf(fp, "mov rdx, 0\n");
-          fprintf(fp, "idiv rcx\n");
-          AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RDX);
-        } else {
-          Error("ILBinOp: Not implemented BinOp %d", op->op);
-        }
+        // rdx <- rdx:rax % r/m
+        AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
+        AssignVirtualRegToRealReg(fp, op->right_reg, REAL_REG_RCX);
+        SpillRealRegister(fp, REAL_REG_RDX);
+        fprintf(fp, "mov rdx, 0\n");
+        fprintf(fp, "idiv rcx\n");
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RDX);
+      } break;
+      case kILOpShiftLeft: {
+        // r/m <<= CL
+        // TODO: left and dst can be any register
+        AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
+        AssignVirtualRegToRealReg(fp, op->right_reg, REAL_REG_RCX);
+        fprintf(fp, "SAL rax, cl\n");
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
+      } break;
+      case kILOpShiftRight: {
+        // r/m >>= CL
+        // TODO: left and dst can be any register
+        AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
+        AssignVirtualRegToRealReg(fp, op->right_reg, REAL_REG_RCX);
+        fprintf(fp, "SAR rax, cl\n");
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
       } break;
       case kILOpReturn: {
         AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
