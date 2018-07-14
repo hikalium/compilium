@@ -111,7 +111,11 @@ ASTNode *ParseEqualityExpr(TokenStream *stream) {
   return ParseLeftAssocBinOp(stream, ParseRelationalExpr, ops);
 }
 
-ASTNode *ParseAndExpr(TokenStream *stream) { return ParseEqualityExpr(stream); }
+ASTNode *ParseAndExpr(TokenStream *stream) {
+  const static char *ops[] = {"&", NULL};
+  return ParseLeftAssocBinOp(stream, ParseEqualityExpr, ops);
+}
+
 ASTNode *ParseExclusiveOrExpr(TokenStream *stream) {
   return ParseAndExpr(stream);
 }
