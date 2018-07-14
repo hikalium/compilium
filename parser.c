@@ -141,7 +141,6 @@ ASTNode *ParseAssignExpr(TokenStream *stream) {
   return AllocAndInitASTExprBinOp(op, last, node);
 }
 
-#define MAX_NODES_IN_EXPR 64
 ASTNode *ParseExpression(TokenStream *stream) {
   const static char *ops[] = {",", NULL};
   return ParseLeftAssocBinOp(stream, ParseAssignExpr, ops);
