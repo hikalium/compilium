@@ -164,17 +164,6 @@ ASTNode* AllocAndInitASTExprBinOp(const Token* op, ASTNode* left,
   return ToASTNode(node);
 }
 
-ASTILOp* AllocAndInitASTILOp(ILOpType op, int dst_reg, int left_reg,
-                             int right_reg, ASTNode* ast_node) {
-  ASTILOp* node = AllocASTILOp();
-  node->op = op;
-  node->dst_reg = dst_reg;
-  node->left_reg = left_reg;
-  node->right_reg = right_reg;
-  node->ast_node = ast_node;
-  return node;
-}
-
 const Token* GetIdentTokenFromDirectDecltor(ASTDirectDecltor* direct_decltor) {
   if (!direct_decltor) return NULL;
   if (direct_decltor->direct_decltor)
@@ -284,9 +273,12 @@ void PrintASTNode(ASTNode* node, int depth) {
   } else if (node->type == kASTILOp) {
     ASTILOp* il_op = ToASTILOp(node);
     PrintfWithPadding(depth + 1, "op=%s", GetILOpTypeName(il_op->op));
-    PrintfWithPadding(depth + 1, "dst=%d", il_op->dst_reg);
-    PrintfWithPadding(depth + 1, "left=%d", il_op->left_reg);
-    PrintfWithPadding(depth + 1, "right=%d", il_op->right_reg);
+    PrintfWithPadding(depth + 1, "dst=%d",
+                      il_op->dst ? il_op->dst->vreg_id : 0);
+    PrintfWithPadding(depth + 1, "left=%d",
+                      il_op->left ? il_op->left->vreg_id : 0);
+    PrintfWithPadding(depth + 1, "right=%d",
+                      il_op->right ? il_op->right->vreg_id : 0);
   } else if (node->type == kASTKeyword) {
     ASTKeyword* kw = ToASTKeyword(node);
     PrintTokenWithName(depth + 1, "token=", kw->token);

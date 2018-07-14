@@ -91,6 +91,12 @@ typedef struct AST_DICT ASTDict;
 typedef struct CONTEXT Context;
 
 typedef struct {
+  int vreg_id;
+  int save_label_num;
+  int real_reg;
+} Register;
+
+typedef struct {
   char str[MAX_TOKEN_LEN + 1];
   TokenType type;
   const char *filename;
@@ -162,9 +168,9 @@ typedef struct {
 typedef struct {
   ASTType type;
   ILOpType op;
-  int dst_reg;
-  int left_reg;
-  int right_reg;
+  Register *dst;
+  Register *left;
+  Register *right;
   ASTNode *ast_node;
 } ASTILOp;
 
@@ -278,10 +284,6 @@ ASTIdent *AllocAndInitASTIdent(const Token *token);
 ASTKeyword *AllocAndInitASTKeyword(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
-
-ASTILOp *AllocAndInitASTILOp(ILOpType op, int dst_reg, int left_reg,
-                             int right_reg, ASTNode *ast_node);
-
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetFuncNameTokenFromFuncDef(ASTFuncDef *func_def);
