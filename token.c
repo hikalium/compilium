@@ -122,7 +122,7 @@ int SeekStream(TokenStream *stream, int pos) {
   return stream->pos;
 }
 
-const Token *PeekToken(TokenStream *stream) {
+const Token *PeekToken(const TokenStream *stream) {
   return GetTokenAt(stream->list, stream->pos);
 }
 
@@ -133,4 +133,9 @@ int IsNextToken(TokenStream *stream, const char *str) {
 const Token *ConsumeToken(TokenStream *stream, const char *str) {
   if (!IsNextToken(stream, str)) return NULL;
   return PopToken(stream);
+}
+
+void DebugPrintTokenStream(const char *s, const TokenStream *stream) {
+  printf("%s ", s);
+  DebugPrintToken(PeekToken(stream));
 }

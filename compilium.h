@@ -299,9 +299,10 @@ const Token *PopToken(TokenStream *stream);
 void UnpopToken(TokenStream *stream);
 int GetStreamPos(TokenStream *stream);
 int SeekStream(TokenStream *stream, int pos);
-const Token *PeekToken(TokenStream *stream);
+const Token *PeekToken(const TokenStream *stream);
 int IsNextToken(TokenStream *stream, const char *str);
 const Token *ConsumeToken(TokenStream *stream, const char *str);
+void DebugPrintTokenStream(const char *s, const TokenStream *stream);
 
 // @tokenizer.c
 char *ReadFile(const char *file_name);

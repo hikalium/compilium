@@ -8,7 +8,7 @@ FORCE:
 
 .SECONDARY:
 
-expr_test : FORCE
+expr_test : ../compilium FORCE
 	@./test_expressions.sh
 
 %.clang.bin : %.c Makefile

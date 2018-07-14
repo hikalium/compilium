@@ -83,41 +83,61 @@ ASTNode *ParseMultiplicativeExpr(TokenStream *stream) {
 
 ASTNode *ParseAdditiveExpr(TokenStream *stream) {
   // additive-expression
-  ASTNode *last = NULL;
-  ASTNode *node = NULL;
-  const Token *op = NULL;
-  while ((node = ParseMultiplicativeExpr(stream))) {
-    if (!last) {
-      last = node;
-    } else {
-      last = AllocAndInitASTExprBinOp(op, last, node);
-    }
-    if (!IsNextToken(stream, "+") && !IsNextToken(stream, "-")) {
-      break;
-    }
-    op = PopToken(stream);
+  DebugPrintTokenStream(__func__, stream);
+  ASTNode *last = ParseMultiplicativeExpr(stream);
+  if (!last) return NULL;
+  while (IsNextToken(stream, "+") || IsNextToken(stream, "-")) {
+    const Token *op = PopToken(stream);
+    ASTNode *node = ParseMultiplicativeExpr(stream);
+    if (!node) Error("node should not be NULL");
+    last = AllocAndInitASTExprBinOp(op, last, node);
   }
   return last;
 }
 
+ASTNode *ParseShiftExpr(TokenStream *stream) {
+  return ParseAdditiveExpr(stream);
+}
+ASTNode *ParseRelationalExpr(TokenStream *stream) {
+  return ParseShiftExpr(stream);
+}
+ASTNode *ParseEqualityExpr(TokenStream *stream) {
+  return ParseRelationalExpr(stream);
+}
+ASTNode *ParseAndExpr(TokenStream *stream) { return ParseEqualityExpr(stream); }
+ASTNode *ParseExclusiveOrExpr(TokenStream *stream) {
+  return ParseAndExpr(stream);
+}
+ASTNode *ParseInclusiveOrExpr(TokenStream *stream) {
+  return ParseExclusiveOrExpr(stream);
+}
+ASTNode *ParseLogicalAndExpr(TokenStream *stream) {
+  return ParseInclusiveOrExpr(stream);
+}
+ASTNode *ParseLogicalOrExpr(TokenStream *stream) {
+  return ParseLogicalAndExpr(stream);
+}
+ASTNode *ParseConditionalExpr(TokenStream *stream) {
+  return ParseLogicalOrExpr(stream);
+}
+
 ASTNode *ParseAssignExpr(TokenStream *stream) {
-  // assignment-expression
-  ASTNode *last = NULL;
-  ASTNode *node = NULL;
-  const Token *op = NULL;
-  // TODO: ParseAdditiveExpr -> ParseCondExpr
-  while ((node = ParseAdditiveExpr(stream))) {
-    if (!last) {
-      last = node;
-    } else {
-      last = AllocAndInitASTExprBinOp(op, last, node);
-    }
-    if (!IsNextToken(stream, "=") && !IsNextToken(stream, "*=")) {
-      break;
-    }
-    op = PopToken(stream);
+  // assignment-expression:
+  // [unary-expression assignment-operator]* conditional-expression
+  DebugPrintTokenStream(__func__, stream);
+  int pos = GetStreamPos(stream);
+  ASTNode *last = ParseUnaryExpr(stream);
+  if (!last) {
+    return ParseConditionalExpr(stream);
   }
-  return last;
+  if (!IsNextToken(stream, "=") && !IsNextToken(stream, "*=")) {
+    SeekStream(stream, pos);
+    return ParseConditionalExpr(stream);
+  }
+  const Token *op = PopToken(stream);
+  ASTNode *node = ParseAssignExpr(stream);
+  if (!node) Error("node should not be NULL");
+  return AllocAndInitASTExprBinOp(op, last, node);
 }
 
 #define MAX_NODES_IN_EXPR 64
@@ -125,6 +145,7 @@ ASTNode *ParseExpression(TokenStream *stream) {
   // expression:
   //   assignment-expression
   //   expression , assignment-expression
+  DebugPrintTokenStream(__func__, stream);
   ASTNode *last = ParseAssignExpr(stream);
   if (!last) return NULL;
   while (IsNextToken(stream, ",")) {
@@ -136,11 +157,16 @@ ASTNode *ParseExpression(TokenStream *stream) {
 }
 
 ASTNode *ParseJumpStmt(TokenStream *stream) {
+  DebugPrintTokenStream(__func__, stream);
   const Token *token;
   if ((token = ConsumeToken(stream, "return"))) {
     // jump-statement(return)
+    printf("return-stmt");
     ASTNode *expr_stmt = ToASTNode(ParseExprStmt(stream));
-    if (!expr_stmt) return NULL;
+    if (!expr_stmt) {
+      DebugPrintTokenStream("return-stmt expr fail", stream);
+      return NULL;
+    }
     ASTKeyword *kw = AllocASTKeyword();
     kw->token = token;
     ASTJumpStmt *return_stmt = AllocASTJumpStmt();
@@ -160,6 +186,7 @@ ASTNode *ParseStmt(TokenStream *stream) {
   //   selection-statement
   //   iteration-statement
   //   jump-statement
+  DebugPrintTokenStream(__func__, stream);
   ASTNode *statement;
   if ((statement = ParseJumpStmt(stream)) ||
       (statement = ToASTNode(ParseExprStmt(stream))))
@@ -170,6 +197,7 @@ ASTNode *ParseStmt(TokenStream *stream) {
 ASTExprStmt *ParseExprStmt(TokenStream *stream) {
   // expression-statement:
   //   expression_opt ;
+  DebugPrintTokenStream(__func__, stream);
   ASTNode *expr = ParseExpression(stream);
   if (!ConsumeToken(stream, ";")) return NULL;
   ASTExprStmt *expr_stmt = AllocASTExprStmt();
@@ -192,6 +220,11 @@ ASTCompStmt *ParseCompStmt(TokenStream *stream) {
     stmt = ToASTNode(ParseDecl(stream));
     if (!stmt) stmt = ParseStmt(stream);
     if (!stmt) break;
+
+    printf("InCompStmt: ");
+    PrintASTNode(stmt, 0);
+    putchar('\n');
+
     PushASTNodeToList(stmt_list, stmt);
   }
   ASTCompStmt *comp_stmt = AllocASTCompStmt();
@@ -418,8 +451,8 @@ ASTDecl *ParseDecl(TokenStream *stream) {
 }
 
 #define MAX_NODES_IN_TRANSLATION_UNIT 64
-ASTNode *ParseTranslationUnit(TokenStream *stream) {
-  // ASTList<ASTFuncDef | ASTDecl>
+// ASTList<ASTFuncDef | ASTDecl>
+ASTList *ParseTranslationUnit(TokenStream *stream) {
   // translation-unit:
   //   [function-definition declaration]+
   ASTList *list = AllocASTList(MAX_NODES_IN_TRANSLATION_UNIT);
@@ -440,11 +473,11 @@ ASTNode *ParseTranslationUnit(TokenStream *stream) {
     Error("Unexpected Token %s (%s:%d)", token->str, token->filename,
           token->line);
   }
-  return ToASTNode(list);
+  return list;
 }
 
 #define MAX_ROOT_NODES 64
 ASTNode *Parse(TokenList *tokens) {
   TokenStream *stream = AllocAndInitTokenStream(tokens);
-  return ParseTranslationUnit(stream);
+  return ToASTNode(ParseTranslationUnit(stream));
 }
