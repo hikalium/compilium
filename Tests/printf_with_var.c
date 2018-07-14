@@ -6,6 +6,6 @@ int main()
   foo = 3;
   int bar;
   bar = 7;
-  printf("foo = %d, bar = %d\n", foo - bar, foo);
+  printf("foo - bar = %d, foo = %d, bar = %d\n", foo - bar, foo, bar);
   return 0;
 }
