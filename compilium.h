@@ -53,6 +53,8 @@ typedef enum {
   kILOpCmpGE,
   kILOpCmpL,
   kILOpCmpLE,
+  kILOpCmpE,
+  kILOpCmpNE,
   kILOpLoadImm,
   kILOpLoadIdent,
   kILOpLoadArg,

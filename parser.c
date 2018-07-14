@@ -107,8 +107,10 @@ ASTNode *ParseRelationalExpr(TokenStream *stream) {
 }
 
 ASTNode *ParseEqualityExpr(TokenStream *stream) {
-  return ParseRelationalExpr(stream);
+  const static char *ops[] = {"==", "!=", NULL};
+  return ParseLeftAssocBinOp(stream, ParseRelationalExpr, ops);
 }
+
 ASTNode *ParseAndExpr(TokenStream *stream) { return ParseEqualityExpr(stream); }
 ASTNode *ParseExclusiveOrExpr(TokenStream *stream) {
   return ParseAndExpr(stream);

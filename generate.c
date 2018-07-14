@@ -347,6 +347,24 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "cmp %s, %s\n", left, right);
         fprintf(fp, "setle al\n");
       } break;
+      case kILOpCmpE: {
+        // TODO: dst can be any registers which can access as a byte reg
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
+        const char *left = AssignRegister(fp, op->left_reg);
+        const char *right = AssignRegister(fp, op->right_reg);
+        fprintf(fp, "xor rax, rax\n");
+        fprintf(fp, "cmp %s, %s\n", left, right);
+        fprintf(fp, "sete al\n");
+      } break;
+      case kILOpCmpNE: {
+        // TODO: dst can be any registers which can access as a byte reg
+        AssignVirtualRegToRealReg(fp, op->dst_reg, REAL_REG_RAX);
+        const char *left = AssignRegister(fp, op->left_reg);
+        const char *right = AssignRegister(fp, op->right_reg);
+        fprintf(fp, "xor rax, rax\n");
+        fprintf(fp, "cmp %s, %s\n", left, right);
+        fprintf(fp, "setne al\n");
+      } break;
       case kILOpReturn: {
         AssignVirtualRegToRealReg(fp, op->left_reg, REAL_REG_RAX);
       } break;
