@@ -117,7 +117,8 @@ ASTNode *ParseAndExpr(TokenStream *stream) {
 }
 
 ASTNode *ParseExclusiveOrExpr(TokenStream *stream) {
-  return ParseAndExpr(stream);
+  const static char *ops[] = {"^", NULL};
+  return ParseLeftAssocBinOp(stream, ParseAndExpr, ops);
 }
 ASTNode *ParseInclusiveOrExpr(TokenStream *stream) {
   return ParseExclusiveOrExpr(stream);
