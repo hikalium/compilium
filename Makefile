@@ -34,7 +34,7 @@ debug: compilium_dbg
 
 test: compilium
 	@ make unittest
-	@ make -C Tests/ | tee test_result.txt && ! grep FAIL test_result.txt  && echo "All tests passed"
+	@ make -C Tests/ | tee test_result.txt && ! grep FAIL test_result.txt && echo "All tests passed" && rm test_result.txt
 
 unittest: $(UNIT_TEST_TARGETS)
 
@@ -43,3 +43,9 @@ clean:
 
 format:
 	clang-format -i *.c *.h
+
+commit:
+	make format
+	make test
+	git add .
+	git commit
