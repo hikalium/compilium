@@ -161,7 +161,10 @@ const char *Preprocess(TokenList *tokens, const char *p) {
   } while (*p);
   const Token *directive = GetTokenAt(tokens, org_num_of_token);
   if (IsEqualToken(directive, "include")) {
-    Error("#include not implemented");
+    const Token *file_name = GetTokenAt(tokens, org_num_of_token + 1);
+    SetSizeOfTokenList(tokens, org_num_of_token);
+    char *input = ReadFile(file_name->str);
+    Tokenize(tokens, input, file_name->str);
   } else {
     Error("Unknown preprocessor directive '%s'",
           directive ? directive->str : "(null)");

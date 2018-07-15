@@ -39,10 +39,10 @@ stmt_test : ../compilium FORCE
 		./$*.compilium.bin > $*.compilium.bin.stdout; actual=$$?; \
 		if [ $$expected = $$actual ]; then \
 		{ diff -u $*.clang.bin.stdout $*.compilium.bin.stdout \
-		&& echo "PASS $*" \
-		|| echo "FAIL $*: text diff";\
+		&& echo "PASS $*.c" \
+		|| echo "FAIL $*.c: text diff";\
 		} else \
-		echo "FAIL $*: expected $$expected but got $$actual"; \
+		echo "FAIL $*.c: expected $$expected but got $$actual"; \
 		fi
 
 clean:
