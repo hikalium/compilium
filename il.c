@@ -314,6 +314,9 @@ ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, Context *context) {
   } else if (node->type == kASTIfStmt) {
     GenerateILForIfStmt(il, node, context);
     return NULL;
+  } else if (node->type == kASTCompStmt) {
+    GenerateILForCompStmt(il, node, context);
+    return NULL;
   }
   PrintASTNode(node, 0);
   putchar('\n');

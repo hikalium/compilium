@@ -6,6 +6,7 @@ ASTDecltor *ParseDecltor(TokenStream *stream);
 ASTDecl *ParseDecl(TokenStream *stream);
 ASTNode *ParseAssignExpr(TokenStream *stream);
 ASTNode *ParseStmt(TokenStream *stream);
+ASTCompStmt *ParseCompStmt(TokenStream *stream);
 
 // Utils
 
@@ -215,7 +216,8 @@ ASTNode *ParseStmt(TokenStream *stream) {
   //   jump-statement
   DebugPrintTokenStream(__func__, stream);
   ASTNode *statement;
-  if ((statement = ParseJumpStmt(stream)) ||
+  if ((statement = ToASTNode(ParseCompStmt(stream))) ||
+      (statement = ParseJumpStmt(stream)) ||
       (statement = ToASTNode(ParseExprStmt(stream))) ||
       (statement = ParseSelectionStmt(stream))) {
     return statement;
