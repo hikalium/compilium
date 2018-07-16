@@ -191,15 +191,19 @@ ASTNode *ParseSelectionStmt(TokenStream *stream) {
   DebugPrintTokenStream(__func__, stream);
   const Token *token;
   if ((token = ConsumeToken(stream, "if"))) {
-    if (!ConsumeToken(stream, "(")) Error("( is expected after if");
-    ASTNode *cond_expr = ParseExpression(stream);
-    if (!cond_expr) Error("expr is expected.");
-    if (!ConsumeToken(stream, ")")) Error(") is expected after expr");
-    ASTNode *body_stmt = ParseStmt(stream);
-    if (!body_stmt) Error("body_stmt is expected.");
     ASTIfStmt *if_stmt = AllocASTIfStmt();
-    if_stmt->cond_expr = cond_expr;
-    if_stmt->body_stmt = body_stmt;
+    if (!ConsumeToken(stream, "(")) Error("( is expected after if");
+    if_stmt->cond_expr = ParseExpression(stream);
+    if (!if_stmt->cond_expr) Error("expr is expected.");
+    if (!ConsumeToken(stream, ")")) Error(") is expected after expr");
+    if_stmt->true_stmt = ParseStmt(stream);
+    if (!if_stmt->true_stmt) Error("true_stmt is expected.");
+    if (ConsumeToken(stream, "else")) {
+      if_stmt->false_stmt = ParseStmt(stream);
+      if (!if_stmt->false_stmt) Error("false_stmt is expected.");
+    } else {
+      if_stmt->false_stmt = NULL;
+    }
     return ToASTNode(if_stmt);
   }
   return NULL;

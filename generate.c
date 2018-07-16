@@ -467,6 +467,12 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "L%d:\n", label->label_number);
         SpillAllRealRegisters(fp);
       } break;
+      case kILOpJmp: {
+        ASTLabel *label = ToASTLabel(op->ast_node);
+        if (!label) Error("Label is null");
+        if (!label->label_number) label->label_number = GetLabelNumber();
+        fprintf(fp, "jmp L%d\n", label->label_number);
+      } break;
       case kILOpJmpIfZero: {
         const char *left = AssignRegister(fp, op->left);
         ASTLabel *label = ToASTLabel(op->ast_node);

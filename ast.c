@@ -262,7 +262,8 @@ void PrintASTNode(ASTNode* node, int depth) {
   } else if (node->type == kASTIfStmt) {
     ASTIfStmt* if_stmt = ToASTIfStmt(node);
     PrintASTNodeWithName(depth + 1, "cond_expr=", if_stmt->cond_expr);
-    PrintASTNodeWithName(depth + 1, "body_stmt=", if_stmt->body_stmt);
+    PrintASTNodeWithName(depth + 1, "true_stmt=", if_stmt->true_stmt);
+    PrintASTNodeWithName(depth + 1, "false_stmt=", if_stmt->false_stmt);
   } else if (node->type == kASTForStmt) {
     ASTForStmt* for_stmt = ToASTForStmt(node);
     PrintASTNodeWithName(depth + 1, "init_expr=", for_stmt->init_expr);

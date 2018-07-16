@@ -23,3 +23,6 @@ test_statements "int foo; foo = 0; if(foo) foo = 2; return foo;" 0
 test_statements "int foo; foo = 1; if(foo) foo = 2; return foo;" 2
 test_statements "int foo; int bar; foo = 1; bar = foo + 1; bar = foo + 2; return foo;" 1
 test_statements "int foo; foo = 1; if(foo == 1){ foo = foo + 1; foo = foo + 1; } if(foo == 1){ foo = foo + 1; foo = foo + 1; } return foo;" 3
+test_statements "int foo; foo = 1; if(foo == 1){ foo = 7; } else if(foo == 2){ foo = 11; } else{ foo = 13; } return foo;" 7
+test_statements "int foo; foo = 2; if(foo == 1){ foo = 7; } else if(foo == 2){ foo = 11; } else{ foo = 13; } return foo;" 11
+test_statements "int foo; foo = 3; if(foo == 1){ foo = 7; } else if(foo == 2){ foo = 11; } else{ foo = 13; } return foo;" 13

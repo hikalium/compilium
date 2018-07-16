@@ -75,6 +75,7 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpWriteLocalVar] = "WriteLocalVar";
   ILOpTypeName[kILOpReadLocalVar] = "ReadLocalVar";
   ILOpTypeName[kILOpLabel] = "Label";
+  ILOpTypeName[kILOpJmp] = "Jmp";
   ILOpTypeName[kILOpJmpIfZero] = "JmpIfZero";
   ILOpTypeName[kILOpJmpIfNotZero] = "JmpIfZero";
   ILOpTypeName[kILOpSetLogicalValue] = "SetLogicalValue";
@@ -278,12 +279,19 @@ void GenerateILForDecl(ASTList *il, ASTNode *node, Context *context) {
 
 void GenerateILForIfStmt(ASTList *il, ASTNode *node, Context *context) {
   ASTIfStmt *if_stmt = ToASTIfStmt(node);
-  ASTLabel *label = AllocASTLabel();
+  ASTLabel *end_label = AllocASTLabel();
+  ASTLabel *false_label = if_stmt->false_stmt ? AllocASTLabel() : end_label;
 
-  ASTILOp *cond_expr_il = GenerateILFor(il, if_stmt->cond_expr, context);
-  EmitILOp(il, kILOpJmpIfZero, NULL, cond_expr_il->dst, NULL, ToASTNode(label));
-  GenerateILFor(il, if_stmt->body_stmt, context);
-  EmitILOp(il, kILOpLabel, REG_NULL, REG_NULL, REG_NULL, ToASTNode(label));
+  ASTILOp *cond_op = GenerateILFor(il, if_stmt->cond_expr, context);
+  EmitILOp(il, kILOpJmpIfZero, NULL, cond_op->dst, NULL,
+           ToASTNode(false_label));
+  GenerateILFor(il, if_stmt->true_stmt, context);
+  if (if_stmt->false_stmt) {
+    EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(end_label));
+    EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(false_label));
+    GenerateILFor(il, if_stmt->false_stmt, context);
+  }
+  EmitILOp(il, kILOpLabel, REG_NULL, REG_NULL, REG_NULL, ToASTNode(end_label));
 }
 
 ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, Context *context) {

@@ -72,6 +72,7 @@ typedef enum {
   kILOpWriteLocalVar,
   kILOpReadLocalVar,
   kILOpLabel,
+  kILOpJmp,
   kILOpJmpIfZero,
   kILOpJmpIfNotZero,
   kILOpSetLogicalValue,
@@ -154,7 +155,8 @@ typedef struct {
 typedef struct {
   ASTType type;
   ASTNode *cond_expr;
-  ASTNode *body_stmt;
+  ASTNode *true_stmt;
+  ASTNode *false_stmt;
 } ASTIfStmt;
 
 typedef struct {
