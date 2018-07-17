@@ -71,9 +71,7 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
     if (IsNextToken(stream, "(")) {
       const Token *op = PopToken(stream);
       ASTList *arg_expr_list = ParseCommaSeparatedList(stream, ParseAssignExpr);
-      if (!ConsumeToken(stream, ")")) {
-        Error("expected )");
-      }
+      ExpectToken(stream, ")");
       last = AllocAndInitASTExprBinOp(op, last, ToASTNode(arg_expr_list));
     } else {
       break;
@@ -150,7 +148,7 @@ ASTNode *ParseConditionalExpr(TokenStream *stream) {
   ASTNode *cond_expr = ParseLogicalOrExpr(stream);
   if (!ConsumeToken(stream, "?")) return cond_expr;
   ASTNode *true_expr = ParseExpression(stream);
-  if (!ConsumeToken(stream, ":")) Error("expected :");
+  ExpectToken(stream, ":");
   ASTNode *false_expr = ParseConditionalExpr(stream);
 
   if (!cond_expr || !true_expr || !false_expr) {
@@ -192,19 +190,17 @@ ASTNode *ParseExpression(TokenStream *stream) {
 
 ASTNode *ParseJumpStmt(TokenStream *stream) {
   DebugPrintTokenStream(__func__, stream);
-  const Token *token;
-  if ((token = ConsumeToken(stream, "return"))) {
-    // jump-statement(return)
-    printf("return-stmt");
+  if (IsNextToken(stream, "return")) {
+    ASTJumpStmt *return_stmt = AllocASTJumpStmt();
+    ASTKeyword *kw = AllocASTKeyword();
+
+    kw->token = PopToken(stream);
+    return_stmt->kw = kw;
     ASTNode *expr_stmt = ToASTNode(ParseExprStmt(stream));
     if (!expr_stmt) {
       DebugPrintTokenStream("return-stmt expr fail", stream);
       return NULL;
     }
-    ASTKeyword *kw = AllocASTKeyword();
-    kw->token = token;
-    ASTJumpStmt *return_stmt = AllocASTJumpStmt();
-    return_stmt->kw = kw;
     return_stmt->param = expr_stmt;
     return ToASTNode(return_stmt);
   }
@@ -229,10 +225,10 @@ ASTNode *ParseSelectionStmt(TokenStream *stream) {
   const Token *token;
   if ((token = ConsumeToken(stream, "if"))) {
     ASTIfStmt *if_stmt = AllocASTIfStmt();
-    if (!ConsumeToken(stream, "(")) Error("( is expected after if");
+    ExpectToken(stream, "(");
     if_stmt->cond_expr = ParseExpression(stream);
     if (!if_stmt->cond_expr) Error("expr is expected.");
-    if (!ConsumeToken(stream, ")")) Error(") is expected after expr");
+    ExpectToken(stream, ")");
     if_stmt->true_stmt = ParseStmt(stream);
     if (!if_stmt->true_stmt) Error("true_stmt is expected.");
     if (ConsumeToken(stream, "else")) {
@@ -302,9 +298,7 @@ ASTCompStmt *ParseCompStmt(TokenStream *stream) {
   }
   ASTCompStmt *comp_stmt = AllocASTCompStmt();
   comp_stmt->stmt_list = stmt_list;
-  if (!ConsumeToken(stream, "}")) {
-    Error("Expected } but got %s", PeekToken(stream)->str);
-  }
+  ExpectToken(stream, "}");
   return comp_stmt;
 }
 
@@ -359,10 +353,8 @@ ASTList *ParseParamTypeList(TokenStream *stream) {
   if (!ConsumeToken(stream, ",")) {
     return list;
   }
-  if (!IsNextToken(stream, "...")) {
-    Error("Token '...' expected, got %s", PeekToken(stream)->str);
-  }
-  PushASTNodeToList(list, ToASTNode(AllocAndInitASTKeyword(PopToken(stream))));
+  PushASTNodeToList(
+      list, ToASTNode(AllocAndInitASTKeyword(ExpectToken(stream, "..."))));
   return list;
 }
 
@@ -400,9 +392,7 @@ ASTDirectDecltor *ParseDirectDecltor(TokenStream *stream) {
       // direct-declarator ( parameter_type_list )
       ASTList *list = ParseParamTypeList(stream);
       if (!list) Error("ParseParamTypeList should not be empty");
-      if (!ConsumeToken(stream, ")"))
-        Error("expected ) after ParseParamTypeList but got %s",
-              PeekToken(stream)->str);
+      ExpectToken(stream, ")");
       ASTDirectDecltor *direct_decltor = AllocASTDirectDecltor();
       direct_decltor->direct_decltor = last_direct_decltor;
       direct_decltor->data = ToASTNode(list);
@@ -514,9 +504,7 @@ ASTDecl *ParseDecl(TokenStream *stream) {
   }
   ASTList *init_decltors = ParseInitDecltors(stream);
   // init_decltors is optional
-  if (!ConsumeToken(stream, ";")) {
-    Error("Expected ; after decl");
-  }
+  ExpectToken(stream, ";");
   ASTDecl *decl = AllocASTDecl();
   decl->decl_specs = decl_specs;
   decl->init_decltors = init_decltors;

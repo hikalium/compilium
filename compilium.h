@@ -378,7 +378,7 @@ const Token *PeekToken(const TokenStream *stream);
 int IsNextToken(TokenStream *stream, const char *str);
 int IsNextTokenInList(TokenStream *stream, const char *list[]);
 const Token *ConsumeToken(TokenStream *stream, const char *str);
-void ExpectToken(TokenStream *stream, const char *str);
+const Token *ExpectToken(TokenStream *stream, const char *str);
 void DebugPrintTokenStream(const char *s, const TokenStream *stream);
 
 // @tokenizer.c

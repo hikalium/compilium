@@ -143,11 +143,12 @@ const Token *ConsumeToken(TokenStream *stream, const char *str) {
   return PopToken(stream);
 }
 
-void ExpectToken(TokenStream *stream, const char *str) {
-  if (!ConsumeToken(stream, str)) {
+const Token *ExpectToken(TokenStream *stream, const char *str) {
+  if (!IsNextToken(stream, str)) {
     const Token *t = PeekToken(stream);
     Error("%s:%d Expected %s but got %s", t->filename, t->line, str, t->str);
   }
+  return PopToken(stream);
 }
 
 void DebugPrintTokenStream(const char *s, const TokenStream *stream) {
