@@ -65,6 +65,8 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpCmpNE] = "CmpNE";
   ILOpTypeName[kILOpShiftLeft] = "ShiftLeft";
   ILOpTypeName[kILOpShiftRight] = "ShiftRight";
+  ILOpTypeName[kILOpIncrement] = "Increment";
+  ILOpTypeName[kILOpDecrement] = "Increment";
   ILOpTypeName[kILOpLoadImm] = "LoadImm";
   ILOpTypeName[kILOpLoadIdent] = "LoadIdent";
   ILOpTypeName[kILOpLoadArg] = "LoadArg";
@@ -106,6 +108,7 @@ ASTILOp *EmitILOp(ASTList *il, ILOpType type, Register *dst, Register *left,
 
 // generators
 ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, Context *context);
+ASTILOp *GenerateILForIdent(ASTList *il, ASTNode *node, Context *context);
 
 void GenerateILForCompStmt(ASTList *il, ASTNode *node, Context *context) {
   ASTCompStmt *comp = ToASTCompStmt(node);
@@ -194,6 +197,16 @@ ASTILOp *GenerateILForExprUnaryPreOp(ASTList *il, ASTNode *node,
     ASTILOp *expr_il = GenerateILFor(il, op->expr, context);
     return EmitILOp(il, kILOpLogicalNot, AllocRegister(), expr_il->dst, NULL,
                     node);
+  } else if (IsEqualToken(op->op, "++")) {
+    ASTILOp *load_il = GenerateILForIdent(il, op->expr, context);
+    ASTILOp *inc_il =
+        EmitILOp(il, kILOpIncrement, AllocRegister(), load_il->dst, NULL, NULL);
+    return GenerateILForAssignmentOp(il, op->expr, inc_il, context);
+  } else if (IsEqualToken(op->op, "--")) {
+    ASTILOp *load_il = GenerateILForIdent(il, op->expr, context);
+    ASTILOp *inc_il =
+        EmitILOp(il, kILOpDecrement, AllocRegister(), load_il->dst, NULL, NULL);
+    return GenerateILForAssignmentOp(il, op->expr, inc_il, context);
   }
   Error("Not impl");
   return NULL;

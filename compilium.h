@@ -61,6 +61,8 @@ typedef enum {
   kILOpLogicalNot,
   kILOpShiftLeft,
   kILOpShiftRight,
+  kILOpIncrement,
+  kILOpDecrement,
   kILOpCmpG,
   kILOpCmpGE,
   kILOpCmpL,

@@ -388,6 +388,16 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "SAR rax, cl\n");
         AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
       } break;
+      case kILOpIncrement: {
+        const char *left = AssignRegister(fp, op->left);
+        fprintf(fp, "inc %s\n", left);
+        AssignVirtualRegToRealReg(fp, op->dst, op->left->real_reg);
+      } break;
+      case kILOpDecrement: {
+        const char *left = AssignRegister(fp, op->left);
+        fprintf(fp, "dec %s\n", left);
+        AssignVirtualRegToRealReg(fp, op->dst, op->left->real_reg);
+      } break;
       case kILOpCmpG: {
         // TODO: dst can be any registers which can access as a byte reg
         AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
