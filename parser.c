@@ -35,11 +35,7 @@ ASTNode *ParseLeftAssocBinOp(TokenStream *stream,
                              const char *ops[]) {
   ASTNode *last = sub_parser(stream);
   while (last) {
-    int i;
-    for (i = 0; ops[i]; i++) {
-      if (IsNextToken(stream, ops[i])) break;
-    }
-    if (!ops[i]) break;
+    if (!IsNextTokenInList(stream, ops)) break;
     const Token *op = PopToken(stream);
     ASTNode *node = sub_parser(stream);
     if (!node) Error("node should not be NULL");
@@ -153,11 +149,7 @@ ASTNode *ParseAssignExpr(TokenStream *stream) {
   if (!last) {
     return ParseConditionalExpr(stream);
   }
-  int i;
-  for (i = 0; ops[i]; i++) {
-    if (IsNextToken(stream, ops[i])) break;
-  }
-  if (!ops[i]) {
+  if (!IsNextTokenInList(stream, ops)) {
     SeekStream(stream, pos);
     return ParseConditionalExpr(stream);
   };

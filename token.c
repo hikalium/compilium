@@ -130,6 +130,14 @@ int IsNextToken(TokenStream *stream, const char *str) {
   return IsEqualToken(GetTokenAt(stream->list, stream->pos), str);
 }
 
+int IsNextTokenInList(TokenStream *stream, const char *list[]) {
+  int i;
+  for (i = 0; list[i]; i++) {
+    if (IsNextToken(stream, list[i])) return 1;
+  }
+  return 0;
+}
+
 const Token *ConsumeToken(TokenStream *stream, const char *str) {
   if (!IsNextToken(stream, str)) return NULL;
   return PopToken(stream);
