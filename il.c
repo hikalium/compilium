@@ -1,7 +1,5 @@
 #include "compilium.h"
 
-#define REG_NULL 0
-
 struct CONTEXT {
   const Context *parent;
   ASTDict *dict;
@@ -116,7 +114,7 @@ void GenerateILForCompStmt(ASTList *il, ASTNode *node, Context *context) {
 }
 
 void GenerateILForFuncDef(ASTList *il, ASTNode *node, Context *context) {
-  EmitILOp(il, kILOpFuncBegin, REG_NULL, REG_NULL, REG_NULL, node);
+  EmitILOp(il, kILOpFuncBegin, NULL, NULL, NULL, node);
   ASTFuncDef *def = ToASTFuncDef(node);
   context = AllocContext(context);
   def->context = context;
@@ -139,7 +137,7 @@ void GenerateILForFuncDef(ASTList *il, ASTNode *node, Context *context) {
     }
   }
   GenerateILForCompStmt(il, ToASTNode(def->comp_stmt), context);
-  EmitILOp(il, kILOpFuncEnd, REG_NULL, REG_NULL, REG_NULL, node);
+  EmitILOp(il, kILOpFuncEnd, NULL, NULL, NULL, node);
 }
 
 typedef struct {
@@ -177,7 +175,7 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
     EmitILOp(il, kILOpSetLogicalValue, dst, il_left->dst, NULL, NULL);
     EmitILOp(il, kILOpJmpIfZero, NULL, il_left->dst, NULL, ToASTNode(label));
     ASTILOp *il_right = GenerateILFor(il, bin_op->right, context);
-    EmitILOp(il, kILOpSetLogicalValue, dst, il_right->dst, REG_NULL, NULL);
+    EmitILOp(il, kILOpSetLogicalValue, dst, il_right->dst, NULL, NULL);
     return EmitILOp(il, kILOpLabel, dst, NULL, NULL, ToASTNode(label));
   } else if (IsEqualToken(bin_op->op, "||")) {
     Register *dst = AllocRegister();
@@ -186,7 +184,7 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
     EmitILOp(il, kILOpSetLogicalValue, dst, il_left->dst, NULL, NULL);
     EmitILOp(il, kILOpJmpIfNotZero, NULL, il_left->dst, NULL, ToASTNode(label));
     ASTILOp *il_right = GenerateILFor(il, bin_op->right, context);
-    EmitILOp(il, kILOpSetLogicalValue, dst, il_right->dst, REG_NULL, NULL);
+    EmitILOp(il, kILOpSetLogicalValue, dst, il_right->dst, NULL, NULL);
     return EmitILOp(il, kILOpLabel, dst, NULL, NULL, ToASTNode(label));
   } else if (IsEqualToken(bin_op->op, "=")) {
     ASTIdent *left_ident = ToASTIdent(bin_op->left);
@@ -260,7 +258,7 @@ ASTILOp *GenerateILForJumpStmt(ASTList *il, ASTNode *node, Context *context) {
   ASTJumpStmt *jump_stmt = ToASTJumpStmt(node);
   if (IsEqualToken(jump_stmt->kw->token, "return")) {
     ASTILOp *expr = GenerateILForExprStmt(il, jump_stmt->param, context);
-    return EmitILOp(il, kILOpReturn, NULL, expr->dst, REG_NULL, node);
+    return EmitILOp(il, kILOpReturn, NULL, expr->dst, NULL, node);
   }
   Error("Not implemented JumpStmt (%s)", jump_stmt->kw->token->str);
   return NULL;
@@ -291,7 +289,7 @@ void GenerateILForIfStmt(ASTList *il, ASTNode *node, Context *context) {
     EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(false_label));
     GenerateILFor(il, if_stmt->false_stmt, context);
   }
-  EmitILOp(il, kILOpLabel, REG_NULL, REG_NULL, REG_NULL, ToASTNode(end_label));
+  EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(end_label));
 }
 
 ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, Context *context) {
