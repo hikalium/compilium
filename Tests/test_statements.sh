@@ -10,6 +10,18 @@ test_statements "return 0;" 0
 test_statements "return 5;" 5
 test_statements "return 3; return 5;" 3
 
+test_statements "int foo; foo = 7; foo *= 3; return foo;" 21
+test_statements "int foo; foo = 7; foo /= 3; return foo;" 2
+test_statements "int foo; foo = 7; foo %= 3; return foo;" 1
+test_statements "int foo; foo = 7; foo += 3; return foo;" 10
+test_statements "int foo; foo = 7; foo += foo + 3; return foo;" 17
+test_statements "int foo; foo = 7; foo -= 3; return foo;" 4
+test_statements "int foo; foo = 7; foo <<= 3; return foo;" 56
+test_statements "int foo; foo = 9; foo >>= 3; return foo;" 1
+test_statements "int foo; foo = 10; foo &= 6; return foo;" 2
+test_statements "int foo; foo = 10; foo ^= 6; return foo;" 12
+test_statements "int foo; foo = 10; foo |= 6; return foo;" 14
+
 test_statements "int foo; foo = 5; return foo;" 5
 test_statements "int foo; foo = 5; return foo * foo;" 25
 test_statements "int foo; int bar; foo = 3; bar = 7; return foo * bar;" 21

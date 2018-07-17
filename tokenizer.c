@@ -43,7 +43,7 @@ int IsKeywordStr(const char *str) {
 #define IS_IDENT_DIGIT(c) (('0' <= (c) && (c) <= '9'))
 const char *CommonTokenizer(TokenList *tokens, const char *p,
                             const char *filename, int line) {
-  static const char *single_char_punctuators = "[](){}~^?:;,%\\";
+  static const char *single_char_punctuators = "[](){}~?:;,\\";
   const char *begin = NULL;
   if (IS_IDENT_NODIGIT(*p)) {
     begin = p++;
@@ -95,15 +95,17 @@ const char *CommonTokenizer(TokenList *tokens, const char *p,
   } else if (*p == '-') {
     // - -- -= ->
     begin = p++;
-    if (*p == *begin || *p == '-' || *p == '>') {
+    if (*p == *begin || *p == '-' || *p == '=' || *p == '>') {
       p++;
     }
     AppendTokenToList(
         tokens, AllocTokenWithSubstring(begin, p, kPunctuator, filename, line));
-  } else if (*p == '=' || *p == '!' || *p == '*') {
+  } else if (*p == '=' || *p == '!' || *p == '*' || *p == '%' || *p == '^') {
     // = ==
     // ! !=
     // * *=
+    // % %=
+    // ^ ^=
     begin = p++;
     if (*p == '=') {
       p++;

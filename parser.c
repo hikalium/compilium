@@ -145,16 +145,22 @@ ASTNode *ParseConditionalExpr(TokenStream *stream) {
 ASTNode *ParseAssignExpr(TokenStream *stream) {
   // assignment-expression:
   // [unary-expression assignment-operator]* conditional-expression
+  const static char *ops[] = {
+      "=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", "&=", "^=", "|=", NULL};
   DebugPrintTokenStream(__func__, stream);
   int pos = GetStreamPos(stream);
   ASTNode *last = ParseUnaryExpr(stream);
   if (!last) {
     return ParseConditionalExpr(stream);
   }
-  if (!IsNextToken(stream, "=") && !IsNextToken(stream, "*=")) {
+  int i;
+  for (i = 0; ops[i]; i++) {
+    if (IsNextToken(stream, ops[i])) break;
+  }
+  if (!ops[i]) {
     SeekStream(stream, pos);
     return ParseConditionalExpr(stream);
-  }
+  };
   const Token *op = PopToken(stream);
   ASTNode *node = ParseAssignExpr(stream);
   if (!node) Error("node should not be NULL");

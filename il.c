@@ -154,9 +154,33 @@ PairOfStrAndILOpType bin_op_list[] = {
     {"|", kILOpOr},          {NULL, kILOpNop},
 };
 
+PairOfStrAndILOpType comp_assign_op_list[] = {
+    {"*=", kILOpMul},         {"/=", kILOpDiv}, {"%=", kILOpMod},
+    {"+=", kILOpAdd},         {"-=", kILOpSub}, {"<<=", kILOpShiftLeft},
+    {">>=", kILOpShiftRight}, {"&=", kILOpAnd}, {"^=", kILOpXor},
+    {"|=", kILOpOr},          {NULL, kILOpNop},
+};
+
+ASTILOp *GenerateILForAssignmentOp(ASTList *il, ASTNode *left,
+                                   ASTILOp *right_il, Context *context) {
+  ASTIdent *left_ident = ToASTIdent(left);
+  if (left_ident) {
+    ASTNode *var = FindIdentInContext(context, left_ident);
+    ASTLocalVar *local_var = ToASTLocalVar(var);
+    if (local_var) {
+      return EmitILOp(il, kILOpWriteLocalVar, right_il->dst, NULL,
+                      right_il->dst, ToASTNode(local_var));
+    }
+    Error("local variable %s not defined here.", left_ident->token->str);
+  }
+  Error("Left operand of assignment should be an lvalue");
+  return NULL;
+}
+
 ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
   ASTExprBinOp *bin_op = ToASTExprBinOp(node);
   ILOpType il_op_type = kILOpNop;
+
   for (int i = 0; bin_op_list[i].str; i++) {
     if (IsEqualToken(bin_op->op, bin_op_list[i].str)) {
       il_op_type = bin_op_list[i].il_op_type;
@@ -168,7 +192,23 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
     ASTILOp *right = GenerateILFor(il, bin_op->right, context);
     return EmitILOp(il, il_op_type, AllocRegister(), left->dst, right->dst,
                     node);
-  } else if (IsEqualToken(bin_op->op, "&&")) {
+  }
+
+  for (int i = 0; comp_assign_op_list[i].str; i++) {
+    if (IsEqualToken(bin_op->op, comp_assign_op_list[i].str)) {
+      il_op_type = comp_assign_op_list[i].il_op_type;
+      break;
+    }
+  }
+  if (il_op_type != kILOpNop) {
+    ASTILOp *left = GenerateILFor(il, bin_op->left, context);
+    ASTILOp *right = GenerateILFor(il, bin_op->right, context);
+    ASTILOp *result =
+        EmitILOp(il, il_op_type, AllocRegister(), left->dst, right->dst, node);
+    return GenerateILForAssignmentOp(il, bin_op->left, result, context);
+  }
+
+  if (IsEqualToken(bin_op->op, "&&")) {
     Register *dst = AllocRegister();
     ASTLabel *label = AllocASTLabel();
     ASTILOp *il_left = GenerateILFor(il, bin_op->left, context);
@@ -187,18 +227,8 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
     EmitILOp(il, kILOpSetLogicalValue, dst, il_right->dst, NULL, NULL);
     return EmitILOp(il, kILOpLabel, dst, NULL, NULL, ToASTNode(label));
   } else if (IsEqualToken(bin_op->op, "=")) {
-    ASTIdent *left_ident = ToASTIdent(bin_op->left);
-    if (left_ident) {
-      ASTNode *var = FindIdentInContext(context, left_ident);
-      ASTLocalVar *local_var = ToASTLocalVar(var);
-      if (local_var) {
-        ASTILOp *il_op = GenerateILFor(il, bin_op->right, context);
-        return EmitILOp(il, kILOpWriteLocalVar, il_op->dst, NULL, il_op->dst,
-                        ToASTNode(local_var));
-      }
-      Error("local variable %s not defined here.", left_ident->token->str);
-    }
-    Error("Left operand of assignment should be an lvalue");
+    ASTILOp *right_il = GenerateILFor(il, bin_op->right, context);
+    return GenerateILForAssignmentOp(il, bin_op->left, right_il, context);
   } else if (IsEqualToken(bin_op->op, ",")) {
     GenerateILFor(il, bin_op->left, context);
     return GenerateILFor(il, bin_op->right, context);
