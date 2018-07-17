@@ -83,7 +83,7 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
 }
 
 ASTNode *ParseUnaryExpr(TokenStream *stream) {
-  const static char *ops[] = {"+", "-", "~", NULL};
+  const static char *ops[] = {"+", "-", "~", "!", NULL};
   if (IsNextTokenInList(stream, ops)) {
     ASTExprUnaryPreOp *op = AllocASTExprUnaryPreOp();
     op->op = PopToken(stream);

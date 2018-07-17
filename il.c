@@ -190,6 +190,10 @@ ASTILOp *GenerateILForExprUnaryPreOp(ASTList *il, ASTNode *node,
   } else if (IsEqualToken(op->op, "~")) {
     ASTILOp *expr_il = GenerateILFor(il, op->expr, context);
     return EmitILOp(il, kILOpNot, AllocRegister(), expr_il->dst, NULL, node);
+  } else if (IsEqualToken(op->op, "!")) {
+    ASTILOp *expr_il = GenerateILFor(il, op->expr, context);
+    return EmitILOp(il, kILOpLogicalNot, AllocRegister(), expr_il->dst, NULL,
+                    node);
   }
   Error("Not impl");
   return NULL;

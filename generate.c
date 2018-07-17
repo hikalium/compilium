@@ -364,6 +364,14 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "or %s, %s\n", left, right);
         fprintf(fp, "setnz al\n");
       } break;
+      case kILOpLogicalNot: {
+        // TODO: dst can be any registers which can access as a byte reg
+        AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
+        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
+        fprintf(fp, "cmp rax, 0\n");
+        fprintf(fp, "setz al\n");
+        fprintf(fp, "and rax, 1\n");
+      } break;
       case kILOpShiftLeft: {
         // r/m <<= CL
         // TODO: left and dst can be any register

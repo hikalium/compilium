@@ -15,6 +15,10 @@ test_expression "+ +5" 5
 test_expression "~10 & 15" 5
 test_expression "~5 & 15" 10
 
+test_expression "!0" 1
+test_expression "!1" 0
+test_expression "!2" 0
+
 test_expression "2 + 3" 5
 test_expression "7 - 3" 4
 test_expression "2 * 3" 6
