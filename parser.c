@@ -65,6 +65,7 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
   //   primary-expression
   //   postfix-expression ( argument-expression-list_opt )
   // TODO: not completed
+  const static char *ops[] = {"++", "--", NULL};
   ASTNode *last = ParsePrimaryExpr(stream);
   if (!last) return NULL;
   for (;;) {
@@ -73,6 +74,11 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
       ASTList *arg_expr_list = ParseCommaSeparatedList(stream, ParseAssignExpr);
       ExpectToken(stream, ")");
       last = AllocAndInitASTExprBinOp(op, last, ToASTNode(arg_expr_list));
+    } else if (IsNextTokenInList(stream, ops)) {
+      ASTExprUnaryPostOp *op = AllocASTExprUnaryPostOp();
+      op->op = PopToken(stream);
+      op->expr = last;
+      last = ToASTNode(op);
     } else {
       break;
     }

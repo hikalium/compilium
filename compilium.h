@@ -20,6 +20,7 @@ typedef enum {
   kASTFuncDef,
   kASTCompStmt,
   kASTExprUnaryPreOp,
+  kASTExprUnaryPostOp,
   kASTExprBinOp,
   kASTConstant,
   kASTExprStmt,
@@ -146,6 +147,12 @@ typedef struct {
 typedef struct {
   ASTType type;
   const Token *op;
+  ASTNode *expr;
+} ASTExprUnaryPostOp;
+
+typedef struct {
+  ASTType type;
+  const Token *op;
   ASTNode *left;
   ASTNode *right;
 } ASTExprBinOp;
@@ -268,6 +275,7 @@ DefToAST(FuncDecl);
 DefToAST(FuncDef);
 DefToAST(CompStmt);
 DefToAST(ExprUnaryPreOp);
+DefToAST(ExprUnaryPostOp);
 DefToAST(ExprBinOp);
 DefToAST(Constant);
 DefToAST(ExprStmt);
@@ -294,6 +302,7 @@ DefAllocAST(FuncDecl);
 DefAllocAST(FuncDef);
 DefAllocAST(CompStmt);
 DefAllocAST(ExprUnaryPreOp);
+DefAllocAST(ExprUnaryPostOp);
 DefAllocAST(ExprBinOp);
 DefAllocAST(Constant);
 DefAllocAST(ExprStmt);

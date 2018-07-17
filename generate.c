@@ -390,13 +390,13 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
       } break;
       case kILOpIncrement: {
         const char *left = AssignRegister(fp, op->left);
-        fprintf(fp, "inc %s\n", left);
         AssignVirtualRegToRealReg(fp, op->dst, op->left->real_reg);
+        fprintf(fp, "inc %s\n", left);
       } break;
       case kILOpDecrement: {
         const char *left = AssignRegister(fp, op->left);
-        fprintf(fp, "dec %s\n", left);
         AssignVirtualRegToRealReg(fp, op->dst, op->left->real_reg);
+        fprintf(fp, "dec %s\n", left);
       } break;
       case kILOpCmpG: {
         // TODO: dst can be any registers which can access as a byte reg

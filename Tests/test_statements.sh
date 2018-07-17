@@ -19,6 +19,11 @@ test_statements "int foo; foo = 7; ++foo; ++foo; return foo;" 9
 test_statements "int foo; foo = 7; --foo; --foo; return --foo;" 4
 test_statements "int foo; foo = 7; --foo; --foo; return foo;" 5
 
+test_statements "int foo; foo = 7; foo++; foo++; return foo++;" 9
+test_statements "int foo; foo = 7; foo++; foo++; return foo;" 9
+test_statements "int foo; foo = 7; foo--; foo--; return foo--;" 5
+test_statements "int foo; foo = 7; foo--; foo--; return foo;" 5
+
 test_statements "int foo; foo = 7; foo *= 3; return foo;" 21
 test_statements "int foo; foo = 7; foo /= 3; return foo;" 2
 test_statements "int foo; foo = 7; foo %= 3; return foo;" 1

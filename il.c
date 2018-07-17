@@ -212,6 +212,26 @@ ASTILOp *GenerateILForExprUnaryPreOp(ASTList *il, ASTNode *node,
   return NULL;
 }
 
+ASTILOp *GenerateILForExprUnaryPostOp(ASTList *il, ASTNode *node,
+                                      Context *context) {
+  ASTExprUnaryPostOp *op = ToASTExprUnaryPostOp(node);
+  if (IsEqualToken(op->op, "++")) {
+    ASTILOp *load_il = GenerateILForIdent(il, op->expr, context);
+    ASTILOp *inc_il =
+        EmitILOp(il, kILOpIncrement, AllocRegister(), load_il->dst, NULL, NULL);
+    GenerateILForAssignmentOp(il, op->expr, inc_il, context);
+    return load_il;
+  } else if (IsEqualToken(op->op, "--")) {
+    ASTILOp *load_il = GenerateILForIdent(il, op->expr, context);
+    ASTILOp *inc_il =
+        EmitILOp(il, kILOpDecrement, AllocRegister(), load_il->dst, NULL, NULL);
+    GenerateILForAssignmentOp(il, op->expr, inc_il, context);
+    return load_il;
+  }
+  Error("Not impl");
+  return NULL;
+}
+
 ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
   ASTExprBinOp *bin_op = ToASTExprBinOp(node);
   ILOpType il_op_type = kILOpNop;
@@ -425,6 +445,8 @@ ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, Context *context) {
     return GenerateILForJumpStmt(il, node, context);
   } else if (node->type == kASTExprUnaryPreOp) {
     return GenerateILForExprUnaryPreOp(il, node, context);
+  } else if (node->type == kASTExprUnaryPostOp) {
+    return GenerateILForExprUnaryPostOp(il, node, context);
   } else if (node->type == kASTExprBinOp) {
     return GenerateILForExprBinOp(il, node, context);
   } else if (node->type == kASTConstant) {
