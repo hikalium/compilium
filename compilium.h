@@ -54,6 +54,7 @@ typedef enum {
   kILOpAnd,
   kILOpXor,
   kILOpOr,
+  kILOpNot,
   kILOpNegate,
   kILOpLogicalAnd,
   kILOpLogicalOr,

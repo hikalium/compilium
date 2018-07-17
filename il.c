@@ -53,6 +53,7 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpAnd] = "And";
   ILOpTypeName[kILOpXor] = "Xor";
   ILOpTypeName[kILOpOr] = "Or";
+  ILOpTypeName[kILOpAnd] = "Not";
   ILOpTypeName[kILOpNegate] = "Negate";
   ILOpTypeName[kILOpLogicalAnd] = "LogicalAnd";
   ILOpTypeName[kILOpLogicalOr] = "LogicalOr";
@@ -186,6 +187,9 @@ ASTILOp *GenerateILForExprUnaryPreOp(ASTList *il, ASTNode *node,
   } else if (IsEqualToken(op->op, "-")) {
     ASTILOp *expr_il = GenerateILFor(il, op->expr, context);
     return EmitILOp(il, kILOpNegate, AllocRegister(), expr_il->dst, NULL, node);
+  } else if (IsEqualToken(op->op, "~")) {
+    ASTILOp *expr_il = GenerateILFor(il, op->expr, context);
+    return EmitILOp(il, kILOpNot, AllocRegister(), expr_il->dst, NULL, node);
   }
   Error("Not impl");
   return NULL;
