@@ -8,6 +8,7 @@ ASTNode *ParseAssignExpr(TokenStream *stream);
 ASTNode *ParseStmt(TokenStream *stream);
 ASTCompStmt *ParseCompStmt(TokenStream *stream);
 ASTNode *ParseCastExpr(TokenStream *stream);
+ASTNode *ParseExpression(TokenStream *stream);
 
 // Utils
 
@@ -146,7 +147,21 @@ ASTNode *ParseLogicalOrExpr(TokenStream *stream) {
 }
 
 ASTNode *ParseConditionalExpr(TokenStream *stream) {
-  return ParseLogicalOrExpr(stream);
+  ASTNode *cond_expr = ParseLogicalOrExpr(stream);
+  if (!ConsumeToken(stream, "?")) return cond_expr;
+  ASTNode *true_expr = ParseExpression(stream);
+  if (!ConsumeToken(stream, ":")) Error("expected :");
+  ASTNode *false_expr = ParseConditionalExpr(stream);
+
+  if (!cond_expr || !true_expr || !false_expr) {
+    Error("ParseConditionalExpr failed.");
+  }
+
+  ASTCondStmt *cond_stmt = AllocASTCondStmt();
+  cond_stmt->cond_expr = cond_expr;
+  cond_stmt->true_expr = true_expr;
+  cond_stmt->false_expr = false_expr;
+  return ToASTNode(cond_stmt);
 }
 
 ASTNode *ParseAssignExpr(TokenStream *stream) {

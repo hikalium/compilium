@@ -24,6 +24,7 @@ typedef enum {
   kASTConstant,
   kASTExprStmt,
   kASTJumpStmt,
+  kASTCondStmt,
   kASTIfStmt,
   kASTForStmt,
   kASTILOp,
@@ -163,6 +164,13 @@ typedef struct {
 typedef struct {
   ASTType type;
   ASTNode *cond_expr;
+  ASTNode *true_expr;
+  ASTNode *false_expr;
+} ASTCondStmt;
+
+typedef struct {
+  ASTType type;
+  ASTNode *cond_expr;
   ASTNode *true_stmt;
   ASTNode *false_stmt;
 } ASTIfStmt;
@@ -253,6 +261,7 @@ DefToAST(ExprBinOp);
 DefToAST(Constant);
 DefToAST(ExprStmt);
 DefToAST(JumpStmt);
+DefToAST(CondStmt);
 DefToAST(IfStmt);
 DefToAST(ForStmt);
 DefToAST(ILOp);
@@ -277,6 +286,7 @@ DefAllocAST(ExprBinOp);
 DefAllocAST(Constant);
 DefAllocAST(ExprStmt);
 DefAllocAST(JumpStmt);
+DefAllocAST(CondStmt);
 DefAllocAST(IfStmt);
 DefAllocAST(ForStmt);
 DefAllocAST(ILOp);

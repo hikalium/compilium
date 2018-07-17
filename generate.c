@@ -476,6 +476,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         ASTLabel *label = ToASTLabel(op->ast_node);
         if (!label) Error("Label is null");
         if (!label->label_number) label->label_number = GetLabelNumber();
+        SpillAllRealRegisters(fp);
         fprintf(fp, "jmp L%d\n", label->label_number);
       } break;
       case kILOpJmpIfZero: {
@@ -483,6 +484,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         ASTLabel *label = ToASTLabel(op->ast_node);
         if (!label) Error("Label is null");
         if (!label->label_number) label->label_number = GetLabelNumber();
+        SpillAllRealRegisters(fp);
         fprintf(fp, "cmp %s, 0\n", left);
         fprintf(fp, "je L%d\n", label->label_number);
       } break;
@@ -491,6 +493,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         ASTLabel *label = ToASTLabel(op->ast_node);
         if (!label) Error("Label is null");
         if (!label->label_number) label->label_number = GetLabelNumber();
+        SpillAllRealRegisters(fp);
         fprintf(fp, "cmp %s, 0\n", left);
         fprintf(fp, "jne L%d\n", label->label_number);
       } break;
