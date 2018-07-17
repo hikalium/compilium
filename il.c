@@ -53,6 +53,7 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpAnd] = "And";
   ILOpTypeName[kILOpXor] = "Xor";
   ILOpTypeName[kILOpOr] = "Or";
+  ILOpTypeName[kILOpNegate] = "Negate";
   ILOpTypeName[kILOpLogicalAnd] = "LogicalAnd";
   ILOpTypeName[kILOpLogicalOr] = "LogicalOr";
   ILOpTypeName[kILOpCmpG] = "CmpG";
@@ -174,6 +175,19 @@ ASTILOp *GenerateILForAssignmentOp(ASTList *il, ASTNode *left,
     Error("local variable %s not defined here.", left_ident->token->str);
   }
   Error("Left operand of assignment should be an lvalue");
+  return NULL;
+}
+
+ASTILOp *GenerateILForExprUnaryPreOp(ASTList *il, ASTNode *node,
+                                     Context *context) {
+  ASTExprUnaryPreOp *op = ToASTExprUnaryPreOp(node);
+  if (IsEqualToken(op->op, "+")) {
+    return GenerateILFor(il, op->expr, context);
+  } else if (IsEqualToken(op->op, "-")) {
+    ASTILOp *expr_il = GenerateILFor(il, op->expr, context);
+    return EmitILOp(il, kILOpNegate, AllocRegister(), expr_il->dst, NULL, node);
+  }
+  Error("Not impl");
   return NULL;
 }
 
@@ -336,6 +350,8 @@ ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, Context *context) {
     return NULL;
   } else if (node->type == kASTJumpStmt) {
     return GenerateILForJumpStmt(il, node, context);
+  } else if (node->type == kASTExprUnaryPreOp) {
+    return GenerateILForExprUnaryPreOp(il, node, context);
   } else if (node->type == kASTExprBinOp) {
     return GenerateILForExprBinOp(il, node, context);
   } else if (node->type == kASTConstant) {

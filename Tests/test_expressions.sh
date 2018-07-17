@@ -9,11 +9,24 @@ function test_expression() {
 test_expression "0" 0
 test_expression "1" 1
 
+test_expression "- -3" 3
+test_expression "+ +5" 5
+
 test_expression "2 + 3" 5
 test_expression "7 - 3" 4
 test_expression "2 * 3" 6
 test_expression "7 / 2" 3
 test_expression "7 % 2" 1
+
+test_expression "7 + +3" 10
+test_expression "7 + -3" 4
+test_expression "7 - +3" 4
+test_expression "7 - -3" 10
+
+test_expression "-7 + +3 + 10" 6
+test_expression "-7 + -3 + 10" 0
+test_expression "-7 - +3 + 10" 0
+test_expression "-7 - -3 + 10" 6
 
 test_expression "3 << 5" 96
 test_expression "5 >> 2" 1

@@ -7,6 +7,7 @@ ASTDecl *ParseDecl(TokenStream *stream);
 ASTNode *ParseAssignExpr(TokenStream *stream);
 ASTNode *ParseStmt(TokenStream *stream);
 ASTCompStmt *ParseCompStmt(TokenStream *stream);
+ASTNode *ParseCastExpr(TokenStream *stream);
 
 // Utils
 
@@ -80,7 +81,17 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
   return last;
 }
 
-ASTNode *ParseUnaryExpr(TokenStream *stream) { return ParsePostExpr(stream); }
+ASTNode *ParseUnaryExpr(TokenStream *stream) {
+  const static char *ops[] = {"+", "-", NULL};
+  if (IsNextTokenInList(stream, ops)) {
+    ASTExprUnaryPreOp *op = AllocASTExprUnaryPreOp();
+    op->op = PopToken(stream);
+    op->expr = ParseCastExpr(stream);
+    if (!op->expr) Error("op->expr expected");
+    return ToASTNode(op);
+  }
+  return ParsePostExpr(stream);
+}
 
 ASTNode *ParseCastExpr(TokenStream *stream) { return ParseUnaryExpr(stream); }
 

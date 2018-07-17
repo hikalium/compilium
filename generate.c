@@ -336,6 +336,11 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "or %s, %s\n", left, right);
         fprintf(fp, "mov %s, %s\n", dst, left);
       } break;
+      case kILOpNegate: {
+        const char *left = AssignRegister(fp, op->left);
+        AssignVirtualRegToRealReg(fp, op->dst, op->left->real_reg);
+        fprintf(fp, "neg %s\n", left);
+      } break;
       case kILOpLogicalAnd: {
         // TODO: dst can be any registers which can access as a byte reg
         AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
