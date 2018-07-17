@@ -197,10 +197,7 @@ ASTNode *ParseJumpStmt(TokenStream *stream) {
     kw->token = PopToken(stream);
     return_stmt->kw = kw;
     ASTNode *expr_stmt = ToASTNode(ParseExprStmt(stream));
-    if (!expr_stmt) {
-      DebugPrintTokenStream("return-stmt expr fail", stream);
-      return NULL;
-    }
+    if (!expr_stmt) return NULL;
     return_stmt->param = expr_stmt;
     return ToASTNode(return_stmt);
   }
@@ -284,9 +281,8 @@ ASTCompStmt *ParseCompStmt(TokenStream *stream) {
   //   statement
   if (!ConsumeToken(stream, "{")) return NULL;
   ASTList *stmt_list = AllocASTList(MAX_NUM_OF_STATEMENTS_IN_BLOCK);
-  ASTNode *stmt;
   while (!IsNextToken(stream, "}")) {
-    stmt = ToASTNode(ParseDecl(stream));
+    ASTNode *stmt = ToASTNode(ParseDecl(stream));
     if (!stmt) stmt = ParseStmt(stream);
     if (!stmt) break;
 
@@ -304,13 +300,12 @@ ASTCompStmt *ParseCompStmt(TokenStream *stream) {
 
 ASTIdent *ParseIdent(TokenStream *stream) {
   const Token *token;
-  ASTIdent *ident;
   token = PeekToken(stream);
   if (token->type != kIdentifier) {
     return NULL;
   }
   PopToken(stream);
-  ident = AllocASTIdent();
+  ASTIdent *ident = AllocASTIdent();
   ident->token = token;
   return ident;
 }
@@ -369,11 +364,9 @@ ASTDirectDecltor *ParseDirectDecltor(TokenStream *stream) {
   if (!token) return NULL;
   if (token->type == kIdentifier) {
     PopToken(stream);
-    ASTIdent *ident = AllocASTIdent();
-    ident->token = token;
     ASTDirectDecltor *direct_decltor = AllocASTDirectDecltor();
     direct_decltor->direct_decltor = last_direct_decltor;
-    direct_decltor->data = ToASTNode(ident);
+    direct_decltor->data = ToASTNode(AllocAndInitASTIdent(token));
     last_direct_decltor = direct_decltor;
   } else {
     return NULL;
