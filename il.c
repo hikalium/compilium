@@ -392,6 +392,23 @@ void GenerateILForWhileStmt(ASTList *il, ASTNode *node, Context *context) {
   EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(end_label));
 }
 
+void GenerateILForForStmt(ASTList *il, ASTNode *node, Context *context) {
+  ASTForStmt *stmt = ToASTForStmt(node);
+  ASTLabel *begin_label = AllocASTLabel();
+  ASTLabel *end_label = AllocASTLabel();
+
+  GenerateILFor(il, stmt->init_expr, context);
+
+  EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(begin_label));
+  ASTILOp *il_cond = GenerateILFor(il, stmt->cond_expr, context);
+  EmitILOp(il, kILOpJmpIfZero, NULL, il_cond->dst, NULL, ToASTNode(end_label));
+
+  GenerateILFor(il, stmt->body_stmt, context);
+  GenerateILFor(il, stmt->updt_expr, context);
+  EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(begin_label));
+  EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(end_label));
+}
+
 ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, Context *context) {
   printf("GenerateIL: AST%s...\n", GetASTTypeName(node));
   if (node->type == kASTList) {
@@ -423,6 +440,9 @@ ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, Context *context) {
     return NULL;
   } else if (node->type == kASTWhileStmt) {
     GenerateILForWhileStmt(il, node, context);
+    return NULL;
+  } else if (node->type == kASTForStmt) {
+    GenerateILForForStmt(il, node, context);
     return NULL;
   } else if (node->type == kASTIfStmt) {
     GenerateILForIfStmt(il, node, context);

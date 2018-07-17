@@ -12,6 +12,8 @@ test_statements "return 3; return 5;" 3
 
 test_statements ";return 0;" 0
 
+test_statements "{}return 0;" 0
+
 test_statements "int foo; foo = 7; ++foo; ++foo; return ++foo;" 10
 test_statements "int foo; foo = 7; ++foo; ++foo; return foo;" 9
 test_statements "int foo; foo = 7; --foo; --foo; return --foo;" 4
@@ -49,3 +51,6 @@ test_statements "int foo; foo = 3; if(foo == 1){ foo = 7; } else if(foo == 2){ f
 test_statements "int i; i = 0; while(i < 5) ++i; return i;" 5
 test_statements "int i; i = 0; while(i < 5){ ++i; ++i; } return i;" 6
 test_statements "int i; i = 5; while(0) ++i; return i;" 5
+
+test_statements "int i; for(i = 0; i < 5; ++i){} return i;" 5
+test_statements "int i; int n; n = 0; for(i = 2; i < 5; ++i){ ++n; } return n;" 3

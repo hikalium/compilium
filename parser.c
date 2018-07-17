@@ -213,6 +213,17 @@ ASTNode *ParseIterationStmt(TokenStream *stream) {
     ExpectToken(stream, ")");
     while_stmt->body_stmt = ParseStmt(stream);
     return ToASTNode(while_stmt);
+  } else if (ConsumeToken(stream, "for")) {
+    ASTForStmt *for_stmt = AllocASTForStmt();
+    ExpectToken(stream, "(");
+    for_stmt->init_expr = ParseExpression(stream);
+    ExpectToken(stream, ";");
+    for_stmt->cond_expr = ParseExpression(stream);
+    ExpectToken(stream, ";");
+    for_stmt->updt_expr = ParseExpression(stream);
+    ExpectToken(stream, ")");
+    for_stmt->body_stmt = ParseStmt(stream);
+    return ToASTNode(for_stmt);
   }
   return NULL;
 }

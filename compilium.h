@@ -191,7 +191,7 @@ typedef struct {
   ASTNode *init_expr;
   ASTNode *cond_expr;
   ASTNode *updt_expr;
-  ASTNode *body_comp_stmt;
+  ASTNode *body_stmt;
 } ASTForStmt;
 
 typedef struct {

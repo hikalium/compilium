@@ -291,8 +291,7 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintASTNodeWithName(depth + 1, "init_expr=", for_stmt->init_expr);
     PrintASTNodeWithName(depth + 1, "cond_expr=", for_stmt->cond_expr);
     PrintASTNodeWithName(depth + 1, "updt_expr=", for_stmt->updt_expr);
-    PrintASTNodeWithName(depth + 1,
-                         "body_comp_stmt=", for_stmt->body_comp_stmt);
+    PrintASTNodeWithName(depth + 1, "body_stmt=", for_stmt->body_stmt);
   } else if (node->type == kASTILOp) {
     ASTILOp* il_op = ToASTILOp(node);
     PrintfWithPadding(depth + 1, "op=%s", GetILOpTypeName(il_op->op));
