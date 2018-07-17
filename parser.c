@@ -211,6 +211,19 @@ ASTNode *ParseJumpStmt(TokenStream *stream) {
   return NULL;
 }
 
+ASTNode *ParseIterationStmt(TokenStream *stream) {
+  DebugPrintTokenStream(__func__, stream);
+  if (ConsumeToken(stream, "while")) {
+    ASTWhileStmt *while_stmt = AllocASTWhileStmt();
+    ExpectToken(stream, "(");
+    while_stmt->cond_expr = ParseExpression(stream);
+    ExpectToken(stream, ")");
+    while_stmt->body_stmt = ParseStmt(stream);
+    return ToASTNode(while_stmt);
+  }
+  return NULL;
+}
+
 ASTNode *ParseSelectionStmt(TokenStream *stream) {
   DebugPrintTokenStream(__func__, stream);
   const Token *token;
@@ -245,9 +258,10 @@ ASTNode *ParseStmt(TokenStream *stream) {
   DebugPrintTokenStream(__func__, stream);
   ASTNode *statement;
   if ((statement = ToASTNode(ParseCompStmt(stream))) ||
-      (statement = ParseJumpStmt(stream)) ||
       (statement = ToASTNode(ParseExprStmt(stream))) ||
-      (statement = ParseSelectionStmt(stream))) {
+      (statement = ParseSelectionStmt(stream)) ||
+      (statement = ParseIterationStmt(stream)) ||
+      (statement = ParseJumpStmt(stream))) {
     return statement;
   }
   return NULL;

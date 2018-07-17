@@ -26,6 +26,7 @@ typedef enum {
   kASTJumpStmt,
   kASTCondStmt,
   kASTIfStmt,
+  kASTWhileStmt,
   kASTForStmt,
   kASTILOp,
   kASTList,
@@ -181,6 +182,12 @@ typedef struct {
 
 typedef struct {
   ASTType type;
+  ASTNode *cond_expr;
+  ASTNode *body_stmt;
+} ASTWhileStmt;
+
+typedef struct {
+  ASTType type;
   ASTNode *init_expr;
   ASTNode *cond_expr;
   ASTNode *updt_expr;
@@ -267,6 +274,7 @@ DefToAST(ExprStmt);
 DefToAST(JumpStmt);
 DefToAST(CondStmt);
 DefToAST(IfStmt);
+DefToAST(WhileStmt);
 DefToAST(ForStmt);
 DefToAST(ILOp);
 DefToAST(List);
@@ -292,6 +300,7 @@ DefAllocAST(ExprStmt);
 DefAllocAST(JumpStmt);
 DefAllocAST(CondStmt);
 DefAllocAST(IfStmt);
+DefAllocAST(WhileStmt);
 DefAllocAST(ForStmt);
 DefAllocAST(ILOp);
 ASTList *AllocASTList(int capacity);
@@ -369,6 +378,7 @@ const Token *PeekToken(const TokenStream *stream);
 int IsNextToken(TokenStream *stream, const char *str);
 int IsNextTokenInList(TokenStream *stream, const char *list[]);
 const Token *ConsumeToken(TokenStream *stream, const char *str);
+void ExpectToken(TokenStream *stream, const char *str);
 void DebugPrintTokenStream(const char *s, const TokenStream *stream);
 
 // @tokenizer.c

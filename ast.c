@@ -34,6 +34,7 @@ void InitASTTypeName() {
   ASTTypeName[kASTJumpStmt] = "JumpStmt";
   ASTTypeName[kASTCondStmt] = "CondStmt";
   ASTTypeName[kASTIfStmt] = "IfStmt";
+  ASTTypeName[kASTWhileStmt] = "WhileStmt";
   ASTTypeName[kASTForStmt] = "ForStmt";
   ASTTypeName[kASTILOp] = "ILOp";
   ASTTypeName[kASTList] = "List";
@@ -71,6 +72,7 @@ GenToAST(ExprStmt);
 GenToAST(JumpStmt);
 GenToAST(CondStmt);
 GenToAST(IfStmt);
+GenToAST(WhileStmt);
 GenToAST(ForStmt);
 GenToAST(ILOp);
 GenToAST(List);
@@ -102,6 +104,7 @@ GenAllocAST(ExprStmt);
 GenAllocAST(JumpStmt);
 GenAllocAST(CondStmt);
 GenAllocAST(IfStmt);
+GenAllocAST(WhileStmt);
 GenAllocAST(ForStmt);
 GenAllocAST(ILOp);
 
@@ -279,6 +282,10 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintASTNodeWithName(depth + 1, "cond_expr=", if_stmt->cond_expr);
     PrintASTNodeWithName(depth + 1, "true_stmt=", if_stmt->true_stmt);
     PrintASTNodeWithName(depth + 1, "false_stmt=", if_stmt->false_stmt);
+  } else if (node->type == kASTWhileStmt) {
+    ASTWhileStmt* stmt = ToASTWhileStmt(node);
+    PrintASTNodeWithName(depth + 1, "cond_expr=", stmt->cond_expr);
+    PrintASTNodeWithName(depth + 1, "body_stmt=", stmt->body_stmt);
   } else if (node->type == kASTForStmt) {
     ASTForStmt* for_stmt = ToASTForStmt(node);
     PrintASTNodeWithName(depth + 1, "init_expr=", for_stmt->init_expr);
