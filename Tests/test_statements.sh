@@ -10,6 +10,8 @@ test_statements "return 0;" 0
 test_statements "return 5;" 5
 test_statements "return 3; return 5;" 3
 
+test_statements ";return 0;" 0
+
 test_statements "int foo; foo = 7; ++foo; ++foo; return ++foo;" 10
 test_statements "int foo; foo = 7; ++foo; ++foo; return foo;" 9
 test_statements "int foo; foo = 7; --foo; --foo; return --foo;" 4

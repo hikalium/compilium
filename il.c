@@ -316,6 +316,8 @@ ASTILOp *GenerateILForIdent(ASTList *il, ASTNode *node, Context *context) {
 
 ASTILOp *GenerateILForExprStmt(ASTList *il, ASTNode *node, Context *context) {
   const ASTExprStmt *expr_stmt = ToASTExprStmt(node);
+  if (!expr_stmt) Error("expr_stmt is NULL");
+  if (!expr_stmt->expr) return NULL;  // expr is opt
   return GenerateILFor(il, expr_stmt->expr, context);
 }
 
