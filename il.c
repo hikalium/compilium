@@ -107,18 +107,22 @@ ASTILOp *EmitILOp(ASTList *il, ILOpType type, Register *dst, Register *left,
 }
 
 // generators
-ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, Context *context);
-ASTILOp *GenerateILForIdent(ASTList *il, ASTNode *node, Context *context);
+Register *GenerateILFor(ASTList *il, Register *dst, ASTNode *node,
+                        Context *context);
+Register *GenerateILForIdent(ASTList *il, Register *dst, ASTNode *node,
+                             Context *context);
 
-void GenerateILForCompStmt(ASTList *il, ASTNode *node, Context *context) {
+void GenerateILForCompStmt(ASTList *il, Register *dst, ASTNode *node,
+                           Context *context) {
   ASTCompStmt *comp = ToASTCompStmt(node);
   ASTList *stmt_list = comp->stmt_list;
   for (int i = 0; i < GetSizeOfASTList(stmt_list); i++) {
-    GenerateILFor(il, GetASTNodeAt(stmt_list, i), context);
+    GenerateILFor(il, AllocRegister(), GetASTNodeAt(stmt_list, i), context);
   }
 }
 
-void GenerateILForFuncDef(ASTList *il, ASTNode *node, Context *context) {
+void GenerateILForFuncDef(ASTList *il, Register *dst, ASTNode *node,
+                          Context *context) {
   EmitILOp(il, kILOpFuncBegin, NULL, NULL, NULL, node);
   ASTFuncDef *def = ToASTFuncDef(node);
   context = AllocContext(context);
@@ -141,7 +145,8 @@ void GenerateILForFuncDef(ASTList *il, ASTNode *node, Context *context) {
                ToASTNode(local_var));
     }
   }
-  GenerateILForCompStmt(il, ToASTNode(def->comp_stmt), context);
+  GenerateILForCompStmt(il, AllocRegister(), ToASTNode(def->comp_stmt),
+                        context);
   EmitILOp(il, kILOpFuncEnd, NULL, NULL, NULL, node);
 }
 
@@ -166,15 +171,16 @@ PairOfStrAndILOpType comp_assign_op_list[] = {
     {"|=", kILOpOr},          {NULL, kILOpNop},
 };
 
-ASTILOp *GenerateILForAssignmentOp(ASTList *il, ASTNode *left,
-                                   ASTILOp *right_il, Context *context) {
+Register *GenerateILForAssignmentOp(ASTList *il, ASTNode *left,
+                                    Register *rvalue, Context *context) {
   ASTIdent *left_ident = ToASTIdent(left);
   if (left_ident) {
     ASTNode *var = FindIdentInContext(context, left_ident);
     ASTLocalVar *local_var = ToASTLocalVar(var);
     if (local_var) {
-      return EmitILOp(il, kILOpWriteLocalVar, right_il->dst, NULL,
-                      right_il->dst, ToASTNode(local_var));
+      EmitILOp(il, kILOpWriteLocalVar, rvalue, NULL, rvalue,
+               ToASTNode(local_var));
+      return rvalue;
     }
     Error("local variable %s not defined here.", left_ident->token->str);
   }
@@ -182,57 +188,64 @@ ASTILOp *GenerateILForAssignmentOp(ASTList *il, ASTNode *left,
   return NULL;
 }
 
-ASTILOp *GenerateILForExprUnaryPreOp(ASTList *il, ASTNode *node,
-                                     Context *context) {
+Register *GenerateILForExprUnaryPreOp(ASTList *il, Register *dst, ASTNode *node,
+                                      Context *context) {
   ASTExprUnaryPreOp *op = ToASTExprUnaryPreOp(node);
+  Register *rvalue = AllocRegister();
   if (IsEqualToken(op->op, "+")) {
-    return GenerateILFor(il, op->expr, context);
+    GenerateILFor(il, dst, op->expr, context);
+    return dst;
   } else if (IsEqualToken(op->op, "-")) {
-    ASTILOp *expr_il = GenerateILFor(il, op->expr, context);
-    return EmitILOp(il, kILOpNegate, AllocRegister(), expr_il->dst, NULL, node);
+    GenerateILFor(il, rvalue, op->expr, context);
+    EmitILOp(il, kILOpNegate, dst, rvalue, NULL, node);
+    return dst;
   } else if (IsEqualToken(op->op, "~")) {
-    ASTILOp *expr_il = GenerateILFor(il, op->expr, context);
-    return EmitILOp(il, kILOpNot, AllocRegister(), expr_il->dst, NULL, node);
+    GenerateILFor(il, rvalue, op->expr, context);
+    EmitILOp(il, kILOpNot, dst, rvalue, NULL, node);
+    return dst;
   } else if (IsEqualToken(op->op, "!")) {
-    ASTILOp *expr_il = GenerateILFor(il, op->expr, context);
-    return EmitILOp(il, kILOpLogicalNot, AllocRegister(), expr_il->dst, NULL,
-                    node);
+    GenerateILFor(il, rvalue, op->expr, context);
+    EmitILOp(il, kILOpLogicalNot, dst, rvalue, NULL, node);
+    return dst;
   } else if (IsEqualToken(op->op, "++")) {
-    ASTILOp *load_il = GenerateILForIdent(il, op->expr, context);
-    ASTILOp *inc_il =
-        EmitILOp(il, kILOpIncrement, AllocRegister(), load_il->dst, NULL, NULL);
-    return GenerateILForAssignmentOp(il, op->expr, inc_il, context);
+    GenerateILForIdent(il, rvalue, op->expr, context);
+    EmitILOp(il, kILOpIncrement, dst, rvalue, NULL, NULL);
+    GenerateILForAssignmentOp(il, op->expr, dst, context);
+    return dst;
   } else if (IsEqualToken(op->op, "--")) {
-    ASTILOp *load_il = GenerateILForIdent(il, op->expr, context);
-    ASTILOp *inc_il =
-        EmitILOp(il, kILOpDecrement, AllocRegister(), load_il->dst, NULL, NULL);
-    return GenerateILForAssignmentOp(il, op->expr, inc_il, context);
+    GenerateILForIdent(il, rvalue, op->expr, context);
+    EmitILOp(il, kILOpDecrement, dst, rvalue, NULL, NULL);
+    GenerateILForAssignmentOp(il, op->expr, dst, context);
+    return dst;
   }
   Error("Not impl");
   return NULL;
 }
 
-ASTILOp *GenerateILForExprUnaryPostOp(ASTList *il, ASTNode *node,
-                                      Context *context) {
+Register *GenerateILForExprUnaryPostOp(ASTList *il, Register *dst,
+                                       ASTNode *node, Context *context) {
   ASTExprUnaryPostOp *op = ToASTExprUnaryPostOp(node);
   if (IsEqualToken(op->op, "++")) {
-    ASTILOp *load_il = GenerateILForIdent(il, op->expr, context);
-    ASTILOp *inc_il =
-        EmitILOp(il, kILOpIncrement, AllocRegister(), load_il->dst, NULL, NULL);
-    GenerateILForAssignmentOp(il, op->expr, inc_il, context);
-    return load_il;
+    Register *inc_result = AllocRegister();
+
+    GenerateILForIdent(il, dst, op->expr, context);
+    EmitILOp(il, kILOpIncrement, inc_result, dst, NULL, NULL);
+    GenerateILForAssignmentOp(il, op->expr, inc_result, context);
+    return dst;
   } else if (IsEqualToken(op->op, "--")) {
-    ASTILOp *load_il = GenerateILForIdent(il, op->expr, context);
-    ASTILOp *inc_il =
-        EmitILOp(il, kILOpDecrement, AllocRegister(), load_il->dst, NULL, NULL);
-    GenerateILForAssignmentOp(il, op->expr, inc_il, context);
-    return load_il;
+    Register *dec_result = AllocRegister();
+
+    GenerateILForIdent(il, dst, op->expr, context);
+    EmitILOp(il, kILOpDecrement, dec_result, dst, NULL, NULL);
+    GenerateILForAssignmentOp(il, op->expr, dec_result, context);
+    return dst;
   }
   Error("Not impl");
   return NULL;
 }
 
-ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
+Register *GenerateILForExprBinOp(ASTList *il, Register *dst, ASTNode *node,
+                                 Context *context) {
   ASTExprBinOp *bin_op = ToASTExprBinOp(node);
   ILOpType il_op_type = kILOpNop;
 
@@ -243,10 +256,13 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
     }
   }
   if (il_op_type != kILOpNop) {
-    ASTILOp *left = GenerateILFor(il, bin_op->left, context);
-    ASTILOp *right = GenerateILFor(il, bin_op->right, context);
-    return EmitILOp(il, il_op_type, AllocRegister(), left->dst, right->dst,
-                    node);
+    Register *left = AllocRegister();
+    Register *right = AllocRegister();
+
+    GenerateILFor(il, left, bin_op->left, context);
+    GenerateILFor(il, right, bin_op->right, context);
+    EmitILOp(il, il_op_type, dst, left, right, node);
+    return dst;
   }
 
   for (int i = 0; comp_assign_op_list[i].str; i++) {
@@ -256,37 +272,46 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
     }
   }
   if (il_op_type != kILOpNop) {
-    ASTILOp *left = GenerateILFor(il, bin_op->left, context);
-    ASTILOp *right = GenerateILFor(il, bin_op->right, context);
-    ASTILOp *result =
-        EmitILOp(il, il_op_type, AllocRegister(), left->dst, right->dst, node);
-    return GenerateILForAssignmentOp(il, bin_op->left, result, context);
+    Register *left = AllocRegister();
+    Register *right = AllocRegister();
+
+    GenerateILFor(il, left, bin_op->left, context);
+    GenerateILFor(il, right, bin_op->right, context);
+    EmitILOp(il, il_op_type, dst, left, right, node);
+    GenerateILForAssignmentOp(il, bin_op->left, dst, context);
+    return dst;
   }
 
   if (IsEqualToken(bin_op->op, "&&")) {
-    Register *dst = AllocRegister();
     ASTLabel *label = AllocASTLabel();
-    ASTILOp *il_left = GenerateILFor(il, bin_op->left, context);
-    EmitILOp(il, kILOpSetLogicalValue, dst, il_left->dst, NULL, NULL);
-    EmitILOp(il, kILOpJmpIfZero, NULL, il_left->dst, NULL, ToASTNode(label));
-    ASTILOp *il_right = GenerateILFor(il, bin_op->right, context);
-    EmitILOp(il, kILOpSetLogicalValue, dst, il_right->dst, NULL, NULL);
-    return EmitILOp(il, kILOpLabel, dst, NULL, NULL, ToASTNode(label));
+    Register *left_result = AllocRegister();
+    GenerateILFor(il, left_result, bin_op->left, context);
+    EmitILOp(il, kILOpSetLogicalValue, dst, left_result, NULL, NULL);
+    EmitILOp(il, kILOpJmpIfZero, NULL, left_result, NULL, ToASTNode(label));
+    Register *right_result = AllocRegister();
+    GenerateILFor(il, right_result, bin_op->right, context);
+    EmitILOp(il, kILOpSetLogicalValue, dst, right_result, NULL, NULL);
+    EmitILOp(il, kILOpLabel, dst, NULL, NULL, ToASTNode(label));
+    return dst;
   } else if (IsEqualToken(bin_op->op, "||")) {
-    Register *dst = AllocRegister();
     ASTLabel *label = AllocASTLabel();
-    ASTILOp *il_left = GenerateILFor(il, bin_op->left, context);
-    EmitILOp(il, kILOpSetLogicalValue, dst, il_left->dst, NULL, NULL);
-    EmitILOp(il, kILOpJmpIfNotZero, NULL, il_left->dst, NULL, ToASTNode(label));
-    ASTILOp *il_right = GenerateILFor(il, bin_op->right, context);
-    EmitILOp(il, kILOpSetLogicalValue, dst, il_right->dst, NULL, NULL);
-    return EmitILOp(il, kILOpLabel, dst, NULL, NULL, ToASTNode(label));
+    Register *left_result = AllocRegister();
+    GenerateILFor(il, left_result, bin_op->left, context);
+    EmitILOp(il, kILOpSetLogicalValue, dst, left_result, NULL, NULL);
+    EmitILOp(il, kILOpJmpIfNotZero, NULL, left_result, NULL, ToASTNode(label));
+    Register *right_result = AllocRegister();
+    GenerateILFor(il, right_result, bin_op->right, context);
+    EmitILOp(il, kILOpSetLogicalValue, dst, right_result, NULL, NULL);
+    EmitILOp(il, kILOpLabel, dst, NULL, NULL, ToASTNode(label));
+    return dst;
   } else if (IsEqualToken(bin_op->op, "=")) {
-    ASTILOp *right_il = GenerateILFor(il, bin_op->right, context);
-    return GenerateILForAssignmentOp(il, bin_op->left, right_il, context);
+    GenerateILFor(il, dst, bin_op->right, context);
+    GenerateILForAssignmentOp(il, bin_op->left, dst, context);
+    return dst;
   } else if (IsEqualToken(bin_op->op, ",")) {
-    GenerateILFor(il, bin_op->left, context);
-    return GenerateILFor(il, bin_op->right, context);
+    GenerateILFor(il, AllocRegister(), bin_op->left, context);
+    GenerateILFor(il, dst, bin_op->right, context);
+    return dst;
   } else if (IsEqualToken(bin_op->op, "(")) {
     if (bin_op->left->type != kASTIdent) {
       Error("Calling non-labeled function is not implemented.");
@@ -298,55 +323,64 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
       if (GetSizeOfASTList(arg_list) > 8) Error("Too many params");
       for (int i = 0; i < GetSizeOfASTList(arg_list); i++) {
         ASTNode *node = GetASTNodeAt(arg_list, i);
-        param_values[i] = GenerateILFor(il, node, context)->dst;
+        param_values[i] = AllocRegister();
+        GenerateILFor(il, param_values[i], node, context);
       }
       for (int i = 0; i < GetSizeOfASTList(arg_list); i++) {
         EmitILOp(il, kILOpCallParam, NULL, param_values[i], NULL, NULL);
       }
     }
-    return EmitILOp(il, kILOpCall, AllocRegister(), NULL, NULL,
-                    ToASTNode(bin_op->left));
+    EmitILOp(il, kILOpCall, dst, NULL, NULL, ToASTNode(bin_op->left));
+    return dst;
   }
   Error("Not implemented GenerateILForExprBinOp (op: %s)", bin_op->op->str);
   return NULL;
 }
 
-ASTILOp *GenerateILForConstant(ASTList *il, ASTNode *node, Context *context) {
-  return EmitILOp(il, kILOpLoadImm, AllocRegister(), NULL, NULL, node);
+Register *GenerateILForConstant(ASTList *il, Register *dst, ASTNode *node,
+                                Context *context) {
+  EmitILOp(il, kILOpLoadImm, dst, NULL, NULL, node);
+  return dst;
 }
 
-ASTILOp *GenerateILForIdent(ASTList *il, ASTNode *node, Context *context) {
+Register *GenerateILForIdent(ASTList *il, Register *dst, ASTNode *node,
+                             Context *context) {
   ASTNode *var = FindIdentInContext(context, ToASTIdent(node));
   if (!var || (var->type != kASTLocalVar)) {
     Error("Unknown identifier %s", ToASTIdent(node)->token->str);
   }
   ASTLocalVar *local_var = ToASTLocalVar(var);
   if (local_var) {
-    return EmitILOp(il, kILOpReadLocalVar, AllocRegister(), NULL, NULL,
-                    ToASTNode(local_var));
+    EmitILOp(il, kILOpReadLocalVar, dst, NULL, NULL, ToASTNode(local_var));
+    return dst;
   }
   Error("var is not a local_var");
   return NULL;
 }
 
-ASTILOp *GenerateILForExprStmt(ASTList *il, ASTNode *node, Context *context) {
+Register *GenerateILForExprStmt(ASTList *il, Register *dst, ASTNode *node,
+                                Context *context) {
   const ASTExprStmt *expr_stmt = ToASTExprStmt(node);
   if (!expr_stmt) Error("expr_stmt is NULL");
   if (!expr_stmt->expr) return NULL;  // expr is opt
-  return GenerateILFor(il, expr_stmt->expr, context);
+  GenerateILFor(il, dst, expr_stmt->expr, context);
+  return dst;
 }
 
-ASTILOp *GenerateILForJumpStmt(ASTList *il, ASTNode *node, Context *context) {
+void GenerateILForJumpStmt(ASTList *il, Register *dst, ASTNode *node,
+                           Context *context) {
   ASTJumpStmt *jump_stmt = ToASTJumpStmt(node);
   if (IsEqualToken(jump_stmt->kw->token, "return")) {
-    ASTILOp *expr = GenerateILForExprStmt(il, jump_stmt->param, context);
-    return EmitILOp(il, kILOpReturn, NULL, expr->dst, NULL, node);
+    Register *return_value = AllocRegister();
+    GenerateILForExprStmt(il, return_value, jump_stmt->param, context);
+    EmitILOp(il, kILOpReturn, NULL, return_value, NULL, node);
+    return;
   }
   Error("Not implemented JumpStmt (%s)", jump_stmt->kw->token->str);
-  return NULL;
 }
 
-void GenerateILForDecl(ASTList *il, ASTNode *node, Context *context) {
+void GenerateILForDecl(ASTList *il, Register *dst, ASTNode *node,
+                       Context *context) {
   ASTDecl *decl = ToASTDecl(node);
   if (!decl) Error("node is not a Decl");
   PrintASTNode(ToASTNode(decl->decl_specs), 0);
@@ -357,74 +391,82 @@ void GenerateILForDecl(ASTList *il, ASTNode *node, Context *context) {
   }
 }
 
-void GenerateILForIfStmt(ASTList *il, ASTNode *node, Context *context) {
+void GenerateILForIfStmt(ASTList *il, Register *dst, ASTNode *node,
+                         Context *context) {
   ASTIfStmt *if_stmt = ToASTIfStmt(node);
   ASTLabel *end_label = AllocASTLabel();
   ASTLabel *false_label = if_stmt->false_stmt ? AllocASTLabel() : end_label;
 
-  ASTILOp *cond_op = GenerateILFor(il, if_stmt->cond_expr, context);
-  EmitILOp(il, kILOpJmpIfZero, NULL, cond_op->dst, NULL,
-           ToASTNode(false_label));
-  GenerateILFor(il, if_stmt->true_stmt, context);
+  Register *cond_result = AllocRegister();
+  GenerateILFor(il, cond_result, if_stmt->cond_expr, context);
+  EmitILOp(il, kILOpJmpIfZero, NULL, cond_result, NULL, ToASTNode(false_label));
+  GenerateILFor(il, AllocRegister(), if_stmt->true_stmt, context);
+
   if (if_stmt->false_stmt) {
     EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(end_label));
     EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(false_label));
-    GenerateILFor(il, if_stmt->false_stmt, context);
+    GenerateILFor(il, AllocRegister(), if_stmt->false_stmt, context);
   }
   EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(end_label));
 }
 
-ASTILOp *GenerateILForCondStmt(ASTList *il, ASTNode *node, Context *context) {
+Register *GenerateILForCondStmt(ASTList *il, Register *dst, ASTNode *node,
+                                Context *context) {
   ASTCondStmt *cond_stmt = ToASTCondStmt(node);
-  Register *dst = AllocRegister();
   ASTLabel *false_label = AllocASTLabel();
   ASTLabel *end_label = AllocASTLabel();
+  Register *cond_result = AllocRegister();
 
-  ASTILOp *il_cond = GenerateILFor(il, cond_stmt->cond_expr, context);
-  EmitILOp(il, kILOpJmpIfZero, NULL, il_cond->dst, NULL,
-           ToASTNode(false_label));
+  GenerateILFor(il, cond_result, cond_stmt->cond_expr, context);
+  EmitILOp(il, kILOpJmpIfZero, NULL, cond_result, NULL, ToASTNode(false_label));
 
-  GenerateILFor(il, cond_stmt->true_expr, context)->dst = dst;
+  GenerateILFor(il, dst, cond_stmt->true_expr, context);
   EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(end_label));
 
   EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(false_label));
-  GenerateILFor(il, cond_stmt->false_expr, context)->dst = dst;
+  GenerateILFor(il, dst, cond_stmt->false_expr, context);
 
-  return EmitILOp(il, kILOpLabel, dst, NULL, NULL, ToASTNode(end_label));
+  EmitILOp(il, kILOpLabel, dst, NULL, NULL, ToASTNode(end_label));
+  return dst;
 }
 
-void GenerateILForWhileStmt(ASTList *il, ASTNode *node, Context *context) {
+void GenerateILForWhileStmt(ASTList *il, Register *dst, ASTNode *node,
+                            Context *context) {
   ASTWhileStmt *stmt = ToASTWhileStmt(node);
   ASTLabel *begin_label = AllocASTLabel();
   ASTLabel *end_label = AllocASTLabel();
 
   EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(begin_label));
-  ASTILOp *il_cond = GenerateILFor(il, stmt->cond_expr, context);
-  EmitILOp(il, kILOpJmpIfZero, NULL, il_cond->dst, NULL, ToASTNode(end_label));
+  Register *cond_result = AllocRegister();
+  GenerateILFor(il, cond_result, stmt->cond_expr, context);
+  EmitILOp(il, kILOpJmpIfZero, NULL, cond_result, NULL, ToASTNode(end_label));
 
-  GenerateILFor(il, stmt->body_stmt, context);
+  GenerateILFor(il, AllocRegister(), stmt->body_stmt, context);
   EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(begin_label));
   EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(end_label));
 }
 
-void GenerateILForForStmt(ASTList *il, ASTNode *node, Context *context) {
+void GenerateILForForStmt(ASTList *il, Register *dst, ASTNode *node,
+                          Context *context) {
   ASTForStmt *stmt = ToASTForStmt(node);
   ASTLabel *begin_label = AllocASTLabel();
   ASTLabel *end_label = AllocASTLabel();
 
-  GenerateILFor(il, stmt->init_expr, context);
+  GenerateILFor(il, AllocRegister(), stmt->init_expr, context);
 
   EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(begin_label));
-  ASTILOp *il_cond = GenerateILFor(il, stmt->cond_expr, context);
-  EmitILOp(il, kILOpJmpIfZero, NULL, il_cond->dst, NULL, ToASTNode(end_label));
+  Register *cond_result = AllocRegister();
+  GenerateILFor(il, cond_result, stmt->cond_expr, context);
+  EmitILOp(il, kILOpJmpIfZero, NULL, cond_result, NULL, ToASTNode(end_label));
 
-  GenerateILFor(il, stmt->body_stmt, context);
-  GenerateILFor(il, stmt->updt_expr, context);
+  GenerateILFor(il, AllocRegister(), stmt->body_stmt, context);
+  GenerateILFor(il, AllocRegister(), stmt->updt_expr, context);
   EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(begin_label));
   EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(end_label));
 }
 
-ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, Context *context) {
+Register *GenerateILFor(ASTList *il, Register *dst, ASTNode *node,
+                        Context *context) {
   printf("GenerateIL: AST%s...\n", GetASTTypeName(node));
   if (node->type == kASTList) {
     // translation-unit
@@ -432,40 +474,41 @@ ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, Context *context) {
     for (int i = 0; i < GetSizeOfASTList(list); i++) {
       ASTNode *child_node = GetASTNodeAt(list, i);
       if (child_node->type == kASTFuncDef) {
-        GenerateILForFuncDef(il, child_node, context);
+        GenerateILForFuncDef(il, NULL, child_node, context);
       }
     }
     return NULL;
   } else if (node->type == kASTJumpStmt) {
-    return GenerateILForJumpStmt(il, node, context);
+    GenerateILForJumpStmt(il, dst, node, context);
+    return NULL;
   } else if (node->type == kASTExprUnaryPreOp) {
-    return GenerateILForExprUnaryPreOp(il, node, context);
+    return GenerateILForExprUnaryPreOp(il, dst, node, context);
   } else if (node->type == kASTExprUnaryPostOp) {
-    return GenerateILForExprUnaryPostOp(il, node, context);
+    return GenerateILForExprUnaryPostOp(il, dst, node, context);
   } else if (node->type == kASTExprBinOp) {
-    return GenerateILForExprBinOp(il, node, context);
+    return GenerateILForExprBinOp(il, dst, node, context);
   } else if (node->type == kASTConstant) {
-    return GenerateILForConstant(il, node, context);
+    return GenerateILForConstant(il, dst, node, context);
   } else if (node->type == kASTExprStmt) {
-    return GenerateILForExprStmt(il, node, context);
+    return GenerateILForExprStmt(il, dst, node, context);
   } else if (node->type == kASTIdent) {
-    return GenerateILForIdent(il, node, context);
+    return GenerateILForIdent(il, dst, node, context);
   } else if (node->type == kASTCondStmt) {
-    return GenerateILForCondStmt(il, node, context);
+    return GenerateILForCondStmt(il, dst, node, context);
   } else if (node->type == kASTDecl) {
-    GenerateILForDecl(il, node, context);
+    GenerateILForDecl(il, dst, node, context);
     return NULL;
   } else if (node->type == kASTWhileStmt) {
-    GenerateILForWhileStmt(il, node, context);
+    GenerateILForWhileStmt(il, dst, node, context);
     return NULL;
   } else if (node->type == kASTForStmt) {
-    GenerateILForForStmt(il, node, context);
+    GenerateILForForStmt(il, dst, node, context);
     return NULL;
   } else if (node->type == kASTIfStmt) {
-    GenerateILForIfStmt(il, node, context);
+    GenerateILForIfStmt(il, dst, node, context);
     return NULL;
   } else if (node->type == kASTCompStmt) {
-    GenerateILForCompStmt(il, node, context);
+    GenerateILForCompStmt(il, dst, node, context);
     return NULL;
   }
   PrintASTNode(node, 0);
@@ -478,6 +521,6 @@ ASTILOp *GenerateILFor(ASTList *il, ASTNode *node, Context *context) {
 ASTList *GenerateIL(ASTNode *root) {
   ASTList *il = AllocASTList(MAX_IL_NODES);
   Context *context = AllocContext(NULL);
-  GenerateILFor(il, root, context);
+  GenerateILFor(il, NULL, root, context);
   return il;
 }
