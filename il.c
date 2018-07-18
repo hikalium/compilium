@@ -288,29 +288,24 @@ ASTILOp *GenerateILForExprBinOp(ASTList *il, ASTNode *node, Context *context) {
     GenerateILFor(il, bin_op->left, context);
     return GenerateILFor(il, bin_op->right, context);
   } else if (IsEqualToken(bin_op->op, "(")) {
-    // func_call
-    // call_params = [func_addr: ILOp, arg1: ILOp, arg2: ILOp, ...]
-    ASTList *call_params = AllocASTList(8);
-
-    // func_addr
-    if (bin_op->left->type == kASTIdent) {
-      PushASTNodeToList(call_params, bin_op->left);
-    } else {
+    if (bin_op->left->type != kASTIdent) {
       Error("Calling non-labeled function is not implemented.");
     }
-
-    // args
     if (bin_op->right) {
       ASTList *arg_list = ToASTList(bin_op->right);
       if (!arg_list) Error("arg_list is not an ASTList");
+      Register *param_values[8];
+      if (GetSizeOfASTList(arg_list) > 8) Error("Too many params");
       for (int i = 0; i < GetSizeOfASTList(arg_list); i++) {
         ASTNode *node = GetASTNodeAt(arg_list, i);
-        PushASTNodeToList(call_params,
-                          ToASTNode(GenerateILFor(il, node, context)));
+        param_values[i] = GenerateILFor(il, node, context)->dst;
+      }
+      for (int i = 0; i < GetSizeOfASTList(arg_list); i++) {
+        EmitILOp(il, kILOpCallParam, NULL, param_values[i], NULL, NULL);
       }
     }
     return EmitILOp(il, kILOpCall, AllocRegister(), NULL, NULL,
-                    ToASTNode(call_params));
+                    ToASTNode(bin_op->left));
   }
   Error("Not implemented GenerateILForExprBinOp (op: %s)", bin_op->op->str);
   return NULL;

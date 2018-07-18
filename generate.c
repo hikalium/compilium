@@ -4,7 +4,7 @@
 // registers should be preserved: rbx, rsp, rbp, r12, r13, r14, and r15
 // scratch registers: rax, rdi, rsi, rdx, rcx, r8, r9, r10, r11
 // return value: rax
-// args: rax, rdi, rsi, rdx, rcx, r8, r9, r10, r11
+// args: rdi, rsi, rdx, rcx, r8, r9, r10, r11
 
 #define NUM_OF_SCRATCH_REGS 9
 
@@ -175,6 +175,7 @@ void GenerateFuncEpilogue(FILE *fp) {
 }
 
 int func_param_requested = 0;
+int call_param_used = 0;
 int local_var_base_in_stack = 256;
 
 void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
@@ -456,21 +457,22 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
         GenerateFuncEpilogue(fp);
         break;
+      case kILOpCallParam: {
+        // left: param_value
+        AssignVirtualRegToRealReg(fp, op->left, call_param_used + REAL_REG_RDI);
+        call_param_used++;
+      } break;
       case kILOpCall: {
-        ASTList *call_params = ToASTList(op->ast_node);
-        if (!call_params) Error("call_params is not an ASTList");
-        for (int i = 1; i < GetSizeOfASTList(call_params); i++) {
-          AssignVirtualRegToRealReg(
-              fp, ToASTILOp(GetASTNodeAt(call_params, i))->dst, i + 1);
-        }
-        ASTIdent *func_ident = ToASTIdent(GetASTNodeAt(call_params, 0));
-        if (!func_ident) Error("call_params[0] is not an ASTIdent");
+        // ast_node: func_ident
+        ASTIdent *func_ident = ToASTIdent(op->ast_node);
+        if (!func_ident) Error("op->ast_node is NULL");
         fprintf(fp, ".global %s%s\n", kernel_type == kKernelDarwin ? "_" : "",
                 func_ident->token->str);
         SpillAllRealRegisters(fp);
         fprintf(fp, "call %s%s\n", kernel_type == kKernelDarwin ? "_" : "",
                 func_ident->token->str);
         AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
+        call_param_used = 0;
       } break;
       case kILOpWriteLocalVar: {
         const char *right = AssignRegister(fp, op->right);

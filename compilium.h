@@ -78,6 +78,7 @@ typedef enum {
   kILOpFuncEnd,
   kILOpReturn,
   kILOpCall,
+  kILOpCallParam,
   kILOpWriteLocalVar,
   kILOpReadLocalVar,
   kILOpLabel,
