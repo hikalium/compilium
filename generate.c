@@ -41,13 +41,6 @@ void ClearRegisterAllocation() {
   order_count = 1;
 }
 
-void GenerateSpillData(FILE *fp) {
-  fprintf(fp, ".data\n");
-  for (int i = 1; i < spill_label_num_next; i++) {
-    fprintf(fp, "LSpill%d: .quad 0\n", i);
-  }
-}
-
 void PrintRegisterAssignment() {
   puts("==== ASSIGNMENT ====");
   for (int i = 1; i < NUM_OF_SCRATCH_REGS + 1; i++) {
@@ -535,5 +528,4 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
               GetILOpTypeName(op->op));
     }
   }
-  GenerateSpillData(fp);
 }
