@@ -361,8 +361,11 @@ void GenerateILForJumpStmt(ASTList *il, Register *dst, ASTNode *node,
                            Context *context) {
   ASTJumpStmt *jump_stmt = ToASTJumpStmt(node);
   if (IsEqualToken(jump_stmt->kw->token, "return")) {
-    Register *return_value = AllocRegister();
-    GenerateILForExprStmt(il, return_value, jump_stmt->param, context);
+    Register *return_value = NULL;
+    if (jump_stmt->param) {
+      return_value = AllocRegister();
+      GenerateILFor(il, return_value, jump_stmt->param, context);
+    }
     EmitILOp(il, kILOpReturn, NULL, return_value, NULL, node);
     return;
   }

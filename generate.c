@@ -447,7 +447,10 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "setne al\n");
       } break;
       case kILOpReturn:
-        AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
+        // left: reg which have return value (can be NULL)
+        if (op->left) {
+          AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
+        }
         GenerateFuncEpilogue(fp);
         break;
       case kILOpCallParam: {

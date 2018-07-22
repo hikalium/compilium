@@ -8,7 +8,7 @@ function test_source() {
 	./out.bin
   actual=$?
   if [ $expected = $actual ]; then
-    echo "PASS $test_name is $expected";
+    echo "PASS $test_name";
   else
     echo "FAIL $test_name: expected $expected but got $actual"; exit 1; 
   fi

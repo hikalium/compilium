@@ -198,13 +198,9 @@ ASTNode *ParseJumpStmt(TokenStream *stream) {
   DebugPrintTokenStream(__func__, stream);
   if (IsNextToken(stream, "return")) {
     ASTJumpStmt *return_stmt = AllocASTJumpStmt();
-    ASTKeyword *kw = AllocASTKeyword();
-
-    kw->token = PopToken(stream);
-    return_stmt->kw = kw;
-    ASTNode *expr_stmt = ToASTNode(ParseExprStmt(stream));
-    if (!expr_stmt) return NULL;
-    return_stmt->param = expr_stmt;
+    return_stmt->kw = AllocAndInitASTKeyword(PopToken(stream));
+    return_stmt->param = ToASTNode(ParseExpression(stream));
+    ExpectToken(stream, ";");
     return ToASTNode(return_stmt);
   }
   return NULL;
@@ -443,8 +439,8 @@ ASTNode *ParseTypeSpec(TokenStream *stream) {
   // type-specifier
   // ASTKeyword | ASTSpec
   // TODO: Impl struct cases (ASTSpec)
-  // TODO: Impl utility function to simplify multiple token matching.
-  if (!IsNextToken(stream, "int") && !IsNextToken(stream, "char")) {
+  const static char *single_token_type_specs[] = {"void", "char", "int", NULL};
+  if (!IsNextTokenInList(stream, single_token_type_specs)) {
     return NULL;
   }
   ASTKeyword *kw = AllocASTKeyword();
