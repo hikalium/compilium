@@ -21,17 +21,57 @@ ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident) {
   return FindIdentInContext(context->parent, ident);
 }
 
-ASTLocalVar *AppendLocalVarInContext(Context *context, const Token *token) {
-  int ofs = GetSizeOfASTDict(context->dict) + 1;
-  printf("LocalVar[%d]: %s\n", ofs, token->str);
-  ASTLocalVar *local_var = AllocASTLocalVar(ofs);
-  local_var->name = token->str;
-  AppendASTNodeToDict(context->dict, token->str, ToASTNode(local_var));
-  return local_var;
+int GetByteSizeOfDeclSpecs(ASTList *decl_specs) {
+  if (GetSizeOfASTList(decl_specs) == 1) {
+    ASTKeyword *kw = ToASTKeyword(GetASTNodeAt(decl_specs, 0));
+    if (!kw) Error("decl_specs should have a ASTkeyword.");
+    if (IsEqualToken(kw->token, "char")) {
+      return 1;
+    } else if (IsEqualToken(kw->token, "int")) {
+      return 8;
+    }
+    Error("Not implemented decl_spec %s", kw->token->str);
+  }
+  Error("Not supported decl_specs consist of multiple tokens");
+  return -1;
+}
+
+int GetByteSizeOfDecl(ASTList *decl_specs, ASTDecltor *decltor) {
+  if (decltor->pointer) return 8;
+  return GetByteSizeOfDeclSpecs(decl_specs);
+}
+
+int GetByteSizeOfDeclAfterDeref(ASTList *decl_specs, ASTDecltor *decltor) {
+  if (!decltor->pointer) Error("Cannot deref value which is not a pointer");
+  if (decltor->pointer->pointer) return 8;
+  return GetByteSizeOfDeclSpecs(decl_specs);
 }
 
 int GetStackSizeForContext(const Context *context) {
-  return GetSizeOfASTDict(context->dict) * 8;
+  int size = 0;
+  for (int i = 0; i < GetSizeOfASTDict(context->dict); i++) {
+    ASTLocalVar *local_var =
+        ToASTLocalVar(GetASTNodeInDictAt(context->dict, i));
+    if (!local_var) Error("GetStackSizeForContext: local_var is NULL");
+    size += local_var->size;
+  }
+  return size;
+}
+
+ASTLocalVar *AppendLocalVarInContext(Context *context, ASTList *decl_specs,
+                                     ASTDecltor *decltor) {
+  const Token *ident_token = GetIdentTokenFromDecltor(decltor);
+  int size = GetByteSizeOfDecl(decl_specs, decltor);
+  int ofs_in_stack = GetStackSizeForContext(context) + size;
+  printf("LocalVar[\"%s\"] ofs_in_stack = %d, size = %d\n", ident_token->str,
+         ofs_in_stack, size);
+  ASTLocalVar *local_var = AllocASTLocalVar(ofs_in_stack);
+  local_var->size = size;
+  local_var->name = ident_token->str;
+  local_var->decl_specs = decl_specs;
+  local_var->decltor = decltor;
+  AppendASTNodeToDict(context->dict, ident_token->str, ToASTNode(local_var));
+  return local_var;
 }
 
 int next_vreg_id = 1;
@@ -68,7 +108,8 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpShiftRight] = "ShiftRight";
   ILOpTypeName[kILOpIncrement] = "Increment";
   ILOpTypeName[kILOpDecrement] = "Decrement";
-  ILOpTypeName[kILOpLoad] = "Load";
+  ILOpTypeName[kILOpLoad8] = "Load8";
+  ILOpTypeName[kILOpLoad64] = "Load64";
   ILOpTypeName[kILOpLoadImm] = "LoadImm";
   ILOpTypeName[kILOpLoadIdent] = "LoadIdent";
   ILOpTypeName[kILOpLoadArg] = "LoadArg";
@@ -137,9 +178,8 @@ void GenerateILForFuncDef(ASTList *il, Register *dst, ASTNode *node,
       ASTParamDecl *param_decl =
           ToASTParamDecl(GetASTNodeAt(param_decl_list, i));
       ASTDecltor *param_decltor = ToASTDecltor(param_decl->decltor);
-      const Token *ident_token = GetIdentTokenFromDecltor(param_decltor);
-      printf("param: %s\n", ident_token->str);
-      ASTLocalVar *local_var = AppendLocalVarInContext(context, ident_token);
+      ASTLocalVar *local_var = AppendLocalVarInContext(
+          context, param_decl->decl_specs, param_decltor);
       Register *var_reg = AllocRegister();
       EmitILOp(il, kILOpLoadArg, var_reg, NULL, NULL, NULL);
       EmitILOp(il, kILOpWriteLocalVar, var_reg, NULL, var_reg,
@@ -229,8 +269,26 @@ Register *GenerateILForExprUnaryPreOp(ASTList *il, Register *dst, ASTNode *node,
     Error("local variable %s not defined here.", left_ident->token->str);
   } else if (IsEqualToken(op->op, "*")) {
     GenerateILFor(il, rvalue, op->expr, context);
-    EmitILOp(il, kILOpLoad, dst, rvalue, NULL, node);
-    return dst;
+    if (op->expr->type == kASTIdent) {
+      ASTIdent *left_ident = ToASTIdent(op->expr);
+      ASTNode *var = FindIdentInContext(context, left_ident);
+      ASTLocalVar *local_var = ToASTLocalVar(var);
+      if (local_var) {
+        int size = GetByteSizeOfDeclAfterDeref(local_var->decl_specs,
+                                               local_var->decltor);
+        printf("size after deref = %d\n", size);
+        if (size == 8) {
+          EmitILOp(il, kILOpLoad64, dst, rvalue, NULL, node);
+          return dst;
+        } else if (size == 1) {
+          EmitILOp(il, kILOpLoad8, dst, rvalue, NULL, node);
+          return dst;
+        }
+        Error("Deref of size %d is not implemented", size);
+      }
+      Error("local variable %s not defined here.", left_ident->token->str);
+    }
+    Error("Deref can be only performed on ident which represents pointer");
   }
   Error("GenerateILForExprUnaryPreOp: Not impl %s", op->op->str);
   return NULL;
@@ -399,10 +457,11 @@ void GenerateILForDecl(ASTList *il, Register *dst, ASTNode *node,
   ASTDecl *decl = ToASTDecl(node);
   if (!decl) Error("node is not a Decl");
   PrintASTNode(ToASTNode(decl->decl_specs), 0);
+  printf("Size: %d\n", GetByteSizeOfDeclSpecs(decl->decl_specs));
   putchar('\n');
   for (int i = 0; i < GetSizeOfASTList(decl->init_decltors); i++) {
     ASTDecltor *decltor = ToASTDecltor(GetASTNodeAt(decl->init_decltors, i));
-    AppendLocalVarInContext(context, GetIdentTokenFromDecltor(decltor));
+    AppendLocalVarInContext(context, decl->decl_specs, decltor);
   }
 }
 

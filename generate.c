@@ -220,7 +220,12 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
       case kILOpFuncEnd:
         GenerateFuncEpilogue(fp);
         break;
-      case kILOpLoad: {
+      case kILOpLoad8: {
+        const char *left = AssignRegister(fp, op->left);
+        const char *dst = AssignRegister(fp, op->dst);
+        fprintf(fp, "movsx %s, byte ptr [%s]\n", dst, left);
+      } break;
+      case kILOpLoad64: {
         const char *left = AssignRegister(fp, op->left);
         const char *dst = AssignRegister(fp, op->dst);
         fprintf(fp, "mov %s, [%s]\n", dst, left);
@@ -479,25 +484,25 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         const char *right = AssignRegister(fp, op->right);
         ASTLocalVar *var = ToASTLocalVar(op->ast_node);
         if (!var) Error("var is not an ASTLocalVar");
-        int byte_ofs = 8 * var->ofs_in_stack + local_var_base_in_stack;
-        fprintf(fp, "mov [rbp - %d], %s # local_var[%s] @ %d\n", byte_ofs,
-                right, var->name, var->ofs_in_stack);
+        int byte_ofs = var->ofs_in_stack + local_var_base_in_stack;
+        fprintf(fp, "mov [rbp - %d], %s # local_var[%s]\n", byte_ofs, right,
+                var->name);
       } break;
       case kILOpReadLocalVar: {
         const char *dst = AssignRegister(fp, op->dst);
         ASTLocalVar *var = ToASTLocalVar(op->ast_node);
         if (!var) Error("var is not an ASTLocalVar");
-        int byte_ofs = 8 * var->ofs_in_stack + local_var_base_in_stack;
-        fprintf(fp, "mov %s, [rbp - %d] # local_var[%s] @ %d\n", dst, byte_ofs,
-                var->name, var->ofs_in_stack);
+        int byte_ofs = var->ofs_in_stack + local_var_base_in_stack;
+        fprintf(fp, "mov %s, [rbp - %d] # local_var[%s]\n", dst, byte_ofs,
+                var->name);
       } break;
       case kILOpLoadLocalVarAddr: {
         const char *dst = AssignRegister(fp, op->dst);
         ASTLocalVar *var = ToASTLocalVar(op->ast_node);
         if (!var) Error("var is not an ASTLocalVar");
-        int byte_ofs = 8 * var->ofs_in_stack + local_var_base_in_stack;
-        fprintf(fp, "lea %s, [rbp - %d] # local_var[%s] @ %d\n", dst, byte_ofs,
-                var->name, var->ofs_in_stack);
+        int byte_ofs = var->ofs_in_stack + local_var_base_in_stack;
+        fprintf(fp, "lea %s, [rbp - %d] # local_var[%s]\n", dst, byte_ofs,
+                var->name);
       } break;
       case kILOpLabel: {
         ASTLabel *label = ToASTLabel(op->ast_node);

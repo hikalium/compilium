@@ -387,4 +387,11 @@ ASTNode* FindASTNodeInDict(ASTDict* dict, const char* key) {
   return NULL;
 }
 
+ASTNode* GetASTNodeInDictAt(const ASTDict* dict, int index) {
+  if (index < 0 || dict->size <= index) {
+    Error("ASTDict: Trying to read index out of bound");
+  }
+  return dict->entries[index].value;
+}
+
 int GetSizeOfASTDict(const ASTDict* dict) { return dict->size; }

@@ -71,7 +71,8 @@ typedef enum {
   kILOpCmpLE,
   kILOpCmpE,
   kILOpCmpNE,
-  kILOpLoad,
+  kILOpLoad8,
+  kILOpLoad64,
   kILOpLoadImm,
   kILOpLoadIdent,
   kILOpLoadArg,
@@ -259,8 +260,11 @@ typedef struct {
 
 typedef struct {
   ASTType type;
+  int size;
   int ofs_in_stack;
   const char *name;
+  ASTList *decl_specs;
+  ASTDecltor *decltor;
 } ASTLocalVar;
 
 typedef struct {
@@ -345,6 +349,7 @@ ASTNode *GetLastASTNode(const ASTList *list);
 
 void AppendASTNodeToDict(ASTDict *dict, const char *key, ASTNode *node);
 ASTNode *FindASTNodeInDict(ASTDict *dict, const char *key);
+ASTNode *GetASTNodeInDictAt(const ASTDict *dict, int index);
 int GetSizeOfASTDict(const ASTDict *dict);
 
 // @compilium.c
