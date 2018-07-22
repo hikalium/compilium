@@ -202,6 +202,12 @@ ASTNode *ParseJumpStmt(TokenStream *stream) {
     return_stmt->param = ToASTNode(ParseExpression(stream));
     ExpectToken(stream, ";");
     return ToASTNode(return_stmt);
+  } else if (IsNextToken(stream, "break")) {
+    ASTJumpStmt *stmt = AllocASTJumpStmt();
+    stmt->kw = AllocAndInitASTKeyword(PopToken(stream));
+    stmt->param = NULL;  // should be determined by an enclosing statement
+    ExpectToken(stream, ";");
+    return ToASTNode(stmt);
   }
   return NULL;
 }

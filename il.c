@@ -3,6 +3,7 @@
 struct CONTEXT {
   const Context *parent;
   ASTDict *dict;
+  ASTLabel *break_label;
 };
 
 Context *AllocContext(const Context *parent) {
@@ -368,6 +369,12 @@ void GenerateILForJumpStmt(ASTList *il, Register *dst, ASTNode *node,
     }
     EmitILOp(il, kILOpReturn, NULL, return_value, NULL, node);
     return;
+  } else if (IsEqualToken(jump_stmt->kw->token, "break")) {
+    if (!context->break_label) {
+      Error("break-stmt should be used within iteration-stmt");
+    }
+    EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(context->break_label));
+    return;
   }
   Error("Not implemented JumpStmt (%s)", jump_stmt->kw->token->str);
 }
@@ -429,6 +436,9 @@ void GenerateILForWhileStmt(ASTList *il, Register *dst, ASTNode *node,
   ASTLabel *end_label = AllocASTLabel();
   Register *cond_result = AllocRegister();
 
+  ASTLabel *org_break_label = context->break_label;
+  context->break_label = end_label;
+
   EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(begin_label));
   GenerateILFor(il, cond_result, stmt->cond_expr, context);
   EmitILOp(il, kILOpJmpIfZero, NULL, cond_result, NULL, ToASTNode(end_label));
@@ -436,6 +446,8 @@ void GenerateILForWhileStmt(ASTList *il, Register *dst, ASTNode *node,
   GenerateILFor(il, AllocRegister(), stmt->body_stmt, context);
   EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(begin_label));
   EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(end_label));
+
+  context->break_label = org_break_label;
 }
 
 void GenerateILForForStmt(ASTList *il, Register *dst, ASTNode *node,
@@ -444,6 +456,9 @@ void GenerateILForForStmt(ASTList *il, Register *dst, ASTNode *node,
   ASTLabel *begin_label = AllocASTLabel();
   ASTLabel *end_label = AllocASTLabel();
   Register *cond_result = AllocRegister();
+
+  ASTLabel *org_break_label = context->break_label;
+  context->break_label = end_label;
 
   GenerateILFor(il, AllocRegister(), stmt->init_expr, context);
 
@@ -455,6 +470,8 @@ void GenerateILForForStmt(ASTList *il, Register *dst, ASTNode *node,
   GenerateILFor(il, AllocRegister(), stmt->updt_expr, context);
   EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(begin_label));
   EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(end_label));
+
+  context->break_label = org_break_label;
 }
 
 void GenerateILFor(ASTList *il, Register *dst, ASTNode *node,

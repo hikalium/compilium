@@ -56,6 +56,8 @@ test_statements "int foo; foo = 3; if(foo == 1){ foo = 7; } else if(foo == 2){ f
 test_statements "int i; i = 0; while(i < 5) ++i; return i;" 5
 test_statements "int i; i = 0; while(i < 5){ ++i; ++i; } return i;" 6
 test_statements "int i; i = 5; while(0) ++i; return i;" 5
+test_statements "int i; i = 0; while(i++ < 10){ if(i == 5) break; }; return i;" 5
 
 test_statements "int i; for(i = 0; i < 5; ++i){} return i;" 5
 test_statements "int i; int n; n = 0; for(i = 2; i < 5; ++i){ ++n; } return n;" 3
+test_statements "int i; for(i = 0; i < 10; ++i){ if(i == 5) break; } return i;" 5
