@@ -56,6 +56,11 @@ ASTNode *ParsePrimaryExpr(TokenStream *stream) {
   } else if (token->type == kIdentifier) {
     PopToken(stream);
     return ToASTNode(AllocAndInitASTIdent(token));
+  } else if (ConsumeToken(stream, "(")) {
+    ASTNode *expr = ParseExpression(stream);
+    if (!expr) Error("Expected expression");
+    ExpectToken(stream, ")");
+    return expr;
   }
   return NULL;
 }

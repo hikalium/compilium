@@ -107,5 +107,10 @@ test_expression "2 * 3 + 5 * 7" 41
 test_expression "2 * 3 + 5 * 7 / 9 - 11 % 3" 7
 test_expression "1 + 2 * 3 / 4 - 5 + 6 * 7 - 8 + 9 + 10 % 11" 50
 
+test_expression "(0)" 0
+test_expression "(1)" 1
+test_expression "3 * (5 + 7)" 36
+test_expression "2 * (3 * (5 + 7))" 72
+
 test_expression "2, 3" 3
 test_expression "2 * 3, 5 + 7" 12
