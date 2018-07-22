@@ -92,7 +92,7 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
 }
 
 ASTNode *ParseUnaryExpr(TokenStream *stream) {
-  const static char *ops[] = {"+", "-", "~", "!", "++", "--", NULL};
+  const static char *ops[] = {"&", "*", "+", "-", "~", "!", "++", "--", NULL};
   if (IsNextTokenInList(stream, ops)) {
     ASTExprUnaryPreOp *op = AllocASTExprUnaryPreOp();
     op->op = PopToken(stream);
@@ -275,10 +275,10 @@ ASTNode *ParseStmt(TokenStream *stream) {
   DebugPrintTokenStream(__func__, stream);
   ASTNode *statement;
   if ((statement = ToASTNode(ParseCompStmt(stream))) ||
-      (statement = ToASTNode(ParseExprStmt(stream))) ||
       (statement = ParseSelectionStmt(stream)) ||
       (statement = ParseIterationStmt(stream)) ||
-      (statement = ParseJumpStmt(stream))) {
+      (statement = ParseJumpStmt(stream)) ||
+      (statement = ToASTNode(ParseExprStmt(stream)))) {
     return statement;
   }
   return NULL;
@@ -289,7 +289,7 @@ ASTExprStmt *ParseExprStmt(TokenStream *stream) {
   //   expression_opt ;
   DebugPrintTokenStream(__func__, stream);
   ASTNode *expr = ParseExpression(stream);
-  if (!ConsumeToken(stream, ";")) return NULL;
+  ExpectToken(stream, ";");
   ASTExprStmt *expr_stmt = AllocASTExprStmt();
   expr_stmt->expr = expr;
   return expr_stmt;

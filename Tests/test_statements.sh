@@ -61,3 +61,5 @@ test_statements "int i; i = 0; while(i++ < 10){ if(i == 5) break; }; return i;" 
 test_statements "int i; for(i = 0; i < 5; ++i){} return i;" 5
 test_statements "int i; int n; n = 0; for(i = 2; i < 5; ++i){ ++n; } return n;" 3
 test_statements "int i; for(i = 0; i < 10; ++i){ if(i == 5) break; } return i;" 5
+
+test_statements "int n; n = 5; int *p; p = &n; n = 7; return *p;" 7

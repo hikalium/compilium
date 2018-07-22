@@ -220,6 +220,11 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
       case kILOpFuncEnd:
         GenerateFuncEpilogue(fp);
         break;
+      case kILOpLoad: {
+        const char *left = AssignRegister(fp, op->left);
+        const char *dst = AssignRegister(fp, op->dst);
+        fprintf(fp, "mov %s, [%s]\n", dst, left);
+      } break;
       case kILOpLoadImm: {
         const char *dst_name = AssignRegister(fp, op->dst);
         //
@@ -484,6 +489,14 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         if (!var) Error("var is not an ASTLocalVar");
         int byte_ofs = 8 * var->ofs_in_stack + local_var_base_in_stack;
         fprintf(fp, "mov %s, [rbp - %d] # local_var[%s] @ %d\n", dst, byte_ofs,
+                var->name, var->ofs_in_stack);
+      } break;
+      case kILOpLoadLocalVarAddr: {
+        const char *dst = AssignRegister(fp, op->dst);
+        ASTLocalVar *var = ToASTLocalVar(op->ast_node);
+        if (!var) Error("var is not an ASTLocalVar");
+        int byte_ofs = 8 * var->ofs_in_stack + local_var_base_in_stack;
+        fprintf(fp, "lea %s, [rbp - %d] # local_var[%s] @ %d\n", dst, byte_ofs,
                 var->name, var->ofs_in_stack);
       } break;
       case kILOpLabel: {

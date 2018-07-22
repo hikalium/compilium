@@ -67,7 +67,8 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpShiftLeft] = "ShiftLeft";
   ILOpTypeName[kILOpShiftRight] = "ShiftRight";
   ILOpTypeName[kILOpIncrement] = "Increment";
-  ILOpTypeName[kILOpDecrement] = "Increment";
+  ILOpTypeName[kILOpDecrement] = "Decrement";
+  ILOpTypeName[kILOpLoad] = "Load";
   ILOpTypeName[kILOpLoadImm] = "LoadImm";
   ILOpTypeName[kILOpLoadIdent] = "LoadIdent";
   ILOpTypeName[kILOpLoadArg] = "LoadArg";
@@ -77,6 +78,7 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpCall] = "Call";
   ILOpTypeName[kILOpWriteLocalVar] = "WriteLocalVar";
   ILOpTypeName[kILOpReadLocalVar] = "ReadLocalVar";
+  ILOpTypeName[kILOpLoadLocalVarAddr] = "LoadLocalVarAddr";
   ILOpTypeName[kILOpLabel] = "Label";
   ILOpTypeName[kILOpJmp] = "Jmp";
   ILOpTypeName[kILOpJmpIfZero] = "JmpIfZero";
@@ -216,8 +218,21 @@ Register *GenerateILForExprUnaryPreOp(ASTList *il, Register *dst, ASTNode *node,
     EmitILOp(il, kILOpDecrement, dst, rvalue, NULL, NULL);
     GenerateILForAssignmentOp(il, op->expr, dst, context);
     return dst;
+  } else if (IsEqualToken(op->op, "&")) {
+    ASTIdent *left_ident = ToASTIdent(op->expr);
+    ASTNode *var = FindIdentInContext(context, left_ident);
+    ASTLocalVar *local_var = ToASTLocalVar(var);
+    if (local_var) {
+      EmitILOp(il, kILOpLoadLocalVarAddr, dst, NULL, dst, ToASTNode(local_var));
+      return dst;
+    }
+    Error("local variable %s not defined here.", left_ident->token->str);
+  } else if (IsEqualToken(op->op, "*")) {
+    GenerateILFor(il, rvalue, op->expr, context);
+    EmitILOp(il, kILOpLoad, dst, rvalue, NULL, node);
+    return dst;
   }
-  Error("Not impl");
+  Error("GenerateILForExprUnaryPreOp: Not impl %s", op->op->str);
   return NULL;
 }
 
