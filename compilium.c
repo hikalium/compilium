@@ -3,6 +3,7 @@
 #define MAX_TOKENS 2048
 int main(int argc, char *argv[]) {
   KernelType kernel_type = kKernelDarwin;
+  int is_parse_only = 0;
   const char *src_file = NULL;
   const char *dst_file = NULL;
   for (int i = 1; i < argc; i++) {
@@ -15,13 +16,18 @@ int main(int argc, char *argv[]) {
       } else {
         Error("Unknown kernel type %s", argv[i]);
       }
+    } else if (strcmp(argv[i], "--parse_only") == 0) {
+      is_parse_only = 1;
     } else if (strcmp(argv[i], "-o") == 0) {
       dst_file = argv[i];
     } else {
       src_file = argv[i];
     }
   }
-  if (!src_file || !dst_file) {
+  if (!dst_file) {
+    dst_file = "out.S";
+  }
+  if (!src_file) {
     Error("Usage: %s -o <dst_file> <src_file>", argv[0]);
   }
 
@@ -42,6 +48,8 @@ int main(int argc, char *argv[]) {
   puts("\nAST:");
   PrintASTNode(ast, 0);
   putchar('\n');
+
+  if (is_parse_only) return 0;
 
   ASTList *il = GenerateIL(ast);
 

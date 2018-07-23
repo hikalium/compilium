@@ -2,4 +2,5 @@
 *.S
 *.stdout
 *.log
+*.ast
 not_implemented/
