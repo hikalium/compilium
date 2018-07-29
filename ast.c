@@ -31,7 +31,8 @@ void InitASTTypeName() {
   ASTTypeName[kASTExprUnaryPostOp] = "ExprUnaryPostOp";
   ASTTypeName[kASTExprBinOp] = "ExprBinOp";
   ASTTypeName[kASTExprFuncCall] = "ExprFuncCall";
-  ASTTypeName[kASTConstant] = "Constant";
+  ASTTypeName[kASTInteger] = "Integer";
+  ASTTypeName[kASTString] = "String";
   ASTTypeName[kASTExprStmt] = "ExprStmt";
   ASTTypeName[kASTJumpStmt] = "JumpStmt";
   ASTTypeName[kASTCondStmt] = "CondStmt";
@@ -71,7 +72,8 @@ GenToAST(ExprUnaryPreOp);
 GenToAST(ExprUnaryPostOp);
 GenToAST(ExprBinOp);
 GenToAST(ExprFuncCall);
-GenToAST(Constant);
+GenToAST(Integer);
+GenToAST(String);
 GenToAST(ExprStmt);
 GenToAST(JumpStmt);
 GenToAST(CondStmt);
@@ -105,7 +107,8 @@ GenAllocAST(ExprUnaryPreOp);
 GenAllocAST(ExprUnaryPostOp);
 GenAllocAST(ExprBinOp);
 GenAllocAST(ExprFuncCall);
-GenAllocAST(Constant);
+GenAllocAST(Integer);
+GenAllocAST(String);
 GenAllocAST(ExprStmt);
 GenAllocAST(JumpStmt);
 GenAllocAST(CondStmt);
@@ -152,10 +155,16 @@ ASTLabel* AllocASTLabel() {
   return label;
 }
 
-ASTNode* AllocAndInitASTConstant(const Token* token) {
-  ASTConstant* node = AllocASTConstant();
-  node->token = token;
-  return ToASTNode(node);
+ASTInteger* AllocAndInitASTInteger(int value) {
+  ASTInteger* node = AllocASTInteger();
+  node->value = value;
+  return node;
+}
+
+ASTString* AllocAndInitASTString(const char* str) {
+  ASTString* node = AllocASTString();
+  node->str = str;
+  return node;
 }
 
 ASTIdent* AllocAndInitASTIdent(const Token* token) {
@@ -283,9 +292,12 @@ void PrintASTNode(ASTNode* node, int depth) {
     ASTExprFuncCall* expr_func_call = ToASTExprFuncCall(node);
     PrintASTNodeWithName(depth + 1, "func=", expr_func_call->func);
     PrintASTNodeWithName(depth + 1, "args=", expr_func_call->args);
-  } else if (node->type == kASTConstant) {
-    ASTConstant* constant = ToASTConstant(node);
-    PrintTokenWithName(depth + 1, "token=", constant->token);
+  } else if (node->type == kASTInteger) {
+    ASTInteger* constant = ToASTInteger(node);
+    PrintfWithPadding(depth + 1, "value=", constant->value);
+  } else if (node->type == kASTString) {
+    ASTString* constant = ToASTString(node);
+    PrintfWithPadding(depth + 1, "str=", constant->str);
   } else if (node->type == kASTExprStmt) {
     ASTExprStmt* expr_stmt = ToASTExprStmt(node);
     PrintASTNodeWithName(depth + 1, "expression=", expr_stmt->expr);

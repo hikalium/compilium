@@ -232,31 +232,21 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
       } break;
       case kILOpLoadImm: {
         const char *dst_name = AssignRegister(fp, op->dst);
-        //
-        ASTConstant *val = ToASTConstant(op->ast_node);
-        switch (val->token->type) {
-          case kInteger: {
-            char *p;
-            const char *s = val->token->str;
-            int n = strtol(s, &p, 0);
-            if (!(s[0] != 0 && *p == 0)) {
-              Error("%s is not valid as integer.", s);
-            }
-            fprintf(fp, "mov %s, %d\n", dst_name, n);
-
-          } break;
-          case kStringLiteral: {
-            int label_for_skip = GetLabelNumber();
-            int label_str = GetLabelNumber();
-            fprintf(fp, "jmp L%d\n", label_for_skip);
-            fprintf(fp, "L%d:\n", label_str);
-            fprintf(fp, ".asciz  \"%s\"\n", val->token->str);
-            fprintf(fp, "L%d:\n", label_for_skip);
-            fprintf(fp, "lea     %s, [rip + L%d]\n", dst_name, label_str);
-          } break;
-          default:
-            Error("kILOpLoadImm: not implemented for token type %d",
-                  val->token->type);
+        if (op->ast_node->type == kASTInteger) {
+          ASTInteger *ast_int = ToASTInteger(op->ast_node);
+          fprintf(fp, "mov %s, %d\n", dst_name, ast_int->value);
+        } else if (op->ast_node->type == kASTString) {
+          ASTString *ast_str = ToASTString(op->ast_node);
+          int label_for_skip = GetLabelNumber();
+          int label_str = GetLabelNumber();
+          fprintf(fp, "jmp L%d\n", label_for_skip);
+          fprintf(fp, "L%d:\n", label_str);
+          fprintf(fp, ".asciz  \"%s\"\n", ast_str->str);
+          fprintf(fp, "L%d:\n", label_for_skip);
+          fprintf(fp, "lea     %s, [rip + L%d]\n", dst_name, label_str);
+        } else {
+          Error("kILOpLoadImm: not implemented for AST type %d",
+                op->ast_node->type);
         }
       } break;
       case kILOpLoadIdent: {

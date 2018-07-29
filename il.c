@@ -353,12 +353,6 @@ Register *GenerateILForExprFuncCall(ASTList *il, Register *dst, ASTNode *node,
   return dst;
 }
 
-Register *GenerateILForConstant(ASTList *il, Register *dst, ASTNode *node,
-                                Context *context) {
-  EmitILOp(il, kILOpLoadImm, dst, NULL, NULL, node);
-  return dst;
-}
-
 void GenerateILForIdent(ASTList *il, Register *dst, ASTNode *node,
                         Context *context) {
   ASTNode *var = FindIdentInContext(context, ToASTIdent(node));
@@ -505,8 +499,10 @@ void GenerateILFor(ASTList *il, Register *dst, ASTNode *node,
     GenerateILForExprBinOp(il, dst, node, context);
   } else if (node->type == kASTExprFuncCall) {
     GenerateILForExprFuncCall(il, dst, node, context);
-  } else if (node->type == kASTConstant) {
-    GenerateILForConstant(il, dst, node, context);
+  } else if (node->type == kASTInteger) {
+    EmitILOp(il, kILOpLoadImm, dst, NULL, NULL, node);
+  } else if (node->type == kASTString) {
+    EmitILOp(il, kILOpLoadImm, dst, NULL, NULL, node);
   } else if (node->type == kASTExprStmt) {
     GenerateILForExprStmt(il, dst, node, context);
   } else if (node->type == kASTIdent) {

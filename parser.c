@@ -50,9 +50,18 @@ ASTNode *ParseLeftAssocBinOp(TokenStream *stream,
 
 ASTNode *ParsePrimaryExpr(TokenStream *stream) {
   const Token *token = PeekToken(stream);
-  if (token->type == kInteger || token->type == kStringLiteral) {
+  if (token->type == kInteger) {
     PopToken(stream);
-    return AllocAndInitASTConstant(token);
+    char *p;
+    const char *s = token->str;
+    int n = strtol(s, &p, 0);
+    if (!(s[0] != 0 && *p == 0)) {
+      Error("%s is not valid as integer.", s);
+    }
+    return ToASTNode(AllocAndInitASTInteger(n));
+  } else if (token->type == kStringLiteral) {
+    PopToken(stream);
+    return ToASTNode(AllocAndInitASTString(token->str));
   } else if (token->type == kIdentifier) {
     PopToken(stream);
     return ToASTNode(AllocAndInitASTIdent(token));

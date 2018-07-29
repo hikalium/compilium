@@ -35,18 +35,10 @@ void AnalyzeNode(ASTNode *node, Context *context) {
     ASTExprBinOp *bin_op = ToASTExprBinOp(node);
     AnalyzeNode(bin_op->left, context);
     AnalyzeNode(bin_op->right, context);
-  } else if (node->type == kASTConstant) {
-    ASTConstant *val = ToASTConstant(node);
-    switch (val->token->type) {
-      case kInteger: {
-        printf("int\n");
-      } break;
-      case kStringLiteral: {
-        printf("char *\n");
-      } break;
-      default:
-        Error("Not implemented Imm token type %d", val->token->type);
-    }
+  } else if (node->type == kASTInteger) {
+    printf("int\n");
+  } else if (node->type == kASTString) {
+    printf("char *\n");
   } else if (node->type == kASTIdent) {
     ASTNode *var = FindIdentInContext(context, ToASTIdent(node));
     if (!var || (var->type != kASTLocalVar)) {

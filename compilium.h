@@ -23,7 +23,8 @@ typedef enum {
   kASTExprUnaryPostOp,
   kASTExprBinOp,
   kASTExprFuncCall,
-  kASTConstant,
+  kASTInteger,
+  kASTString,
   kASTExprStmt,
   kASTJumpStmt,
   kASTCondStmt,
@@ -171,8 +172,13 @@ typedef struct {
 
 typedef struct {
   ASTType type;
-  const Token *token;
-} ASTConstant;
+  int value;
+} ASTInteger;
+
+typedef struct {
+  ASTType type;
+  const char *str;
+} ASTString;
 
 typedef struct {
   ASTType type;
@@ -300,7 +306,8 @@ DefToAST(ExprUnaryPreOp);
 DefToAST(ExprUnaryPostOp);
 DefToAST(ExprBinOp);
 DefToAST(ExprFuncCall);
-DefToAST(Constant);
+DefToAST(Integer);
+DefToAST(String);
 DefToAST(ExprStmt);
 DefToAST(JumpStmt);
 DefToAST(CondStmt);
@@ -328,7 +335,8 @@ DefAllocAST(ExprUnaryPreOp);
 DefAllocAST(ExprUnaryPostOp);
 DefAllocAST(ExprBinOp);
 DefAllocAST(ExprFuncCall);
-DefAllocAST(Constant);
+DefAllocAST(Integer);
+DefAllocAST(String);
 DefAllocAST(ExprStmt);
 DefAllocAST(JumpStmt);
 DefAllocAST(CondStmt);
@@ -348,7 +356,8 @@ ASTDict *AllocASTDict(int capacity);
 ASTLocalVar *AllocASTLocalVar(int ofs_in_stack);
 DefAllocAST(Label);
 
-ASTNode *AllocAndInitASTConstant(const Token *token);
+ASTInteger *AllocAndInitASTInteger(int value);
+ASTString *AllocAndInitASTString(const char *str);
 ASTIdent *AllocAndInitASTIdent(const Token *token);
 ASTKeyword *AllocAndInitASTKeyword(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
