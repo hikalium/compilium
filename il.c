@@ -393,11 +393,7 @@ void GenerateILForJumpStmt(ASTList *il, Register *dst, ASTNode *node,
     EmitILOp(il, kILOpReturn, NULL, return_value, NULL, node);
     return;
   } else if (IsEqualToken(jump_stmt->kw->token, "break")) {
-    ASTLabel *break_label = GetBreakLabelInContext(context);
-    if (!break_label) {
-      Error("break-stmt should be used within iteration-stmt");
-    }
-    EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(break_label));
+    EmitILOp(il, kILOpJmp, NULL, NULL, NULL, jump_stmt->param);
     return;
   }
   Error("Not implemented JumpStmt (%s)", jump_stmt->kw->token->str);
@@ -457,46 +453,34 @@ void GenerateILForCondStmt(ASTList *il, Register *dst, ASTNode *node,
 void GenerateILForWhileStmt(ASTList *il, Register *dst, ASTNode *node,
                             Context *context) {
   ASTWhileStmt *stmt = ToASTWhileStmt(node);
-  ASTLabel *begin_label = AllocASTLabel();
-  ASTLabel *end_label = AllocASTLabel();
   Register *cond_result = AllocRegister();
 
-  ASTLabel *org_break_label = GetBreakLabelInContext(context);
-  SetBreakLabelInContext(context, end_label);
-
-  EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(begin_label));
+  EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(stmt->begin_label));
   GenerateILFor(il, cond_result, stmt->cond_expr, context);
-  EmitILOp(il, kILOpJmpIfZero, NULL, cond_result, NULL, ToASTNode(end_label));
+  EmitILOp(il, kILOpJmpIfZero, NULL, cond_result, NULL,
+           ToASTNode(stmt->end_label));
 
   GenerateILFor(il, AllocRegister(), stmt->body_stmt, context);
-  EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(begin_label));
-  EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(end_label));
-
-  SetBreakLabelInContext(context, org_break_label);
+  EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(stmt->begin_label));
+  EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(stmt->end_label));
 }
 
 void GenerateILForForStmt(ASTList *il, Register *dst, ASTNode *node,
                           Context *context) {
   ASTForStmt *stmt = ToASTForStmt(node);
-  ASTLabel *begin_label = AllocASTLabel();
-  ASTLabel *end_label = AllocASTLabel();
   Register *cond_result = AllocRegister();
-
-  ASTLabel *org_break_label = GetBreakLabelInContext(context);
-  SetBreakLabelInContext(context, end_label);
 
   GenerateILFor(il, AllocRegister(), stmt->init_expr, context);
 
-  EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(begin_label));
+  EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(stmt->begin_label));
   GenerateILFor(il, cond_result, stmt->cond_expr, context);
-  EmitILOp(il, kILOpJmpIfZero, NULL, cond_result, NULL, ToASTNode(end_label));
+  EmitILOp(il, kILOpJmpIfZero, NULL, cond_result, NULL,
+           ToASTNode(stmt->end_label));
 
   GenerateILFor(il, AllocRegister(), stmt->body_stmt, context);
   GenerateILFor(il, AllocRegister(), stmt->updt_expr, context);
-  EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(begin_label));
-  EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(end_label));
-
-  SetBreakLabelInContext(context, org_break_label);
+  EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(stmt->begin_label));
+  EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(stmt->end_label));
 }
 
 void GenerateILFor(ASTList *il, Register *dst, ASTNode *node,

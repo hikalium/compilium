@@ -309,9 +309,9 @@ ASTCompStmt *ParseCompStmt(TokenStream *stream) {
     if (!stmt) stmt = ParseStmt(stream);
     if (!stmt) break;
 
-    printf("InCompStmt: ");
-    PrintASTNode(stmt, 0);
-    putchar('\n');
+    // printf("InCompStmt: ");
+    // PrintASTNode(stmt, 0);
+    // putchar('\n');
 
     PushASTNodeToList(stmt_list, stmt);
   }

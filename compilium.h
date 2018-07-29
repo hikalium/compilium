@@ -104,6 +104,7 @@ typedef struct TOKEN_STREAM TokenStream;
 typedef struct AST_LIST ASTList;
 typedef struct AST_DICT ASTDict;
 typedef struct CONTEXT Context;
+typedef struct AST_LABEL ASTLabel;
 
 typedef struct {
   int vreg_id;
@@ -202,6 +203,8 @@ typedef struct {
   ASTType type;
   ASTNode *cond_expr;
   ASTNode *body_stmt;
+  ASTLabel *begin_label;
+  ASTLabel *end_label;
 } ASTWhileStmt;
 
 typedef struct {
@@ -210,6 +213,8 @@ typedef struct {
   ASTNode *cond_expr;
   ASTNode *updt_expr;
   ASTNode *body_stmt;
+  ASTLabel *begin_label;
+  ASTLabel *end_label;
 } ASTForStmt;
 
 typedef struct {
@@ -274,10 +279,10 @@ typedef struct {
   ASTDecltor *decltor;
 } ASTLocalVar;
 
-typedef struct {
+struct AST_LABEL {
   ASTType type;
   int label_number;
-} ASTLabel;
+};
 
 // @analyzer.c
 void Analyze(ASTNode *root);
@@ -387,7 +392,6 @@ const char *GetILOpTypeName(ILOpType type);
 void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type);
 
 // @il.c
-int GetStackSizeForContext(const Context *context);
 ASTList *GenerateIL(ASTNode *root);
 
 // @parser.c

@@ -347,6 +347,9 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintASTNodeWithName(depth + 1,
                          "decl_specs=", ToASTNode(param_decl->decl_specs));
     PrintASTNodeWithName(depth + 1, "decltor=", ToASTNode(param_decl->decltor));
+  } else if (node->type == kASTLabel) {
+    ASTLabel* label = ToASTLabel(node);
+    PrintfWithPadding(depth + 1, "label_number=%d", label->label_number);
   } else {
     Error("PrintASTNode not implemented for type %d (%s)", node->type,
           GetASTTypeName(node));

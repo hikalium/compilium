@@ -50,31 +50,91 @@ void AnalyzeNode(ASTNode *node, Context *context) {
   } else if (node->type == kASTIdent) {
     ASTNode *var = FindIdentInContext(context, ToASTIdent(node));
     if (!var || (var->type != kASTLocalVar)) {
-      Error("Unknown identifier %s", ToASTIdent(node)->token->str);
+      // TODO: Add func ident check
+      return;
     }
     ASTLocalVar *local_var = ToASTLocalVar(var);
     if (!local_var) {
       Error("var is not a local_var");
     }
   } else if (node->type == kASTForStmt) {
-    // ASTForStmt *stmt = ToASTForStmt(node);
-    // ASTLabel *begin_label = AllocASTLabel();
-    // ASTLabel *end_label = AllocASTLabel();
-    // Register *cond_result = AllocRegister();
+    ASTForStmt *stmt = ToASTForStmt(node);
+
+    stmt->begin_label = AllocASTLabel();
+    stmt->end_label = AllocASTLabel();
 
     ASTLabel *org_break_label = GetBreakLabelInContext(context);
-    // SetBreakLabelInContext(context, end_label);
+    SetBreakLabelInContext(context, stmt->end_label);
 
-    // AnalyzeNode(stmt->init_expr, context);
-    // AnalyzeNode(stmt->cond_expr, context);
-    // AnalyzeNode(stmt->body_stmt, context);
-    // AnalyzeNode(stmt->updt_expr, context);
+    AnalyzeNode(stmt->init_expr, context);
+    AnalyzeNode(stmt->cond_expr, context);
+    AnalyzeNode(stmt->body_stmt, context);
+    AnalyzeNode(stmt->updt_expr, context);
+
+    SetBreakLabelInContext(context, org_break_label);
+  } else if (node->type == kASTJumpStmt) {
+    ASTJumpStmt *jump_stmt = ToASTJumpStmt(node);
+    if (IsEqualToken(jump_stmt->kw->token, "return")) {
+      if (jump_stmt->param) {
+        AnalyzeNode(jump_stmt->param, context);
+      }
+      // TODO: Impl return type check
+    } else if (IsEqualToken(jump_stmt->kw->token, "break")) {
+      ASTLabel *break_label = GetBreakLabelInContext(context);
+      if (!break_label) {
+        Error("break-stmt should be used within iteration-stmt");
+      }
+      jump_stmt->param = ToASTNode(break_label);
+    } else {
+      Error("Not implemented JumpStmt (%s)", jump_stmt->kw->token->str);
+    }
+  } else if (node->type == kASTIfStmt) {
+    ASTIfStmt *if_stmt = ToASTIfStmt(node);
+    AnalyzeNode(if_stmt->cond_expr, context);
+    AnalyzeNode(if_stmt->true_stmt, context);
+    if (if_stmt->false_stmt) AnalyzeNode(if_stmt->false_stmt, context);
+  } else if (node->type == kASTExprFuncCall) {
+    ASTExprFuncCall *expr_func_call = ToASTExprFuncCall(node);
+    // TODO: support func pointer
+    if (expr_func_call->func->type != kASTIdent) {
+      Error("Calling non-labeled function is not implemented.");
+    }
+    if (expr_func_call->args) {
+      ASTList *arg_list = ToASTList(expr_func_call->args);
+      if (!arg_list) Error("arg_list is not an ASTList");
+      if (GetSizeOfASTList(arg_list) > 8) Error("Too many params");
+      for (int i = 0; i < GetSizeOfASTList(arg_list); i++) {
+        ASTNode *arg_node = GetASTNodeAt(arg_list, i);
+        AnalyzeNode(arg_node, context);
+      }
+    }
+  } else if (node->type == kASTExprUnaryPreOp) {
+    ASTExprUnaryPreOp *op = ToASTExprUnaryPreOp(node);
+    AnalyzeNode(op->expr, context);
+  } else if (node->type == kASTExprUnaryPostOp) {
+    ASTExprUnaryPostOp *op = ToASTExprUnaryPostOp(node);
+    AnalyzeNode(op->expr, context);
+  } else if (node->type == kASTCondStmt) {
+    ASTCondStmt *cond_stmt = ToASTCondStmt(node);
+    AnalyzeNode(cond_stmt->cond_expr, context);
+    AnalyzeNode(cond_stmt->true_expr, context);
+    AnalyzeNode(cond_stmt->false_expr, context);
+  } else if (node->type == kASTWhileStmt) {
+    ASTWhileStmt *stmt = ToASTWhileStmt(node);
+    stmt->begin_label = AllocASTLabel();
+    stmt->end_label = AllocASTLabel();
+
+    ASTLabel *org_break_label = GetBreakLabelInContext(context);
+    SetBreakLabelInContext(context, stmt->end_label);
+
+    AnalyzeNode(stmt->cond_expr, context);
+    AnalyzeNode(stmt->body_stmt, context);
 
     SetBreakLabelInContext(context, org_break_label);
   } else {
     PrintASTNode(node, 0);
     putchar('\n');
-    Warning("Analyzing AST%s is not implemented.", GetASTTypeName(node));
+    Error("Analyzing AST%s is not implemented.", GetASTTypeName(node));
   }
 }
 
