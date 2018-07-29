@@ -15,3 +15,14 @@ void Error(const char *fmt, ...) {
   fputc('\n', stderr);
   exit(EXIT_FAILURE);
 }
+
+void Warning(const char *fmt, ...) {
+  fflush(stdout);
+
+  fprintf(stderr, "Warning: ");
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  va_end(ap);
+  fputc('\n', stderr);
+}

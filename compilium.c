@@ -44,6 +44,7 @@ int main(int argc, char *argv[]) {
   putchar('\n');
 
   ASTNode *ast = Parse(tokens);
+  Analyze(ast);
 
   puts("\nAST:");
   PrintASTNode(ast, 0);

@@ -30,6 +30,7 @@ void InitASTTypeName() {
   ASTTypeName[kASTExprUnaryPreOp] = "ExprUnaryPreOp";
   ASTTypeName[kASTExprUnaryPostOp] = "ExprUnaryPostOp";
   ASTTypeName[kASTExprBinOp] = "ExprBinOp";
+  ASTTypeName[kASTExprFuncCall] = "ExprFuncCall";
   ASTTypeName[kASTConstant] = "Constant";
   ASTTypeName[kASTExprStmt] = "ExprStmt";
   ASTTypeName[kASTJumpStmt] = "JumpStmt";
@@ -69,6 +70,7 @@ GenToAST(CompStmt);
 GenToAST(ExprUnaryPreOp);
 GenToAST(ExprUnaryPostOp);
 GenToAST(ExprBinOp);
+GenToAST(ExprFuncCall);
 GenToAST(Constant);
 GenToAST(ExprStmt);
 GenToAST(JumpStmt);
@@ -102,6 +104,7 @@ GenAllocAST(CompStmt);
 GenAllocAST(ExprUnaryPreOp);
 GenAllocAST(ExprUnaryPostOp);
 GenAllocAST(ExprBinOp);
+GenAllocAST(ExprFuncCall);
 GenAllocAST(Constant);
 GenAllocAST(ExprStmt);
 GenAllocAST(JumpStmt);
@@ -173,6 +176,13 @@ ASTNode* AllocAndInitASTExprBinOp(const Token* op, ASTNode* left,
   node->op = op;
   node->left = left;
   node->right = right;
+  return ToASTNode(node);
+}
+
+ASTNode* AllocAndInitASTExprFuncCall(ASTNode* func, ASTNode* args) {
+  ASTExprFuncCall* node = AllocASTExprFuncCall();
+  node->func = func;
+  node->args = args;
   return ToASTNode(node);
 }
 
@@ -269,6 +279,10 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintTokenWithName(depth + 1, "op=", expr_bin_op->op);
     PrintASTNodeWithName(depth + 1, "left=", expr_bin_op->left);
     PrintASTNodeWithName(depth + 1, "right=", expr_bin_op->right);
+  } else if (node->type == kASTExprFuncCall) {
+    ASTExprFuncCall* expr_func_call = ToASTExprFuncCall(node);
+    PrintASTNodeWithName(depth + 1, "func=", expr_func_call->func);
+    PrintASTNodeWithName(depth + 1, "args=", expr_func_call->args);
   } else if (node->type == kASTConstant) {
     ASTConstant* constant = ToASTConstant(node);
     PrintTokenWithName(depth + 1, "token=", constant->token);

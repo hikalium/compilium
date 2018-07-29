@@ -74,11 +74,10 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
   ASTNode *last = ParsePrimaryExpr(stream);
   if (!last) return NULL;
   for (;;) {
-    if (IsNextToken(stream, "(")) {
-      const Token *op = PopToken(stream);
+    if (ConsumeToken(stream, "(")) {
       ASTList *arg_expr_list = ParseCommaSeparatedList(stream, ParseAssignExpr);
       ExpectToken(stream, ")");
-      last = AllocAndInitASTExprBinOp(op, last, ToASTNode(arg_expr_list));
+      last = AllocAndInitASTExprFuncCall(last, ToASTNode(arg_expr_list));
     } else if (IsNextTokenInList(stream, ops)) {
       ASTExprUnaryPostOp *op = AllocASTExprUnaryPostOp();
       op->op = PopToken(stream);

@@ -22,6 +22,7 @@ typedef enum {
   kASTExprUnaryPreOp,
   kASTExprUnaryPostOp,
   kASTExprBinOp,
+  kASTExprFuncCall,
   kASTConstant,
   kASTExprStmt,
   kASTJumpStmt,
@@ -163,6 +164,12 @@ typedef struct {
 
 typedef struct {
   ASTType type;
+  ASTNode *func;
+  ASTNode *args;
+} ASTExprFuncCall;
+
+typedef struct {
+  ASTType type;
   const Token *token;
 } ASTConstant;
 
@@ -272,6 +279,9 @@ typedef struct {
   int label_number;
 } ASTLabel;
 
+// @analyzer.c
+void Analyze(ASTNode *root);
+
 // @ast.c
 void InitASTTypeName();
 const char *GetASTTypeName(ASTNode *node);
@@ -284,6 +294,7 @@ DefToAST(CompStmt);
 DefToAST(ExprUnaryPreOp);
 DefToAST(ExprUnaryPostOp);
 DefToAST(ExprBinOp);
+DefToAST(ExprFuncCall);
 DefToAST(Constant);
 DefToAST(ExprStmt);
 DefToAST(JumpStmt);
@@ -311,6 +322,7 @@ DefAllocAST(CompStmt);
 DefAllocAST(ExprUnaryPreOp);
 DefAllocAST(ExprUnaryPostOp);
 DefAllocAST(ExprBinOp);
+DefAllocAST(ExprFuncCall);
 DefAllocAST(Constant);
 DefAllocAST(ExprStmt);
 DefAllocAST(JumpStmt);
@@ -336,6 +348,7 @@ ASTIdent *AllocAndInitASTIdent(const Token *token);
 ASTKeyword *AllocAndInitASTKeyword(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
+ASTNode *AllocAndInitASTExprFuncCall(ASTNode *func, ASTNode *args);
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetFuncNameTokenFromFuncDef(ASTFuncDef *func_def);
@@ -352,11 +365,21 @@ ASTNode *FindASTNodeInDict(ASTDict *dict, const char *key);
 ASTNode *GetASTNodeInDictAt(const ASTDict *dict, int index);
 int GetSizeOfASTDict(const ASTDict *dict);
 
-// @compilium.c
-extern KernelType kernel_type;
+// @context.c
+Context *AllocContext(const Context *parent);
+ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident);
+int GetByteSizeOfDeclSpecs(ASTList *decl_specs);
+int GetByteSizeOfDecl(ASTList *decl_specs, ASTDecltor *decltor);
+int GetByteSizeOfDeclAfterDeref(ASTList *decl_specs, ASTDecltor *decltor);
+int GetStackSizeForContext(const Context *context);
+ASTLocalVar *AppendLocalVarInContext(Context *context, ASTList *decl_specs,
+                                     ASTDecltor *decltor);
+void SetBreakLabelInContext(Context *context, ASTLabel *label);
+ASTLabel *GetBreakLabelInContext(Context *context);
 
 // @error.c
 void Error(const char *fmt, ...);
+void Warning(const char *fmt, ...);
 
 // @generate.c
 void InitILOpTypeName();
