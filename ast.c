@@ -6,7 +6,7 @@
 #include "compilium.h"
 
 struct AST_LIST {
-  ASTType type;
+  ASTNodeType type;
   int capacity;
   int size;
   ASTNode* nodes[];
@@ -18,47 +18,47 @@ typedef struct {
 } ASTDictEntry;
 
 struct AST_DICT {
-  ASTType type;
+  ASTNodeType type;
   int capacity;
   int size;
   ASTDictEntry entries[];
 };
 
-const char* ASTTypeName[kNumOfASTType];
+const char* ASTNodeTypeName[kNumOfASTNodeType];
 
-void InitASTTypeName() {
-  ASTTypeName[kASTFuncDecl] = "FuncDecl";
-  ASTTypeName[kASTFuncDef] = "FuncDef";
-  ASTTypeName[kASTCompStmt] = "CompStmt";
-  ASTTypeName[kASTExprUnaryPreOp] = "ExprUnaryPreOp";
-  ASTTypeName[kASTExprUnaryPostOp] = "ExprUnaryPostOp";
-  ASTTypeName[kASTExprBinOp] = "ExprBinOp";
-  ASTTypeName[kASTExprFuncCall] = "ExprFuncCall";
-  ASTTypeName[kASTInteger] = "Integer";
-  ASTTypeName[kASTString] = "String";
-  ASTTypeName[kASTExprStmt] = "ExprStmt";
-  ASTTypeName[kASTJumpStmt] = "JumpStmt";
-  ASTTypeName[kASTCondStmt] = "CondStmt";
-  ASTTypeName[kASTIfStmt] = "IfStmt";
-  ASTTypeName[kASTWhileStmt] = "WhileStmt";
-  ASTTypeName[kASTForStmt] = "ForStmt";
-  ASTTypeName[kASTILOp] = "ILOp";
-  ASTTypeName[kASTList] = "List";
-  ASTTypeName[kASTKeyword] = "Keyword";
-  ASTTypeName[kASTDecltor] = "Decltor";
-  ASTTypeName[kASTDirectDecltor] = "DirectDecltor";
-  ASTTypeName[kASTIdent] = "Ident";
-  ASTTypeName[kASTDecl] = "Decl";
-  ASTTypeName[kASTParamDecl] = "ParamDecl";
-  ASTTypeName[kASTPointer] = "Pointer";
-  ASTTypeName[kASTDict] = "Dict";
-  ASTTypeName[kASTLocalVar] = "LocalVar";
-  ASTTypeName[kASTLabel] = "Label";
+void InitASTNodeTypeName() {
+  ASTNodeTypeName[kASTFuncDecl] = "FuncDecl";
+  ASTNodeTypeName[kASTFuncDef] = "FuncDef";
+  ASTNodeTypeName[kASTCompStmt] = "CompStmt";
+  ASTNodeTypeName[kASTExprUnaryPreOp] = "ExprUnaryPreOp";
+  ASTNodeTypeName[kASTExprUnaryPostOp] = "ExprUnaryPostOp";
+  ASTNodeTypeName[kASTExprBinOp] = "ExprBinOp";
+  ASTNodeTypeName[kASTExprFuncCall] = "ExprFuncCall";
+  ASTNodeTypeName[kASTInteger] = "Integer";
+  ASTNodeTypeName[kASTString] = "String";
+  ASTNodeTypeName[kASTExprStmt] = "ExprStmt";
+  ASTNodeTypeName[kASTJumpStmt] = "JumpStmt";
+  ASTNodeTypeName[kASTCondStmt] = "CondStmt";
+  ASTNodeTypeName[kASTIfStmt] = "IfStmt";
+  ASTNodeTypeName[kASTWhileStmt] = "WhileStmt";
+  ASTNodeTypeName[kASTForStmt] = "ForStmt";
+  ASTNodeTypeName[kASTILOp] = "ILOp";
+  ASTNodeTypeName[kASTList] = "List";
+  ASTNodeTypeName[kASTKeyword] = "Keyword";
+  ASTNodeTypeName[kASTDecltor] = "Decltor";
+  ASTNodeTypeName[kASTDirectDecltor] = "DirectDecltor";
+  ASTNodeTypeName[kASTIdent] = "Ident";
+  ASTNodeTypeName[kASTDecl] = "Decl";
+  ASTNodeTypeName[kASTParamDecl] = "ParamDecl";
+  ASTNodeTypeName[kASTPointer] = "Pointer";
+  ASTNodeTypeName[kASTDict] = "Dict";
+  ASTNodeTypeName[kASTLocalVar] = "LocalVar";
+  ASTNodeTypeName[kASTLabel] = "Label";
 }
 
-const char* GetASTTypeName(ASTNode* node) {
-  if (!node || kNumOfASTType <= node->type) return "?";
-  return ASTTypeName[node->type];
+const char* GetASTNodeTypeName(ASTNode* node) {
+  if (!node || kNumOfASTNodeType <= node->type) return "?";
+  return ASTNodeTypeName[node->type];
 }
 
 ASTNode* ToASTNode(void* node) { return (ASTNode*)node; }
@@ -258,8 +258,8 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintASTNodePadding(depth);
     putchar(']');
     return;
-  } else if (node->type < kNumOfASTType) {
-    printf("(%s:", ASTTypeName[node->type]);
+  } else if (node->type < kNumOfASTNodeType) {
+    printf("(%s:", ASTNodeTypeName[node->type]);
   } else {
     printf("(Unknown: %d)", node->type);
     return;
@@ -378,7 +378,7 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintfWithPadding(depth + 1, "name=%s", var->name);
   } else {
     Error("PrintASTNode not implemented for type %d (%s)", node->type,
-          GetASTTypeName(node));
+          GetASTNodeTypeName(node));
   }
   PrintfWithPadding(depth, ")");
 }

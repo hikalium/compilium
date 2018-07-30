@@ -428,7 +428,7 @@ void GenerateILForForStmt(ASTList *il, Register *dst, ASTNode *node) {
 }
 
 void GenerateILFor(ASTList *il, Register *dst, ASTNode *node) {
-  printf("GenerateIL: AST%s...\n", GetASTTypeName(node));
+  printf("GenerateIL: AST%s...\n", GetASTNodeTypeName(node));
   if (node->type == kASTList) {
     // translation-unit
     ASTList *list = ToASTList(node);
@@ -474,7 +474,8 @@ void GenerateILFor(ASTList *il, Register *dst, ASTNode *node) {
   } else {
     PrintASTNode(node, 0);
     putchar('\n');
-    Error("IL Generation for AST%s is not implemented.", GetASTTypeName(node));
+    Error("IL Generation for AST%s is not implemented.",
+          GetASTNodeTypeName(node));
   }
 }
 

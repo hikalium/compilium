@@ -4,7 +4,7 @@
 #include "compilium.h"
 
 void AnalyzeNode(ASTNode *node, Context *context) {
-  printf("Analyzing AST%s...\n", GetASTTypeName(node));
+  printf("Analyzing AST%s...\n", GetASTNodeTypeName(node));
   if (node->type == kASTList) {
     // translation-unit
     ASTList *list = ToASTList(node);
@@ -143,7 +143,7 @@ void AnalyzeNode(ASTNode *node, Context *context) {
   } else {
     PrintASTNode(node, 0);
     putchar('\n');
-    Error("Analyzing AST%s is not implemented.", GetASTTypeName(node));
+    Error("Analyzing AST%s is not implemented.", GetASTNodeTypeName(node));
   }
 }
 

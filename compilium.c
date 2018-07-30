@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     Error("Usage: %s -o <dst_file> <src_file>", argv[0]);
   }
 
-  InitASTTypeName();
+  InitASTNodeTypeName();
   InitILOpTypeName();
 
   char *input = ReadFile(src_file);

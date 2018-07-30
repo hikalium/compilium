@@ -40,8 +40,8 @@ typedef enum {
   kASTLocalVar,
   kASTLabel,
   //
-  kNumOfASTType
-} ASTType;
+  kNumOfASTNodeType
+} ASTNodeType;
 
 typedef enum {
   kILOpNop,
@@ -117,92 +117,92 @@ typedef struct {
 } Token;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
 } ASTNode;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   const Token *token;
 } ASTKeyword;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTList *root_list;
 } ASTRoot;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTNode *type_and_name;
   ASTList *arg_list;
 } ASTFuncDecl;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTList *stmt_list;
 } ASTCompStmt;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   const Token *op;
   ASTNode *expr;
 } ASTExprUnaryPreOp;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   const Token *op;
   ASTNode *expr;
 } ASTExprUnaryPostOp;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   const Token *op;
   ASTNode *left;
   ASTNode *right;
 } ASTExprBinOp;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTNode *func;
   ASTNode *args;
 } ASTExprFuncCall;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   int value;
 } ASTInteger;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   const char *str;
 } ASTString;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTNode *expr;
 } ASTExprStmt;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTKeyword *kw;
   ASTNode *param;
 } ASTJumpStmt;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTNode *cond_expr;
   ASTNode *true_expr;
   ASTNode *false_expr;
 } ASTCondStmt;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTNode *cond_expr;
   ASTNode *true_stmt;
   ASTNode *false_stmt;
 } ASTIfStmt;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTNode *cond_expr;
   ASTNode *body_stmt;
   ASTLabel *begin_label;
@@ -210,7 +210,7 @@ typedef struct {
 } ASTWhileStmt;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTNode *init_expr;
   ASTNode *cond_expr;
   ASTNode *updt_expr;
@@ -220,7 +220,7 @@ typedef struct {
 } ASTForStmt;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ILOpType op;
   Register *dst;
   Register *left;
@@ -229,44 +229,44 @@ typedef struct {
 } ASTILOp;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   const Token *token;
   ASTLocalVar *local_var;
 } ASTIdent;
 
 typedef struct AST_DIRECT_DECLTOR ASTDirectDecltor;
 struct AST_DIRECT_DECLTOR {
-  ASTType type;
+  ASTNodeType type;
   ASTDirectDecltor *direct_decltor;
   ASTNode *data;
 };
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTList *decl_specs;
   ASTList *init_decltors;
 } ASTDecl;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTList *decl_specs;
   ASTNode *decltor;
 } ASTParamDecl;
 
 typedef struct AST_POINTER ASTPointer;
 struct AST_POINTER {
-  ASTType type;
+  ASTNodeType type;
   ASTPointer *pointer;
 };
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTPointer *pointer;
   ASTDirectDecltor *direct_decltor;
 } ASTDecltor;
 
 typedef struct {
-  ASTType type;
+  ASTNodeType type;
   ASTList *decl_specs;
   ASTDecltor *decltor;
   ASTCompStmt *comp_stmt;
@@ -274,7 +274,7 @@ typedef struct {
 } ASTFuncDef;
 
 struct AST_LOCAL_VAR {
-  ASTType type;
+  ASTNodeType type;
   int size;
   int ofs_in_stack;
   const char *name;
@@ -283,7 +283,7 @@ struct AST_LOCAL_VAR {
 };
 
 struct AST_LABEL {
-  ASTType type;
+  ASTNodeType type;
   int label_number;
 };
 
@@ -291,8 +291,8 @@ struct AST_LABEL {
 void Analyze(ASTNode *root);
 
 // @ast.c
-void InitASTTypeName();
-const char *GetASTTypeName(ASTNode *node);
+void InitASTNodeTypeName();
+const char *GetASTNodeTypeName(ASTNode *node);
 
 ASTNode *ToASTNode(void *node);
 #define DefToAST(type) AST##type *ToAST##type(ASTNode *node)
