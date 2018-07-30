@@ -54,6 +54,7 @@ void InitASTNodeTypeName() {
   ASTNodeTypeName[kASTDict] = "Dict";
   ASTNodeTypeName[kASTLocalVar] = "LocalVar";
   ASTNodeTypeName[kASTLabel] = "Label";
+  ASTNodeTypeName[kASTType] = "Type";
 }
 
 const char* GetASTNodeTypeName(ASTNode* node) {
@@ -96,9 +97,10 @@ GenToAST(Pointer);
 GenToAST(Dict);
 GenToAST(LocalVar);
 GenToAST(Label);
+GenToAST(Type);
 
 #define GenAllocAST(Type) \
-  AST##Type* AllocAST##Type() { \
+  AST##Type* AllocAST##Type(void) { \
     AST##Type* node = (AST##Type*)calloc(1, sizeof(AST##Type)); \
     node->type = kAST##Type; \
     return node; \
@@ -145,19 +147,9 @@ ASTDict* AllocASTDict(int capacity) {
   return dict;
 }
 
-ASTLocalVar* AllocASTLocalVar(int ofs_in_stack) {
-  ASTLocalVar* var = calloc(1, sizeof(ASTLocalVar));
-  var->type = kASTLocalVar;
-  var->ofs_in_stack = ofs_in_stack;
-  return var;
-}
-
-ASTLabel* AllocASTLabel() {
-  ASTLabel* label = calloc(1, sizeof(ASTLabel));
-  label->type = kASTLabel;
-  label->label_number = 0;
-  return label;
-}
+GenAllocAST(LocalVar);
+GenAllocAST(Label);
+GenAllocAST(Type);
 
 ASTInteger* AllocAndInitASTInteger(int value) {
   ASTInteger* node = AllocASTInteger();
@@ -197,6 +189,12 @@ ASTNode* AllocAndInitASTExprFuncCall(ASTNode* func, ASTNode* args) {
   node->func = func;
   node->args = args;
   return ToASTNode(node);
+}
+
+ASTLocalVar* AllocAndInitASTLocalVar(int ofs_in_stack) {
+  ASTLocalVar* node = AllocASTLocalVar();
+  node->ofs_in_stack = ofs_in_stack;
+  return node;
 }
 
 const Token* GetIdentTokenFromDirectDecltor(ASTDirectDecltor* direct_decltor) {

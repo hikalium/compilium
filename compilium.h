@@ -39,6 +39,7 @@ typedef enum {
   kASTDict,
   kASTLocalVar,
   kASTLabel,
+  kASTType,
   //
   kNumOfASTNodeType
 } ASTNodeType;
@@ -102,6 +103,7 @@ typedef struct AST_DICT ASTDict;
 typedef struct CONTEXT Context;
 typedef struct AST_LABEL ASTLabel;
 typedef struct AST_LOCAL_VAR ASTLocalVar;
+typedef struct AST_TYPE ASTType;
 
 typedef struct {
   int vreg_id;
@@ -287,6 +289,10 @@ struct AST_LABEL {
   int label_number;
 };
 
+struct AST_TYPE {
+  ASTNodeType type;
+};
+
 // @analyzer.c
 void Analyze(ASTNode *root);
 
@@ -323,8 +329,9 @@ DefToAST(Pointer);
 DefToAST(Dict);
 DefToAST(LocalVar);
 DefToAST(Label);
+DefToAST(Type);
 
-#define DefAllocAST(type) AST##type *AllocAST##type()
+#define DefAllocAST(type) AST##type *AllocAST##type(void)
 DefAllocAST(FuncDecl);
 DefAllocAST(FuncDef);
 DefAllocAST(CompStmt);
@@ -350,8 +357,9 @@ DefAllocAST(Decl);
 DefAllocAST(ParamDecl);
 DefAllocAST(Pointer);
 ASTDict *AllocASTDict(int capacity);
-ASTLocalVar *AllocASTLocalVar(int ofs_in_stack);
+DefAllocAST(LocalVar);
 DefAllocAST(Label);
+DefAllocAST(Type);
 
 ASTInteger *AllocAndInitASTInteger(int value);
 ASTString *AllocAndInitASTString(const char *str);
@@ -360,6 +368,8 @@ ASTKeyword *AllocAndInitASTKeyword(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
 ASTNode *AllocAndInitASTExprFuncCall(ASTNode *func, ASTNode *args);
+ASTLocalVar *AllocAndInitASTLocalVar(int ofs_in_stack);
+
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetFuncNameTokenFromFuncDef(ASTFuncDef *func_def);

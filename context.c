@@ -68,7 +68,7 @@ ASTLocalVar *AppendLocalVarInContext(Context *context, ASTList *decl_specs,
   int ofs_in_stack = GetStackSizeForContext(context) + size;
   printf("LocalVar[\"%s\"] ofs_in_stack = %d, size = %d\n", ident_token->str,
          ofs_in_stack, size);
-  ASTLocalVar *local_var = AllocASTLocalVar(ofs_in_stack);
+  ASTLocalVar *local_var = AllocAndInitASTLocalVar(ofs_in_stack);
   local_var->size = size;
   local_var->name = ident_token->str;
   local_var->decl_specs = decl_specs;
