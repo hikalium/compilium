@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "compilium.h"
 
 // https://wiki.osdev.org/System_V_ABI

@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "compilium.h"
 
 void AnalyzeNode(ASTNode *node, Context *context) {

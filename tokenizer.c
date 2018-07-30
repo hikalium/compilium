@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "compilium.h"
 
 const char *Preprocess(TokenList *tokens, const char *p);

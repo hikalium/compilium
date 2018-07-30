@@ -1,8 +1,3 @@
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #define MAX_TOKEN_LEN 64
 #define MAX_INPUT_SIZE 8192
 

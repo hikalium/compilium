@@ -1,4 +1,6 @@
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "compilium.h"
@@ -96,8 +98,7 @@ GenToAST(Label);
 
 #define GenAllocAST(Type) \
   AST##Type* AllocAST##Type() { \
-    AST##Type* node = (AST##Type*)malloc(sizeof(AST##Type)); \
-    bzero(node, sizeof(AST##Type)); \
+    AST##Type* node = (AST##Type*)calloc(1, sizeof(AST##Type)); \
     node->type = kAST##Type; \
     return node; \
   }
@@ -120,7 +121,7 @@ GenAllocAST(ForStmt);
 GenAllocAST(ILOp);
 
 ASTList* AllocASTList(int capacity) {
-  ASTList* list = malloc(sizeof(ASTList) + sizeof(ASTNode*) * capacity);
+  ASTList* list = calloc(1, sizeof(ASTList) + sizeof(ASTNode*) * capacity);
   list->type = kASTList;
   list->capacity = capacity;
   list->size = 0;
@@ -136,7 +137,7 @@ GenAllocAST(ParamDecl);
 GenAllocAST(Pointer);
 
 ASTDict* AllocASTDict(int capacity) {
-  ASTDict* dict = malloc(sizeof(ASTDict) + sizeof(ASTDictEntry*) * capacity);
+  ASTDict* dict = calloc(1, sizeof(ASTDict) + sizeof(ASTDictEntry*) * capacity);
   dict->type = kASTDict;
   dict->capacity = capacity;
   dict->size = 0;
@@ -144,14 +145,14 @@ ASTDict* AllocASTDict(int capacity) {
 }
 
 ASTLocalVar* AllocASTLocalVar(int ofs_in_stack) {
-  ASTLocalVar* var = malloc(sizeof(ASTLocalVar));
+  ASTLocalVar* var = calloc(1, sizeof(ASTLocalVar));
   var->type = kASTLocalVar;
   var->ofs_in_stack = ofs_in_stack;
   return var;
 }
 
 ASTLabel* AllocASTLabel() {
-  ASTLabel* label = malloc(sizeof(ASTLabel));
+  ASTLabel* label = calloc(1, sizeof(ASTLabel));
   label->type = kASTLabel;
   label->label_number = 0;
   return label;

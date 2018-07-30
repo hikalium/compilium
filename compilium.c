@@ -1,3 +1,7 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "compilium.h"
 
 #define MAX_TOKENS 2048
