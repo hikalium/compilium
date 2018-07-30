@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <string.h>
 
 #include "compilium.h"
 
@@ -96,6 +97,7 @@ GenToAST(Label);
 #define GenAllocAST(Type) \
   AST##Type* AllocAST##Type() { \
     AST##Type* node = (AST##Type*)malloc(sizeof(AST##Type)); \
+    bzero(node, sizeof(AST##Type)); \
     node->type = kAST##Type; \
     return node; \
   }
@@ -334,6 +336,7 @@ void PrintASTNode(ASTNode* node, int depth) {
                       il_op->left ? il_op->left->vreg_id : 0);
     PrintfWithPadding(depth + 1, "right=%d",
                       il_op->right ? il_op->right->vreg_id : 0);
+    PrintASTNodeWithName(depth + 1, "ast_node=", il_op->ast_node);
   } else if (node->type == kASTKeyword) {
     ASTKeyword* kw = ToASTKeyword(node);
     PrintTokenWithName(depth + 1, "token=", kw->token);
@@ -349,6 +352,7 @@ void PrintASTNode(ASTNode* node, int depth) {
   } else if (node->type == kASTIdent) {
     ASTIdent* ident = ToASTIdent(node);
     PrintTokenWithName(depth + 1, "token=", ident->token);
+    PrintASTNodeWithName(depth + 1, "local_var=", ToASTNode(ident->local_var));
   } else if (node->type == kASTDecl) {
     ASTDecl* decl = ToASTDecl(node);
     PrintASTNodeWithName(depth + 1, "decl_specs=", ToASTNode(decl->decl_specs));
@@ -362,6 +366,10 @@ void PrintASTNode(ASTNode* node, int depth) {
   } else if (node->type == kASTLabel) {
     ASTLabel* label = ToASTLabel(node);
     PrintfWithPadding(depth + 1, "label_number=%d", label->label_number);
+  } else if (node->type == kASTLocalVar) {
+    ASTLocalVar* var = ToASTLocalVar(node);
+    PrintfWithPadding(depth + 1, "size=%d", var->size);
+    PrintfWithPadding(depth + 1, "name=%s", var->name);
   } else {
     Error("PrintASTNode not implemented for type %d (%s)", node->type,
           GetASTTypeName(node));
@@ -390,6 +398,13 @@ ASTNode* GetASTNodeAt(const ASTList* list, int index) {
     Error("ASTList: Trying to read index out of bound");
   }
   return list->nodes[index];
+}
+
+void SetASTNodeAt(ASTList* list, int index, ASTNode* node) {
+  if (index < 0 || list->size <= index) {
+    Error("ASTList: Trying to write index out of bound");
+  }
+  list->nodes[index] = node;
 }
 
 int GetSizeOfASTList(const ASTList* list) { return list->size; }

@@ -106,6 +106,7 @@ typedef struct AST_LIST ASTList;
 typedef struct AST_DICT ASTDict;
 typedef struct CONTEXT Context;
 typedef struct AST_LABEL ASTLabel;
+typedef struct AST_LOCAL_VAR ASTLocalVar;
 
 typedef struct {
   int vreg_id;
@@ -235,6 +236,7 @@ typedef struct {
 typedef struct {
   ASTType type;
   const Token *token;
+  ASTLocalVar *local_var;
 } ASTIdent;
 
 typedef struct AST_DIRECT_DECLTOR ASTDirectDecltor;
@@ -276,14 +278,14 @@ typedef struct {
   Context *context;
 } ASTFuncDef;
 
-typedef struct {
+struct AST_LOCAL_VAR {
   ASTType type;
   int size;
   int ofs_in_stack;
   const char *name;
   ASTList *decl_specs;
   ASTDecltor *decltor;
-} ASTLocalVar;
+};
 
 struct AST_LABEL {
   ASTType type;
@@ -371,6 +373,7 @@ void PrintASTNode(ASTNode *node, int depth);
 void PushASTNodeToList(ASTList *list, ASTNode *node);
 ASTNode *PopASTNodeFromList(ASTList *list);
 ASTNode *GetASTNodeAt(const ASTList *list, int index);
+void SetASTNodeAt(ASTList *list, int index, ASTNode *node);
 int GetSizeOfASTList(const ASTList *list);
 ASTNode *GetLastASTNode(const ASTList *list);
 

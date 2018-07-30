@@ -13,6 +13,22 @@ void AnalyzeNode(ASTNode *node, Context *context) {
     }
   } else if (node->type == kASTFuncDef) {
     ASTFuncDef *def = ToASTFuncDef(node);
+
+    context = AllocContext(context);
+    def->context = context;
+    ASTDirectDecltor *args_decltor = def->decltor->direct_decltor;
+    ASTList *param_decl_list = ToASTList(args_decltor->data);
+    if (param_decl_list) {
+      PrintASTNode(ToASTNode(param_decl_list), 0);
+      for (int i = 0; i < GetSizeOfASTList(param_decl_list); i++) {
+        ASTParamDecl *param_decl =
+            ToASTParamDecl(GetASTNodeAt(param_decl_list, i));
+        ASTDecltor *param_decltor = ToASTDecltor(param_decl->decltor);
+        ASTLocalVar *local_var = AppendLocalVarInContext(
+            context, param_decl->decl_specs, param_decltor);
+        SetASTNodeAt(param_decl_list, i, ToASTNode(local_var));
+      }
+    }
     AnalyzeNode(ToASTNode(def->comp_stmt), context);
   } else if (node->type == kASTCompStmt) {
     ASTCompStmt *comp = ToASTCompStmt(node);
@@ -40,15 +56,13 @@ void AnalyzeNode(ASTNode *node, Context *context) {
   } else if (node->type == kASTString) {
     printf("char *\n");
   } else if (node->type == kASTIdent) {
-    ASTNode *var = FindIdentInContext(context, ToASTIdent(node));
+    ASTIdent *ident = ToASTIdent(node);
+    ASTNode *var = FindIdentInContext(context, ident);
     if (!var || (var->type != kASTLocalVar)) {
       // TODO: Add func ident check
       return;
     }
-    ASTLocalVar *local_var = ToASTLocalVar(var);
-    if (!local_var) {
-      Error("var is not a local_var");
-    }
+    ident->local_var = ToASTLocalVar(var);
   } else if (node->type == kASTForStmt) {
     ASTForStmt *stmt = ToASTForStmt(node);
 
