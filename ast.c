@@ -297,7 +297,7 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintASTNodeWithName(depth + 1, "args=", expr_func_call->args);
   } else if (node->type == kASTInteger) {
     ASTInteger* constant = ToASTInteger(node);
-    PrintfWithPadding(depth + 1, "value=", constant->value);
+    PrintfWithPadding(depth + 1, "value=%d", constant->value);
   } else if (node->type == kASTString) {
     ASTString* constant = ToASTString(node);
     PrintfWithPadding(depth + 1, "str=", constant->str);
