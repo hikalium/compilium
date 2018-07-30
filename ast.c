@@ -50,6 +50,7 @@ void InitASTTypeName() {
   ASTTypeName[kASTIdent] = "Ident";
   ASTTypeName[kASTDecl] = "Decl";
   ASTTypeName[kASTParamDecl] = "ParamDecl";
+  ASTTypeName[kASTPointer] = "Pointer";
   ASTTypeName[kASTDict] = "Dict";
   ASTTypeName[kASTLocalVar] = "LocalVar";
   ASTTypeName[kASTLabel] = "Label";
@@ -235,11 +236,11 @@ void PrintASTNodeWithName(int depth, const char* name, ASTNode* node) {
   PrintASTNode(node, depth);
 }
 void PrintTokenWithName(int depth, const char* name, const Token* token) {
-  PrintfWithPadding(depth + 1, name);
+  PrintfWithPadding(depth, name);
   PrintToken(token);
 }
 void PrintTokenListWithName(int depth, const char* name, TokenList* list) {
-  PrintfWithPadding(depth + 1, name);
+  PrintfWithPadding(depth, name);
   PrintTokenList(list);
 }
 void PrintASTNode(ASTNode* node, int depth) {
@@ -343,6 +344,7 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintTokenWithName(depth + 1, "token=", kw->token);
   } else if (node->type == kASTDecltor) {
     ASTDecltor* decltor = ToASTDecltor(node);
+    PrintASTNodeWithName(depth + 1, "pointer=", ToASTNode(decltor->pointer));
     PrintASTNodeWithName(depth + 1,
                          "direct_decltor=", ToASTNode(decltor->direct_decltor));
   } else if (node->type == kASTDirectDecltor) {
@@ -364,6 +366,9 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintASTNodeWithName(depth + 1,
                          "decl_specs=", ToASTNode(param_decl->decl_specs));
     PrintASTNodeWithName(depth + 1, "decltor=", ToASTNode(param_decl->decltor));
+  } else if (node->type == kASTPointer) {
+    ASTPointer* pointer = ToASTPointer(node);
+    PrintASTNodeWithName(depth + 1, "pointer=", ToASTNode(pointer->pointer));
   } else if (node->type == kASTLabel) {
     ASTLabel* label = ToASTLabel(node);
     PrintfWithPadding(depth + 1, "label_number=%d", label->label_number);

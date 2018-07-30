@@ -36,8 +36,7 @@ c_test : ../compilium $(addsuffix .test, $(TESTS)) FORCE
 		|| { echo "FAIL $@"; cat $*.compilium.log; false; }
 
 %.compilium.ast : %.c Makefile ../compilium FORCE
-	../compilium --parse_only --prefix_type `uname` $*.c &> $*.compilium.ast
-	cat $*.compilium.ast
+	../compilium --parse_only --prefix_type `uname` $*.c &> $*.compilium.ast; cat $*.compilium.ast
 
 %.bin : %.S Makefile FORCE
 	@ gcc -o $@ $*.S
