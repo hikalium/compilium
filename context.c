@@ -44,12 +44,6 @@ int GetByteSizeOfDecl(ASTList *decl_specs, ASTDecltor *decltor) {
   return GetByteSizeOfDeclSpecs(decl_specs);
 }
 
-int GetByteSizeOfDeclAfterDeref(ASTList *decl_specs, ASTDecltor *decltor) {
-  if (!decltor->pointer) Error("Cannot deref value which is not a pointer");
-  if (decltor->pointer->pointer) return 8;
-  return GetByteSizeOfDeclSpecs(decl_specs);
-}
-
 int GetStackSizeForContext(const Context *context) {
   int size = 0;
   for (int i = 0; i < GetSizeOfASTDict(context->dict); i++) {
@@ -71,8 +65,7 @@ ASTLocalVar *AppendLocalVarInContext(Context *context, ASTList *decl_specs,
   ASTLocalVar *local_var = AllocAndInitASTLocalVar(ofs_in_stack);
   local_var->size = size;
   local_var->name = ident_token->str;
-  local_var->decl_specs = decl_specs;
-  local_var->decltor = decltor;
+  local_var->var_type = AllocAndInitASTType(decl_specs, decltor);
   AppendASTNodeToDict(context->dict, ident_token->str, ToASTNode(local_var));
   return local_var;
 }

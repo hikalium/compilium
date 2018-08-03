@@ -64,12 +64,6 @@ const char* GetASTNodeTypeName(ASTNode* node) {
 
 ASTNode* ToASTNode(void* node) { return (ASTNode*)node; }
 
-#define GenToAST(Type) \
-  AST##Type* ToAST##Type(ASTNode* node) { \
-    if (!node || node->type != kAST##Type) return NULL; \
-    return (AST##Type*)node; \
-  }
-
 GenToAST(FuncDecl);
 GenToAST(FuncDef);
 GenToAST(CompStmt);
@@ -97,14 +91,6 @@ GenToAST(Pointer);
 GenToAST(Dict);
 GenToAST(LocalVar);
 GenToAST(Label);
-GenToAST(Type);
-
-#define GenAllocAST(Type) \
-  AST##Type* AllocAST##Type(void) { \
-    AST##Type* node = (AST##Type*)calloc(1, sizeof(AST##Type)); \
-    node->type = kAST##Type; \
-    return node; \
-  }
 
 GenAllocAST(FuncDecl);
 GenAllocAST(FuncDef);
@@ -149,7 +135,6 @@ ASTDict* AllocASTDict(int capacity) {
 
 GenAllocAST(LocalVar);
 GenAllocAST(Label);
-GenAllocAST(Type);
 
 ASTInteger* AllocAndInitASTInteger(int value) {
   ASTInteger* node = AllocASTInteger();
@@ -374,6 +359,11 @@ void PrintASTNode(ASTNode* node, int depth) {
     ASTLocalVar* var = ToASTLocalVar(node);
     PrintfWithPadding(depth + 1, "size=%d", var->size);
     PrintfWithPadding(depth + 1, "name=%s", var->name);
+    PrintASTNodeWithName(depth + 1, "type=", ToASTNode(var->var_type));
+  } else if (node->type == kASTType) {
+    PrintASTType(ToASTType(node));
+    putchar(')');
+    return;
   } else {
     Error("PrintASTNode not implemented for type %d (%s)", node->type,
           GetASTNodeTypeName(node));

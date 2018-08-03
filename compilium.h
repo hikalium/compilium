@@ -1,6 +1,23 @@
 #define MAX_TOKEN_LEN 64
 #define MAX_INPUT_SIZE 8192
 
+#define DefToAST(type) AST##type *ToAST##type(ASTNode *node)
+
+#define GenToAST(Type) \
+  AST##Type *ToAST##Type(ASTNode *node) { \
+    if (!node || node->type != kAST##Type) return NULL; \
+    return (AST##Type *)node; \
+  }
+
+#define DefAllocAST(type) AST##type *AllocAST##type(void)
+
+#define GenAllocAST(Type) \
+  AST##Type *AllocAST##Type(void) { \
+    AST##Type *node = (AST##Type *)calloc(1, sizeof(AST##Type)); \
+    node->type = kAST##Type; \
+    return node; \
+  }
+
 typedef enum {
   kIdentifier,
   kStringLiteral,
@@ -280,17 +297,12 @@ struct AST_LOCAL_VAR {
   int size;
   int ofs_in_stack;
   const char *name;
-  ASTList *decl_specs;
-  ASTDecltor *decltor;
+  ASTType *var_type;
 };
 
 struct AST_LABEL {
   ASTNodeType type;
   int label_number;
-};
-
-struct AST_TYPE {
-  ASTNodeType type;
 };
 
 // @analyzer.c
@@ -301,7 +313,6 @@ void InitASTNodeTypeName();
 const char *GetASTNodeTypeName(ASTNode *node);
 
 ASTNode *ToASTNode(void *node);
-#define DefToAST(type) AST##type *ToAST##type(ASTNode *node)
 DefToAST(FuncDecl);
 DefToAST(FuncDef);
 DefToAST(CompStmt);
@@ -329,9 +340,7 @@ DefToAST(Pointer);
 DefToAST(Dict);
 DefToAST(LocalVar);
 DefToAST(Label);
-DefToAST(Type);
 
-#define DefAllocAST(type) AST##type *AllocAST##type(void)
 DefAllocAST(FuncDecl);
 DefAllocAST(FuncDef);
 DefAllocAST(CompStmt);
@@ -359,7 +368,6 @@ DefAllocAST(Pointer);
 ASTDict *AllocASTDict(int capacity);
 DefAllocAST(LocalVar);
 DefAllocAST(Label);
-DefAllocAST(Type);
 
 ASTInteger *AllocAndInitASTInteger(int value);
 ASTString *AllocAndInitASTString(const char *str);
@@ -392,7 +400,6 @@ Context *AllocContext(const Context *parent);
 ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident);
 int GetByteSizeOfDeclSpecs(ASTList *decl_specs);
 int GetByteSizeOfDecl(ASTList *decl_specs, ASTDecltor *decltor);
-int GetByteSizeOfDeclAfterDeref(ASTList *decl_specs, ASTDecltor *decltor);
 int GetStackSizeForContext(const Context *context);
 ASTLocalVar *AppendLocalVarInContext(Context *context, ASTList *decl_specs,
                                      ASTDecltor *decltor);
@@ -445,3 +452,11 @@ void DebugPrintTokenStream(const char *s, const TokenStream *stream);
 // @tokenizer.c
 char *ReadFile(const char *file_name);
 void Tokenize(TokenList *tokens, const char *p, const char *filename);
+
+// @type.c
+DefToAST(Type);
+DefAllocAST(Type);
+ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor);
+ASTType *GetDereferencedTypeOf(ASTType *node);
+int GetSizeOfType(ASTType *node);
+void PrintASTType(ASTType *node);

@@ -184,8 +184,7 @@ Register *GenerateILForExprUnaryPreOp(ASTList *il, Register *dst,
     ASTIdent *left_ident = ToASTIdent(op->expr);
     ASTLocalVar *local_var = left_ident->local_var;
     if (local_var) {
-      int size = GetByteSizeOfDeclAfterDeref(local_var->decl_specs,
-                                             local_var->decltor);
+      int size = GetSizeOfType(GetDereferencedTypeOf(local_var->var_type));
       printf("size after deref = %d\n", size);
       if (size == 8) {
         EmitILOp(il, kILOpLoad64, dst, rvalue, NULL, node);
