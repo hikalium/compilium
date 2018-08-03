@@ -50,9 +50,6 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
   for (ASTPointer *ptr = decltor->pointer; ptr; ptr = ptr->pointer) {
     node = AllocAndInitASTTypePointerOf(node);
   }
-  printf("Resolved type: ");
-  PrintASTType(node);
-  putchar('\n');
 
   return node;
 }

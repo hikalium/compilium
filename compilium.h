@@ -294,7 +294,6 @@ typedef struct {
 
 struct AST_LOCAL_VAR {
   ASTNodeType type;
-  int size;
   int ofs_in_stack;
   const char *name;
   ASTType *var_type;
@@ -376,7 +375,6 @@ ASTKeyword *AllocAndInitASTKeyword(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
 ASTNode *AllocAndInitASTExprFuncCall(ASTNode *func, ASTNode *args);
-ASTLocalVar *AllocAndInitASTLocalVar(int ofs_in_stack);
 
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
@@ -398,8 +396,6 @@ int GetSizeOfASTDict(const ASTDict *dict);
 // @context.c
 Context *AllocContext(const Context *parent);
 ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident);
-int GetByteSizeOfDeclSpecs(ASTList *decl_specs);
-int GetByteSizeOfDecl(ASTList *decl_specs, ASTDecltor *decltor);
 int GetStackSizeForContext(const Context *context);
 ASTLocalVar *AppendLocalVarInContext(Context *context, ASTList *decl_specs,
                                      ASTDecltor *decltor);

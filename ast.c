@@ -176,12 +176,6 @@ ASTNode* AllocAndInitASTExprFuncCall(ASTNode* func, ASTNode* args) {
   return ToASTNode(node);
 }
 
-ASTLocalVar* AllocAndInitASTLocalVar(int ofs_in_stack) {
-  ASTLocalVar* node = AllocASTLocalVar();
-  node->ofs_in_stack = ofs_in_stack;
-  return node;
-}
-
 const Token* GetIdentTokenFromDirectDecltor(ASTDirectDecltor* direct_decltor) {
   if (!direct_decltor) return NULL;
   if (direct_decltor->direct_decltor)
@@ -357,9 +351,9 @@ void PrintASTNode(ASTNode* node, int depth) {
     PrintfWithPadding(depth + 1, "label_number=%d", label->label_number);
   } else if (node->type == kASTLocalVar) {
     ASTLocalVar* var = ToASTLocalVar(node);
-    PrintfWithPadding(depth + 1, "size=%d", var->size);
-    PrintfWithPadding(depth + 1, "name=%s", var->name);
     PrintASTNodeWithName(depth + 1, "type=", ToASTNode(var->var_type));
+    PrintfWithPadding(depth + 1, "name=%s", var->name);
+    PrintfWithPadding(depth + 1, "ofs_in_stack=%d", var->ofs_in_stack);
   } else if (node->type == kASTType) {
     PrintASTType(ToASTType(node));
     putchar(')');

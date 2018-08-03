@@ -24,33 +24,13 @@ ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident) {
   return FindIdentInContext(context->parent, ident);
 }
 
-int GetByteSizeOfDeclSpecs(ASTList *decl_specs) {
-  if (GetSizeOfASTList(decl_specs) == 1) {
-    ASTKeyword *kw = ToASTKeyword(GetASTNodeAt(decl_specs, 0));
-    if (!kw) Error("decl_specs should have a ASTkeyword.");
-    if (IsEqualToken(kw->token, "char")) {
-      return 1;
-    } else if (IsEqualToken(kw->token, "int")) {
-      return 8;
-    }
-    Error("Not implemented decl_spec %s", kw->token->str);
-  }
-  Error("Not supported decl_specs consist of multiple tokens");
-  return -1;
-}
-
-int GetByteSizeOfDecl(ASTList *decl_specs, ASTDecltor *decltor) {
-  if (decltor->pointer) return 8;
-  return GetByteSizeOfDeclSpecs(decl_specs);
-}
-
 int GetStackSizeForContext(const Context *context) {
   int size = 0;
   for (int i = 0; i < GetSizeOfASTDict(context->dict); i++) {
     ASTLocalVar *local_var =
         ToASTLocalVar(GetASTNodeInDictAt(context->dict, i));
     if (!local_var) Error("GetStackSizeForContext: local_var is NULL");
-    size += local_var->size;
+    size += GetSizeOfType(local_var->var_type);
   }
   return size;
 }
@@ -58,15 +38,14 @@ int GetStackSizeForContext(const Context *context) {
 ASTLocalVar *AppendLocalVarInContext(Context *context, ASTList *decl_specs,
                                      ASTDecltor *decltor) {
   const Token *ident_token = GetIdentTokenFromDecltor(decltor);
-  int size = GetByteSizeOfDecl(decl_specs, decltor);
-  int ofs_in_stack = GetStackSizeForContext(context) + size;
-  printf("LocalVar[\"%s\"] ofs_in_stack = %d, size = %d\n", ident_token->str,
-         ofs_in_stack, size);
-  ASTLocalVar *local_var = AllocAndInitASTLocalVar(ofs_in_stack);
-  local_var->size = size;
+  ASTLocalVar *local_var = AllocASTLocalVar();
   local_var->name = ident_token->str;
   local_var->var_type = AllocAndInitASTType(decl_specs, decltor);
+  local_var->ofs_in_stack =
+      GetStackSizeForContext(context) + GetSizeOfType(local_var->var_type);
   AppendASTNodeToDict(context->dict, ident_token->str, ToASTNode(local_var));
+  PrintASTNode(ToASTNode(local_var), 0);
+  putchar('\n');
   return local_var;
 }
 
