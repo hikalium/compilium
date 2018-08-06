@@ -30,8 +30,16 @@ int GetLabelNumber() {
 }
 
 int next_spill_index = 1;
-int NewSpillIndex(void) { return next_spill_index++; }
+int num_of_spill_entries;
+int NewSpillIndex(void) {
+  if (next_spill_index > num_of_spill_entries) {
+    Error("No more spill entries");
+  }
+  return next_spill_index++;
+}
 void ResetSpillIndex(void) { next_spill_index = 1; }
+void SetNumOfSpillEntries(int num) { num_of_spill_entries = num; }
+int GetByteSizeOfSpillArea(void) { return num_of_spill_entries * 8; }
 
 Register *RealRegToVirtualReg[NUM_OF_SCRATCH_REGS + 1];
 int RealRegRefOrder[NUM_OF_SCRATCH_REGS + 1];
@@ -163,12 +171,18 @@ void GenerateFuncEpilogue(FILE *fp) {
   fprintf(fp, "ret\n");
 }
 
-int func_param_requested = 0;
-int call_param_used = 0;
-// TODO: local_var_base_in_stack should be determined automatically
-int local_var_base_in_stack = 512;
-
 void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
+  // Stack layout:
+  // qword [rbp]: return address
+  // qword [rbp - 8 * i]: ith spill area
+  // qword [rbp - GetByteSizeOfSpillArea()]: last spill area
+  //
+  // nth local variable can be accessed as [rbp - 8 * n] (n is one based)
+  // push qword: SS[rsp -= 8] = data64;
+  // pop qword: data64 = SS[rsp]; rsp += 8;
+  int func_param_requested = 0;
+  int call_param_used = 0;
+
   fputs(".intel_syntax noprefix\n", fp);
   // generate func symbol
   for (int i = 0; i < GetSizeOfASTList(il); i++) {
@@ -193,11 +207,10 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
     }
     switch (op->op) {
       case kILOpFuncBegin: {
-        // nth local variable can be accessed as [rbp - 8 * n] (n is one based)
-        // push qword: SS[rsp -= 8] = data64;
-        // pop qword: data64 = SS[rsp]; rsp += 8;
         ClearRegisterAllocation();
         ResetSpillIndex();
+        // TODO: The number of spill entries should be determined automatically
+        SetNumOfSpillEntries(64);
         func_param_requested = 0;
         ASTFuncDef *func_def = ToASTFuncDef(op->ast_node);
         const char *func_name = GetFuncNameTokenFromFuncDef(func_def)->str;
@@ -211,7 +224,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "mov     rax, 0xf\n");
         fprintf(fp, "not     rax\n");
         fprintf(fp, "sub     rsp, %d\n",
-                local_var_base_in_stack +
+                GetByteSizeOfSpillArea() +
                     GetStackSizeForContext(func_def->context));
         fprintf(fp, "and     rsp, rax\n");
       } break;
@@ -483,7 +496,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         const char *dst = AssignRegister(fp, op->dst);
         ASTLocalVar *var = ToASTLocalVar(op->ast_node);
         if (!var) Error("var is not an ASTLocalVar");
-        int byte_ofs = var->ofs_in_stack + local_var_base_in_stack;
+        int byte_ofs = var->ofs_in_stack + GetByteSizeOfSpillArea();
         fprintf(fp, "lea %s, [rbp - %d] # local_var[%s]\n", dst, byte_ofs,
                 var->name);
       } break;
