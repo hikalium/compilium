@@ -7,7 +7,7 @@ int next_vreg_id = 1;
 Register *AllocRegister() {
   Register *reg = malloc(sizeof(Register));
   reg->vreg_id = next_vreg_id++;
-  reg->save_label_num = 0;
+  reg->spill_index = 0;
   reg->real_reg = 0;
   return reg;
 }

@@ -124,7 +124,7 @@ typedef struct AST_TYPE ASTType;
 
 typedef struct {
   int vreg_id;
-  int save_label_num;
+  int spill_index;
   int real_reg;
 } Register;
 
