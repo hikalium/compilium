@@ -172,7 +172,8 @@ void GenerateFuncEpilogue(FILE *fp) {
 
 int func_param_requested = 0;
 int call_param_used = 0;
-int local_var_base_in_stack = 256;
+// TODO: local_var_base_in_stack should be determined automatically
+int local_var_base_in_stack = 512;
 
 void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
   fputs(".intel_syntax noprefix\n", fp);
@@ -232,6 +233,17 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         const char *left = AssignRegister(fp, op->left);
         const char *dst = AssignRegister(fp, op->dst);
         fprintf(fp, "mov %s, [%s]\n", dst, left);
+      } break;
+      case kILOpStore8: {
+        // TODO: dst can be any registers which can access as a byte reg
+        AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
+        const char *dst = AssignRegister(fp, op->dst);
+        fprintf(fp, "mov [%s], al\n", dst);
+      } break;
+      case kILOpStore64: {
+        const char *left = AssignRegister(fp, op->left);
+        const char *dst = AssignRegister(fp, op->dst);
+        fprintf(fp, "mov [%s], %s\n", dst, left);
       } break;
       case kILOpLoadImm: {
         const char *dst_name = AssignRegister(fp, op->dst);
@@ -473,22 +485,6 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
         call_param_used = 0;
       } break;
-      case kILOpWriteLocalVar: {
-        const char *right = AssignRegister(fp, op->right);
-        ASTLocalVar *var = ToASTLocalVar(op->ast_node);
-        if (!var) Error("var is not an ASTLocalVar");
-        int byte_ofs = var->ofs_in_stack + local_var_base_in_stack;
-        fprintf(fp, "mov [rbp - %d], %s # local_var[%s]\n", byte_ofs, right,
-                var->name);
-      } break;
-      case kILOpReadLocalVar: {
-        const char *dst = AssignRegister(fp, op->dst);
-        ASTLocalVar *var = ToASTLocalVar(op->ast_node);
-        if (!var) Error("var is not an ASTLocalVar");
-        int byte_ofs = var->ofs_in_stack + local_var_base_in_stack;
-        fprintf(fp, "mov %s, [rbp - %d] # local_var[%s]\n", dst, byte_ofs,
-                var->name);
-      } break;
       case kILOpLoadLocalVarAddr: {
         const char *dst = AssignRegister(fp, op->dst);
         ASTLocalVar *var = ToASTLocalVar(op->ast_node);
@@ -501,8 +497,8 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         ASTLabel *label = ToASTLabel(op->ast_node);
         if (!label) Error("Label is null");
         if (!label->label_number) label->label_number = GetLabelNumber();
-        fprintf(fp, "L%d:\n", label->label_number);
         SpillAllRealRegisters(fp);
+        fprintf(fp, "L%d:\n", label->label_number);
       } break;
       case kILOpJmp: {
         ASTLabel *label = ToASTLabel(op->ast_node);

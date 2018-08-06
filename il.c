@@ -15,6 +15,7 @@ Register *AllocRegister() {
 const char *ILOpTypeName[kNumOfILOpFunc];
 
 void InitILOpTypeName() {
+  ILOpTypeName[kILOpNop] = "Nop";
   ILOpTypeName[kILOpAdd] = "Add";
   ILOpTypeName[kILOpSub] = "Sub";
   ILOpTypeName[kILOpMul] = "Mul";
@@ -23,22 +24,25 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpAnd] = "And";
   ILOpTypeName[kILOpXor] = "Xor";
   ILOpTypeName[kILOpOr] = "Or";
-  ILOpTypeName[kILOpAnd] = "Not";
+  ILOpTypeName[kILOpNot] = "Not";
   ILOpTypeName[kILOpNegate] = "Negate";
   ILOpTypeName[kILOpLogicalAnd] = "LogicalAnd";
   ILOpTypeName[kILOpLogicalOr] = "LogicalOr";
+  ILOpTypeName[kILOpLogicalNot] = "LogicalNot";
+  ILOpTypeName[kILOpShiftLeft] = "ShiftLeft";
+  ILOpTypeName[kILOpShiftRight] = "ShiftRight";
+  ILOpTypeName[kILOpIncrement] = "Increment";
+  ILOpTypeName[kILOpDecrement] = "Decrement";
   ILOpTypeName[kILOpCmpG] = "CmpG";
   ILOpTypeName[kILOpCmpGE] = "CmpGE";
   ILOpTypeName[kILOpCmpL] = "CmpL";
   ILOpTypeName[kILOpCmpLE] = "CmpLE";
   ILOpTypeName[kILOpCmpE] = "CmpE";
   ILOpTypeName[kILOpCmpNE] = "CmpNE";
-  ILOpTypeName[kILOpShiftLeft] = "ShiftLeft";
-  ILOpTypeName[kILOpShiftRight] = "ShiftRight";
-  ILOpTypeName[kILOpIncrement] = "Increment";
-  ILOpTypeName[kILOpDecrement] = "Decrement";
   ILOpTypeName[kILOpLoad8] = "Load8";
   ILOpTypeName[kILOpLoad64] = "Load64";
+  ILOpTypeName[kILOpStore8] = "Store8";
+  ILOpTypeName[kILOpStore64] = "Store64";
   ILOpTypeName[kILOpLoadImm] = "LoadImm";
   ILOpTypeName[kILOpLoadIdent] = "LoadIdent";
   ILOpTypeName[kILOpLoadArg] = "LoadArg";
@@ -46,13 +50,12 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpFuncEnd] = "FuncEnd";
   ILOpTypeName[kILOpReturn] = "Return";
   ILOpTypeName[kILOpCall] = "Call";
-  ILOpTypeName[kILOpWriteLocalVar] = "WriteLocalVar";
-  ILOpTypeName[kILOpReadLocalVar] = "ReadLocalVar";
+  ILOpTypeName[kILOpCallParam] = "CallParam";
   ILOpTypeName[kILOpLoadLocalVarAddr] = "LoadLocalVarAddr";
   ILOpTypeName[kILOpLabel] = "Label";
   ILOpTypeName[kILOpJmp] = "Jmp";
   ILOpTypeName[kILOpJmpIfZero] = "JmpIfZero";
-  ILOpTypeName[kILOpJmpIfNotZero] = "JmpIfZero";
+  ILOpTypeName[kILOpJmpIfNotZero] = "JmpIfNotZero";
   ILOpTypeName[kILOpSetLogicalValue] = "SetLogicalValue";
 }
 
@@ -98,12 +101,20 @@ void GenerateILForFuncDef(ASTList *il, Register *dst, ASTNode *node) {
 
   if (param_decl_list) {
     PrintASTNode(ToASTNode(param_decl_list), 0);
+    // TODO: Simplify this
+    Register *var_regs[8];
+    ASTLocalVar *local_vars[8];
     for (int i = 0; i < GetSizeOfASTList(param_decl_list); i++) {
-      ASTLocalVar *local_var = ToASTLocalVar(GetASTNodeAt(param_decl_list, i));
-      Register *var_reg = AllocRegister();
-      EmitILOp(il, kILOpLoadArg, var_reg, NULL, NULL, NULL);
-      EmitILOp(il, kILOpWriteLocalVar, var_reg, NULL, var_reg,
-               ToASTNode(local_var));
+      local_vars[i] = ToASTLocalVar(GetASTNodeAt(param_decl_list, i));
+      var_regs[i] = AllocRegister();
+      EmitILOp(il, kILOpLoadArg, var_regs[i], NULL, NULL,
+               ToASTNode(local_vars[i]));
+    }
+    for (int i = 0; i < GetSizeOfASTList(param_decl_list); i++) {
+      Register *var_addr = AllocRegister();
+      EmitILOp(il, kILOpLoadLocalVarAddr, var_addr, NULL, NULL,
+               ToASTNode(local_vars[i]));
+      EmitILOp(il, kILOpStore64, var_addr, var_regs[i], NULL, NULL);
     }
   }
   GenerateILForCompStmt(il, AllocRegister(), ToASTNode(def->comp_stmt));
@@ -135,8 +146,10 @@ Register *GenerateILForAssignmentOp(ASTList *il, ASTNode *left,
                                     Register *rvalue) {
   ASTIdent *left_ident = ToASTIdent(left);
   if (left_ident->local_var) {
-    EmitILOp(il, kILOpWriteLocalVar, rvalue, NULL, rvalue,
+    Register *var_addr = AllocRegister();
+    EmitILOp(il, kILOpLoadLocalVarAddr, var_addr, NULL, NULL,
              ToASTNode(left_ident->local_var));
+    EmitILOp(il, kILOpStore64, var_addr, rvalue, NULL, NULL);
     return rvalue;
   }
   Error("Left operand of assignment should be an lvalue");
@@ -332,7 +345,9 @@ Register *GenerateILForExprFuncCall(ASTList *il, Register *dst, ASTNode *node) {
 }
 
 void GenerateILForLocalVar(ASTList *il, Register *dst, ASTNode *node) {
-  EmitILOp(il, kILOpReadLocalVar, dst, NULL, NULL, node);
+  Register *var_addr = AllocRegister();
+  EmitILOp(il, kILOpLoadLocalVarAddr, var_addr, NULL, NULL, node);
+  EmitILOp(il, kILOpLoad64, dst, var_addr, NULL, NULL);
 }
 
 void GenerateILForExprStmt(ASTList *il, Register *dst, ASTNode *node) {
