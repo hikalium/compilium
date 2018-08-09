@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -195,6 +196,7 @@ Register *GenerateILForExprUnaryPreOp(ASTList *il, Register *dst,
   } else if (IsEqualToken(op->op, "*")) {
     GenerateILFor(il, rvalue, op->expr);
     ASTIdent *left_ident = ToASTIdent(op->expr);
+    assert(left_ident);
     ASTLocalVar *local_var = left_ident->local_var;
     if (local_var) {
       int size = GetSizeOfType(GetDereferencedTypeOf(local_var->var_type));
