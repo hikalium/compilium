@@ -3,17 +3,11 @@
 
 #include "compilium.h"
 
-typedef enum {
-  kTypeNone,
-  kTypePointerOf,
-  kTypeChar,
-  kTypeInt,
-} BasicType;
-
 struct AST_TYPE {
   ASTNodeType type;
   BasicType basic_type;
   ASTType *pointer_of;
+  ASTType *lvalue_of;
 };
 
 GenToAST(Type);
@@ -29,6 +23,13 @@ ASTType *AllocAndInitASTTypePointerOf(ASTType *pointer_of) {
   ASTType *node = AllocASTType();
   node->basic_type = kTypePointerOf;
   node->pointer_of = pointer_of;
+  return node;
+}
+
+ASTType *AllocAndInitASTTypeLValueOf(ASTType *lvalue_of) {
+  ASTType *node = AllocASTType();
+  node->basic_type = kTypeLValueOf;
+  node->lvalue_of = lvalue_of;
   return node;
 }
 
@@ -54,7 +55,33 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
   return node;
 }
 
+int IsEqualASTType(ASTType *a, ASTType *b) {
+  a = GetRValueTypeOf(a);
+  b = GetRValueTypeOf(b);
+  while (1) {
+    if (!a || !b) return 0;
+    if (a->basic_type != b->basic_type) return 0;
+    if (a->basic_type != kTypePointerOf) break;
+    a = a->pointer_of;
+    b = b->pointer_of;
+  }
+  return 1;
+}
+
+int IsBasicType(ASTType *node, BasicType type) {
+  return node && node->basic_type == type;
+}
+
+ASTType *GetRValueTypeOf(ASTType *node) {
+  if (!node) return NULL;
+  if (node->basic_type == kTypeLValueOf) {
+    return node->lvalue_of;
+  }
+  return node;
+}
+
 ASTType *GetDereferencedTypeOf(ASTType *node) {
+  node = GetRValueTypeOf(node);
   if (node->basic_type == kTypePointerOf) {
     return node->pointer_of;
   }
@@ -77,7 +104,12 @@ int GetSizeOfType(ASTType *node) {
 }
 
 void PrintASTType(ASTType *node) {
-  if (node->basic_type == kTypePointerOf) {
+  if (!node) {
+    printf("(null)");
+  } else if (node->basic_type == kTypeLValueOf) {
+    printf("lvalue_of ");
+    PrintASTType(node->lvalue_of);
+  } else if (node->basic_type == kTypePointerOf) {
     PrintASTType(node->pointer_of);
     putchar('*');
   } else if (node->basic_type == kTypeChar) {

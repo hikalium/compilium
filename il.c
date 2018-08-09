@@ -195,21 +195,15 @@ Register *GenerateILForExprUnaryPreOp(ASTList *il, Register *dst,
     return dst;
   } else if (IsEqualToken(op->op, "*")) {
     GenerateILFor(il, rvalue, op->expr);
-    ASTIdent *left_ident = ToASTIdent(op->expr);
-    assert(left_ident);
-    ASTLocalVar *local_var = left_ident->local_var;
-    if (local_var) {
-      int size = GetSizeOfType(GetDereferencedTypeOf(local_var->var_type));
-      printf("size after deref = %d\n", size);
-      if (size == 8) {
-        EmitILOp(il, kILOpLoad64, dst, rvalue, NULL, node);
-        return dst;
-      } else if (size == 1) {
-        EmitILOp(il, kILOpLoad8, dst, rvalue, NULL, node);
-        return dst;
-      }
-      Error("Deref of size %d is not implemented", size);
+    int size = GetSizeOfType(op->expr_type);
+    if (size == 8) {
+      EmitILOp(il, kILOpLoad64, dst, rvalue, NULL, node);
+      return dst;
+    } else if (size == 1) {
+      EmitILOp(il, kILOpLoad8, dst, rvalue, NULL, node);
+      return dst;
     }
+    Error("Deref of size %d is not implemented", size);
   }
   Error("GenerateILForExprUnaryPreOp: Not impl %s", op->op->str);
   return NULL;

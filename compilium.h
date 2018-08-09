@@ -62,6 +62,14 @@ typedef enum {
 } ASTNodeType;
 
 typedef enum {
+  kTypeNone,
+  kTypeLValueOf,
+  kTypePointerOf,
+  kTypeChar,
+  kTypeInt,
+} BasicType;
+
+typedef enum {
   kILOpNop,
   kILOpAdd,
   kILOpSub,
@@ -164,6 +172,7 @@ typedef struct {
   ASTNodeType type;
   const Token *op;
   ASTNode *expr;
+  ASTType *expr_type;
 } ASTExprUnaryPreOp;
 
 typedef struct {
@@ -177,6 +186,7 @@ typedef struct {
   const Token *op;
   ASTNode *left;
   ASTNode *right;
+  ASTType *var_type;
 } ASTExprBinOp;
 
 typedef struct {
@@ -251,6 +261,7 @@ typedef struct {
   ASTNodeType type;
   const Token *token;
   ASTLocalVar *local_var;
+  ASTType *var_type;
 } ASTIdent;
 
 typedef struct AST_DIRECT_DECLTOR ASTDirectDecltor;
@@ -452,7 +463,13 @@ void Tokenize(TokenList *tokens, const char *p, const char *filename);
 // @type.c
 DefToAST(Type);
 DefAllocAST(Type);
+ASTType *AllocAndInitBasicType(BasicType basic_type);
+ASTType *AllocAndInitASTTypePointerOf(ASTType *pointer_of);
+ASTType *AllocAndInitASTTypeLValueOf(ASTType *lvalue_of);
 ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor);
+int IsEqualASTType(ASTType *a, ASTType *b);
+int IsBasicType(ASTType *node, BasicType type);
+ASTType *GetRValueTypeOf(ASTType *node);
 ASTType *GetDereferencedTypeOf(ASTType *node);
 int GetSizeOfType(ASTType *node);
 void PrintASTType(ASTType *node);

@@ -259,6 +259,8 @@ void PrintASTNode(ASTNode* node, int depth) {
   } else if (node->type == kASTExprUnaryPreOp) {
     ASTExprUnaryPreOp* expr_unary_pre_op = ToASTExprUnaryPreOp(node);
     PrintTokenWithName(depth + 1, "op=", expr_unary_pre_op->op);
+    PrintASTNodeWithName(depth + 1,
+                         "expr_type=", ToASTNode(expr_unary_pre_op->expr_type));
     PrintASTNodeWithName(depth + 1, "expr=", expr_unary_pre_op->expr);
   } else if (node->type == kASTExprUnaryPostOp) {
     ASTExprUnaryPostOp* expr_unary_post_op = ToASTExprUnaryPostOp(node);
@@ -267,6 +269,8 @@ void PrintASTNode(ASTNode* node, int depth) {
   } else if (node->type == kASTExprBinOp) {
     ASTExprBinOp* expr_bin_op = ToASTExprBinOp(node);
     PrintTokenWithName(depth + 1, "op=", expr_bin_op->op);
+    PrintASTNodeWithName(depth + 1,
+                         "var_type=", ToASTNode(expr_bin_op->var_type));
     PrintASTNodeWithName(depth + 1, "left=", expr_bin_op->left);
     PrintASTNodeWithName(depth + 1, "right=", expr_bin_op->right);
   } else if (node->type == kASTExprFuncCall) {
@@ -332,6 +336,7 @@ void PrintASTNode(ASTNode* node, int depth) {
   } else if (node->type == kASTIdent) {
     ASTIdent* ident = ToASTIdent(node);
     PrintTokenWithName(depth + 1, "token=", ident->token);
+    PrintASTNodeWithName(depth + 1, "var_type=", ToASTNode(ident->var_type));
     PrintASTNodeWithName(depth + 1, "local_var=", ToASTNode(ident->local_var));
   } else if (node->type == kASTDecl) {
     ASTDecl* decl = ToASTDecl(node);
