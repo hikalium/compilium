@@ -81,7 +81,6 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
   // postfix-expression:
   //   primary-expression
   //   postfix-expression ( argument-expression-list_opt )
-  // TODO: not completed
   const static char *ops[] = {"++", "--", NULL};
   ASTNode *last = ParsePrimaryExpr(stream);
   if (!last) return NULL;
@@ -275,7 +274,6 @@ ASTNode *ParseSelectionStmt(TokenStream *stream) {
 }
 
 ASTNode *ParseStmt(TokenStream *stream) {
-  // 6.8
   // statement:
   //   labeled-statement
   //   compound-statement
@@ -309,22 +307,13 @@ ASTExprStmt *ParseExprStmt(TokenStream *stream) {
 #define MAX_NUM_OF_STATEMENTS_IN_BLOCK 64
 ASTCompStmt *ParseCompStmt(TokenStream *stream) {
   // compound-statement:
-  //   { block-item-list_opt }
-  //
-  // block-item:
-  //   declaration
-  //   statement
+  //   { [declaration | statement]* }
   if (!ConsumeToken(stream, "{")) return NULL;
   ASTList *stmt_list = AllocASTList(MAX_NUM_OF_STATEMENTS_IN_BLOCK);
   while (!IsNextToken(stream, "}")) {
     ASTNode *stmt = ToASTNode(ParseDecl(stream));
     if (!stmt) stmt = ParseStmt(stream);
     if (!stmt) break;
-
-    // printf("InCompStmt: ");
-    // PrintASTNode(stmt, 0);
-    // putchar('\n');
-
     PushASTNodeToList(stmt_list, stmt);
   }
   ASTCompStmt *comp_stmt = AllocASTCompStmt();
@@ -518,8 +507,8 @@ ASTNode *ParseFuncDef(TokenStream *stream) {
 
 #define MAX_NODES_IN_INIT_DECLTORS 8
 ASTList *ParseInitDecltors(TokenStream *stream) {
-  // declaration-specifiers
   // ASTList<ASTKeyword>
+  // declaration-specifiers
   return ParseCommaSeparatedList(stream, ParseDecltorNode);
 }
 
@@ -540,10 +529,10 @@ ASTDecl *ParseDecl(TokenStream *stream) {
 }
 
 #define MAX_NODES_IN_TRANSLATION_UNIT 64
-// ASTList<ASTFuncDef | ASTDecl>
 ASTList *ParseTranslationUnit(TokenStream *stream) {
+  // ASTList<ASTFuncDef | ASTDecl>
   // translation-unit:
-  //   [function-definition declaration]+
+  //   [function-definition | declaration]+
   ASTList *list = AllocASTList(MAX_NODES_IN_TRANSLATION_UNIT);
   ASTNode *node;
   for (;;) {
@@ -565,7 +554,6 @@ ASTList *ParseTranslationUnit(TokenStream *stream) {
   return list;
 }
 
-#define MAX_ROOT_NODES 64
 ASTNode *Parse(TokenList *tokens) {
   TokenStream *stream = AllocAndInitTokenStream(tokens);
   return ToASTNode(ParseTranslationUnit(stream));
