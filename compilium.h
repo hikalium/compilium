@@ -389,7 +389,8 @@ const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetFuncNameTokenFromFuncDef(ASTFuncDef *func_def);
 
-void PrintASTNode(ASTNode *node, int depth);
+void PrintASTNode(void *node, int depth);
+
 void PushASTNodeToList(ASTList *list, ASTNode *node);
 ASTNode *PopASTNodeFromList(ASTList *list);
 ASTNode *GetASTNodeAt(const ASTList *list, int index);
