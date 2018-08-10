@@ -65,3 +65,4 @@ test_statements 'int i; for(i = 0; i < 10; ++i){ if(i == 5) break; } return i;' 
 test_statements 'int n; n = 5; int *p; p = &n; n = 7; return *p;' 7
 test_statements 'char *p; p = "text"; return *p;' 116
 test_statements 'char *p; p = "text"; p++; return *p;' 101
+test_statements 'char *p; p = "text"; return *(p + 1);' 101

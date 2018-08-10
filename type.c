@@ -43,6 +43,8 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
     basic_type = kTypeInt;
   } else if (IsEqualToken(kw->token, "char")) {
     basic_type = kTypeChar;
+  } else if (IsEqualToken(kw->token, "void")) {
+    basic_type = kTypeChar;
   }
   if (basic_type == kTypeNone) {
     Error("Type %s is not implemented", kw->token->str);

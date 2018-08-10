@@ -28,7 +28,6 @@ typedef enum {
 } TokenType;
 
 typedef enum {
-  kASTFuncDecl,
   kASTFuncDef,
   kASTCompStmt,
   kASTExprUnaryPreOp,
@@ -65,6 +64,7 @@ typedef enum {
   kTypeNone,
   kTypeLValueOf,
   kTypePointerOf,
+  kTypeVoid,
   kTypeChar,
   kTypeInt,
 } BasicType;
@@ -156,12 +156,6 @@ typedef struct {
   ASTNodeType type;
   ASTList *root_list;
 } ASTRoot;
-
-typedef struct {
-  ASTNodeType type;
-  ASTNode *type_and_name;
-  ASTList *arg_list;
-} ASTFuncDecl;
 
 typedef struct {
   ASTNodeType type;
@@ -301,6 +295,7 @@ typedef struct {
   ASTDecltor *decltor;
   ASTCompStmt *comp_stmt;
   Context *context;
+  ASTType *return_type;
 } ASTFuncDef;
 
 struct AST_LOCAL_VAR {
@@ -323,7 +318,6 @@ void InitASTNodeTypeName();
 const char *GetASTNodeTypeName(ASTNode *node);
 
 ASTNode *ToASTNode(void *node);
-DefToAST(FuncDecl);
 DefToAST(FuncDef);
 DefToAST(CompStmt);
 DefToAST(ExprUnaryPreOp);
@@ -351,7 +345,6 @@ DefToAST(Dict);
 DefToAST(LocalVar);
 DefToAST(Label);
 
-DefAllocAST(FuncDecl);
 DefAllocAST(FuncDef);
 DefAllocAST(CompStmt);
 DefAllocAST(ExprUnaryPreOp);

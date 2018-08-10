@@ -27,7 +27,6 @@ struct AST_DICT {
 const char* ASTNodeTypeName[kNumOfASTNodeType];
 
 void InitASTNodeTypeName() {
-  ASTNodeTypeName[kASTFuncDecl] = "FuncDecl";
   ASTNodeTypeName[kASTFuncDef] = "FuncDef";
   ASTNodeTypeName[kASTCompStmt] = "CompStmt";
   ASTNodeTypeName[kASTExprUnaryPreOp] = "ExprUnaryPreOp";
@@ -64,7 +63,6 @@ const char* GetASTNodeTypeName(ASTNode* node) {
 
 ASTNode* ToASTNode(void* node) { return (ASTNode*)node; }
 
-GenToAST(FuncDecl);
 GenToAST(FuncDef);
 GenToAST(CompStmt);
 GenToAST(ExprUnaryPreOp);
@@ -92,7 +90,6 @@ GenToAST(Dict);
 GenToAST(LocalVar);
 GenToAST(Label);
 
-GenAllocAST(FuncDecl);
 GenAllocAST(FuncDef);
 GenAllocAST(CompStmt);
 GenAllocAST(ExprUnaryPreOp);
@@ -241,13 +238,10 @@ void PrintASTNode(ASTNode* node, int depth) {
     printf("(Unknown: %d)", node->type);
     return;
   }
-  if (node->type == kASTFuncDecl) {
-    ASTFuncDecl* func_decl = ToASTFuncDecl(node);
-    PrintASTNodeWithName(depth + 1, "type_and_name=", func_decl->type_and_name);
-    PrintASTNodeWithName(depth + 1,
-                         "arg_list=", ToASTNode(func_decl->arg_list));
-  } else if (node->type == kASTFuncDef) {
+  if (node->type == kASTFuncDef) {
     ASTFuncDef* func_def = ToASTFuncDef(node);
+    PrintASTNodeWithName(depth + 1,
+                         "return_type=", ToASTNode(func_def->return_type));
     PrintASTNodeWithName(depth + 1,
                          "decl_specs=", ToASTNode(func_def->decl_specs));
     PrintASTNodeWithName(depth + 1, "decltor=", ToASTNode(func_def->decltor));
