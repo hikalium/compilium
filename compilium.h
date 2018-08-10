@@ -434,14 +434,14 @@ Token *AllocTokenWithSubstring(const char *begin, const char *end,
                                TokenType type, const char *filename, int line);
 int IsEqualToken(const Token *token, const char *s);
 int IsTypeToken(const Token *token);
-void SetNumOfTokens(int num_of_tokens);
+void DebugPrintToken(const Token *token);
+void PrintToken(const Token *token);
+
 TokenList *AllocTokenList(int capacity);
 void AppendTokenToList(TokenList *list, const Token *token);
 const Token *GetTokenAt(const TokenList *list, int index);
 int GetSizeOfTokenList(const TokenList *list);
 void SetSizeOfTokenList(TokenList *list, int size);
-void DebugPrintToken(const Token *token);
-void PrintToken(const Token *token);
 void PrintTokenList(const TokenList *list);
 
 TokenStream *AllocAndInitTokenStream(const TokenList *list);
@@ -471,8 +471,8 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor);
 int IsEqualASTType(ASTType *a, ASTType *b);
 int IsBasicType(ASTType *node, BasicType type);
 ASTType *GetRValueTypeOf(ASTType *node);
-ASTType *ConvertFromArrayToPointer(ASTType *node);
 ASTType *GetDereferencedTypeOf(ASTType *node);
+ASTType *ConvertFromArrayToPointer(ASTType *node);
 int GetSizeOfType(ASTType *node);
 ASTType *GetExprTypeOfASTNode(ASTNode *node);
 void PrintASTType(ASTType *node);

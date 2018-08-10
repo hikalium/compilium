@@ -4,7 +4,7 @@
 
 #include "compilium.h"
 
-void InternalCopyTokenStr(Token *token, const char *s, size_t len) {
+static void CopyTokenStr(Token *token, const char *s, size_t len) {
   if (len >= MAX_TOKEN_LEN) {
     Error("Too long token");
   }
@@ -17,7 +17,7 @@ Token *AllocToken(const char *s, TokenType type) {
     Error("Trying to allocate a token with a null string");
   }
   Token *token = malloc(sizeof(Token));
-  InternalCopyTokenStr(token, s, strlen(s));
+  CopyTokenStr(token, s, strlen(s));
   token->type = type;
   return token;
 }
@@ -25,7 +25,7 @@ Token *AllocToken(const char *s, TokenType type) {
 Token *AllocTokenWithSubstring(const char *begin, const char *end,
                                TokenType type, const char *filename, int line) {
   Token *token = malloc(sizeof(Token));
-  InternalCopyTokenStr(token, begin, end - begin);
+  CopyTokenStr(token, begin, end - begin);
   token->type = type;
   token->filename = filename;
   token->line = line;
@@ -68,10 +68,8 @@ TokenList *AllocTokenList(int capacity) {
   return list;
 }
 
-int IsTokenListFull(TokenList *list) { return (list->size >= list->capacity); }
-
 void AppendTokenToList(TokenList *list, const Token *token) {
-  if (IsTokenListFull(list)) {
+  if (list->size >= list->capacity) {
     Error("No more space in TokenList");
   }
   list->tokens[list->size++] = token;
