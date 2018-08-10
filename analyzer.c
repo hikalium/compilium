@@ -169,6 +169,9 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     if (IsEqualToken(op->op, "*")) {
       op->expr_type = GetDereferencedTypeOf(op->expr_type);
       return op->expr_type;
+    } else if (IsEqualToken(op->op, "sizeof")) {
+      op->expr_type = AllocAndInitBasicType(kTypeInt);
+      return op->expr_type;
     }
     op->expr_type = GetRValueTypeOf(op->expr_type);
     return op->expr_type;

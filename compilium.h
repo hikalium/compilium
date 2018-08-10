@@ -64,6 +64,7 @@ typedef enum {
   kTypeNone,
   kTypeLValueOf,
   kTypePointerOf,
+  kTypeArrayOf,
   kTypeVoid,
   kTypeChar,
   kTypeInt,
@@ -262,6 +263,7 @@ typedef struct {
 typedef struct AST_DIRECT_DECLTOR ASTDirectDecltor;
 struct AST_DIRECT_DECLTOR {
   ASTNodeType type;
+  const Token *bracket_token;
   ASTDirectDecltor *direct_decltor;
   ASTNode *data;
 };
@@ -460,10 +462,12 @@ DefAllocAST(Type);
 ASTType *AllocAndInitBasicType(BasicType basic_type);
 ASTType *AllocAndInitASTTypePointerOf(ASTType *pointer_of);
 ASTType *AllocAndInitASTTypeLValueOf(ASTType *lvalue_of);
+ASTType *AllocAndInitASTTypeArrayOf(ASTType *array_of, int num_of_elements);
 ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor);
 int IsEqualASTType(ASTType *a, ASTType *b);
 int IsBasicType(ASTType *node, BasicType type);
 ASTType *GetRValueTypeOf(ASTType *node);
 ASTType *GetDereferencedTypeOf(ASTType *node);
 int GetSizeOfType(ASTType *node);
+int GetSizeOfTypeForASTNode(ASTNode *node);
 void PrintASTType(ASTType *node);

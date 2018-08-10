@@ -102,11 +102,20 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
 }
 
 ASTNode *ParseUnaryExpr(TokenStream *stream) {
-  const static char *ops[] = {"&", "*", "+", "-", "~", "!", "++", "--", NULL};
-  if (IsNextTokenInList(stream, ops)) {
+  const static char *ops_follows_cast_expr[] = {"&", "*",  "+",  "-", "~",
+                                                "!", "++", "--", NULL};
+  const static char *ops_follows_unary_expr[] = {"++", "--", "sizeof"};
+  if (IsNextTokenInList(stream, ops_follows_cast_expr)) {
     ASTExprUnaryPreOp *op = AllocASTExprUnaryPreOp();
     op->op = PopToken(stream);
     op->expr = ParseCastExpr(stream);
+    if (!op->expr) Error("op->expr expected");
+    return ToASTNode(op);
+  }
+  if (IsNextTokenInList(stream, ops_follows_unary_expr)) {
+    ASTExprUnaryPreOp *op = AllocASTExprUnaryPreOp();
+    op->op = PopToken(stream);
+    op->expr = ParseUnaryExpr(stream);
     if (!op->expr) Error("op->expr expected");
     return ToASTNode(op);
   }
@@ -397,11 +406,12 @@ ASTDirectDecltor *ParseDirectDecltor(TokenStream *stream) {
   }
 
   for (;;) {
+    ASTDirectDecltor *direct_decltor = AllocASTDirectDecltor();
+    direct_decltor->direct_decltor = last_direct_decltor;
+    direct_decltor->bracket_token = PeekToken(stream);
     if (ConsumeToken(stream, "(")) {
       if (ConsumeToken(stream, ")")) {
         // direct-declarator ( )
-        ASTDirectDecltor *direct_decltor = AllocASTDirectDecltor();
-        direct_decltor->direct_decltor = last_direct_decltor;
         direct_decltor->data = ToASTNode(ParseIdentList(stream));
         last_direct_decltor = direct_decltor;
         continue;
@@ -410,9 +420,12 @@ ASTDirectDecltor *ParseDirectDecltor(TokenStream *stream) {
       ASTList *list = ParseParamTypeList(stream);
       if (!list) Error("ParseParamTypeList should not be empty");
       ExpectToken(stream, ")");
-      ASTDirectDecltor *direct_decltor = AllocASTDirectDecltor();
-      direct_decltor->direct_decltor = last_direct_decltor;
       direct_decltor->data = ToASTNode(list);
+      last_direct_decltor = direct_decltor;
+      continue;
+    } else if (ConsumeToken(stream, "[")) {
+      direct_decltor->data = ParseAssignExpr(stream);
+      ExpectToken(stream, "]");
       last_direct_decltor = direct_decltor;
       continue;
     }

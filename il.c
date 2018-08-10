@@ -203,6 +203,11 @@ Register *GenerateILForExprUnaryPreOp(ASTList *il, Register *dst,
       return dst;
     }
     Error("Deref of size %d is not implemented", size);
+  } else if (IsEqualToken(op->op, "sizeof")) {
+    int size = GetSizeOfTypeForASTNode(op->expr);
+    EmitILOp(il, kILOpLoadImm, dst, NULL, NULL,
+             ToASTNode(AllocAndInitASTInteger(size)));
+    return dst;
   }
   Error("GenerateILForExprUnaryPreOp: Not impl %s", op->op->str);
   return NULL;

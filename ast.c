@@ -326,9 +326,11 @@ void PrintASTNode(ASTNode* node, int depth) {
                          "direct_decltor=", ToASTNode(decltor->direct_decltor));
   } else if (node->type == kASTDirectDecltor) {
     ASTDirectDecltor* direct_decltor = ToASTDirectDecltor(node);
+    PrintTokenWithName(depth + 1,
+                       "bracket_token=", direct_decltor->bracket_token);
+    PrintASTNodeWithName(depth + 1, "data=", direct_decltor->data);
     PrintASTNodeWithName(depth + 1, "direct_decltor=",
                          ToASTNode(direct_decltor->direct_decltor));
-    PrintASTNodeWithName(depth + 1, "data=", direct_decltor->data);
   } else if (node->type == kASTIdent) {
     ASTIdent* ident = ToASTIdent(node);
     PrintTokenWithName(depth + 1, "token=", ident->token);
