@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -78,17 +79,31 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
         PrintASTNode(node, 0);
         Error("right operand should be an int");
       }
-      bin_op->expr_type = GetRValueTypeOf(left_type);
+      bin_op->expr_type = left_type;
       return bin_op->expr_type;
     } else if (IsBasicType(right_type, kTypePointerOf)) {
       if (!IsBasicType(left_type, kTypeInt)) {
         PrintASTNode(node, 0);
         Error("left operand should be an int");
       }
-      bin_op->expr_type = GetRValueTypeOf(right_type);
+      bin_op->expr_type = right_type;
+      return bin_op->expr_type;
+    } else if (IsBasicType(left_type, kTypeArrayOf)) {
+      if (!IsBasicType(right_type, kTypeInt)) {
+        PrintASTNode(node, 0);
+        Error("right operand should be an int");
+      }
+      bin_op->expr_type = ConvertFromArrayToPointer(left_type);
+      return bin_op->expr_type;
+    } else if (IsBasicType(right_type, kTypeArrayOf)) {
+      if (!IsBasicType(left_type, kTypeInt)) {
+        PrintASTNode(node, 0);
+        Error("left operand should be an int");
+      }
+      bin_op->expr_type = ConvertFromArrayToPointer(right_type);
       return bin_op->expr_type;
     } else if (IsEqualASTType(left_type, right_type)) {
-      bin_op->expr_type = GetRValueTypeOf(left_type);
+      bin_op->expr_type = left_type;
       return bin_op->expr_type;
     }
     PrintASTNode(node, 0);
@@ -169,6 +184,10 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     if (IsEqualToken(op->op, "*")) {
       op->expr_type = GetDereferencedTypeOf(op->expr_type);
       return op->expr_type;
+    } else if (IsEqualToken(op->op, "&")) {
+      op->expr_type =
+          AllocAndInitASTTypePointerOf(GetRValueTypeOf(op->expr_type));
+      return op->expr_type;
     } else if (IsEqualToken(op->op, "sizeof")) {
       op->expr_type = AllocAndInitBasicType(kTypeInt);
       return op->expr_type;
@@ -188,7 +207,8 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     if (!IsEqualASTType(true_expr_type, false_expr_type)) {
       Error("expressions of condition-statement should have same types.");
     }
-    return GetRValueTypeOf(true_expr_type);
+    cond_stmt->expr_type = GetRValueTypeOf(true_expr_type);
+    return cond_stmt->expr_type;
   } else if (node->type == kASTWhileStmt) {
     ASTWhileStmt *stmt = ToASTWhileStmt(node);
     stmt->begin_label = AllocASTLabel();

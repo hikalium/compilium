@@ -113,6 +113,7 @@ typedef enum {
   kILOpJmpIfZero,
   kILOpJmpIfNotZero,
   kILOpSetLogicalValue,
+  kILOpAssign,
   //
   kNumOfILOpFunc
 } ILOpType;
@@ -217,6 +218,7 @@ typedef struct {
   ASTNode *cond_expr;
   ASTNode *true_expr;
   ASTNode *false_expr;
+  ASTType *expr_type;
 } ASTCondStmt;
 
 typedef struct {
@@ -467,7 +469,8 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor);
 int IsEqualASTType(ASTType *a, ASTType *b);
 int IsBasicType(ASTType *node, BasicType type);
 ASTType *GetRValueTypeOf(ASTType *node);
+ASTType *ConvertFromArrayToPointer(ASTType *node);
 ASTType *GetDereferencedTypeOf(ASTType *node);
 int GetSizeOfType(ASTType *node);
-int GetSizeOfTypeForASTNode(ASTNode *node);
+ASTType *GetExprTypeOfASTNode(ASTNode *node);
 void PrintASTType(ASTType *node);

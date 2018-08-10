@@ -62,6 +62,9 @@ ASTNode *ParsePrimaryExpr(TokenStream *stream) {
       Error("%s is not valid as integer.", s);
     }
     return ToASTNode(AllocAndInitASTInteger(n));
+  } else if (token->type == kCharacterLiteral) {
+    PopToken(stream);
+    return ToASTNode(AllocAndInitASTInteger(token->str[0]));
   } else if (token->type == kStringLiteral) {
     PopToken(stream);
     return ToASTNode(AllocAndInitASTString(token->str));
@@ -89,6 +92,16 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
       ASTList *arg_expr_list = ParseCommaSeparatedList(stream, ParseAssignExpr);
       ExpectToken(stream, ")");
       last = AllocAndInitASTExprFuncCall(last, ToASTNode(arg_expr_list));
+    } else if (ConsumeToken(stream, "[")) {
+      ASTNode *expr = ParseExpression(stream);
+      ExpectToken(stream, "]");
+
+      ASTExprUnaryPreOp *op = AllocASTExprUnaryPreOp();
+      op->op = AllocToken("*", kPunctuator);
+      op->expr =
+          AllocAndInitASTExprBinOp(AllocToken("+", kPunctuator), last, expr);
+
+      last = ToASTNode(op);
     } else if (IsNextTokenInList(stream, ops)) {
       ASTExprUnaryPostOp *op = AllocASTExprUnaryPostOp();
       op->op = PopToken(stream);

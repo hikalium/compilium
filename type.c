@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -102,15 +103,17 @@ ASTType *GetRValueTypeOf(ASTType *node) {
 
 ASTType *GetDereferencedTypeOf(ASTType *node) {
   node = GetRValueTypeOf(node);
-  if (node->basic_type == kTypePointerOf) {
-    return node->pointer_of;
-  }
-  Error("GetDereferencedTypeOf: Not implemented for basic_type %d",
-        node->basic_type);
-  return NULL;
+  assert((node->basic_type == kTypePointerOf));
+  return AllocAndInitASTTypeLValueOf(node->pointer_of);
+}
+
+ASTType *ConvertFromArrayToPointer(ASTType *node) {
+  assert(node->basic_type == kTypeArrayOf);
+  return AllocAndInitASTTypePointerOf(node->array_of);
 }
 
 int GetSizeOfType(ASTType *node) {
+  node = GetRValueTypeOf(node);
   if (node->basic_type == kTypePointerOf) {
     return 8;
   } else if (node->basic_type == kTypeArrayOf) {
@@ -125,16 +128,28 @@ int GetSizeOfType(ASTType *node) {
   return -1;
 }
 
-int GetSizeOfTypeForASTNode(ASTNode *node) {
-  if (!node) {
-    Error("GetSizeOfTypeForASTNode: Can not take size of NULL AST");
-  }
+ASTType *GetExprTypeOfASTNode(ASTNode *node) {
+  assert(node);
   if (node->type == kASTIdent) {
-    return GetSizeOfType(ToASTIdent(node)->local_var->var_type);
+    return ToASTIdent(node)->var_type;
+  } else if (node->type == kASTInteger) {
+    return AllocAndInitBasicType(kTypeInt);
+  } else if (node->type == kASTExprBinOp) {
+    return ToASTExprBinOp(node)->expr_type;
+  } else if (node->type == kASTExprUnaryPreOp) {
+    return ToASTExprUnaryPreOp(node)->expr_type;
+  } else if (node->type == kASTExprUnaryPostOp) {
+    return ToASTExprUnaryPostOp(node)->expr_type;
+  } else if (node->type == kASTString) {
+    return AllocAndInitASTTypePointerOf(AllocAndInitBasicType(kTypeChar));
+  } else if (node->type == kASTExprFuncCall) {
+    return AllocAndInitBasicType(kTypeInt);
+  } else if (node->type == kASTCondStmt) {
+    return ToASTCondStmt(node)->expr_type;
   }
   PrintASTNode(node, 0);
-  Error("GetSizeOfTypeForASTNode is not implemented for this AST type");
-  return -1;
+  Error("GetExprTypeOfASTNode is not implemented for this AST type");
+  return NULL;
 }
 
 void PrintASTType(ASTType *node) {

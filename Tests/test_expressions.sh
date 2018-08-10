@@ -9,6 +9,8 @@ function test_expression() {
 test_expression '0' 0
 test_expression '1' 1
 
+test_expression "'A'" 65
+
 test_expression '- -3' 3
 test_expression '+ +5' 5
 

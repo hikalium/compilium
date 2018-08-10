@@ -210,7 +210,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         ClearRegisterAllocation();
         ResetSpillIndex();
         // TODO: The number of spill entries should be determined automatically
-        SetNumOfSpillEntries(64);
+        SetNumOfSpillEntries(128);
         func_param_requested = 0;
         ASTFuncDef *func_def = ToASTFuncDef(op->ast_node);
         const char *func_name = GetFuncNameTokenFromFuncDef(func_def)->str;
@@ -539,6 +539,11 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "xor rax, rax\n");
         fprintf(fp, "cmp %s, 0\n", left);
         fprintf(fp, "setne al\n");
+      } break;
+      case kILOpAssign: {
+        const char *left = AssignRegister(fp, op->left);
+        const char *dst = AssignRegister(fp, op->dst);
+        fprintf(fp, "mov %s, %s\n", dst, left);
       } break;
       default:
         Error("Not implemented code generation for ILOp%s",
