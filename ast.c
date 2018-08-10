@@ -49,6 +49,8 @@ void InitASTNodeTypeName() {
   ASTNodeTypeName[kASTIdent] = "Ident";
   ASTNodeTypeName[kASTDecl] = "Decl";
   ASTNodeTypeName[kASTParamDecl] = "ParamDecl";
+  ASTNodeTypeName[kASTStructDecl] = "StructDecl";
+  ASTNodeTypeName[kASTStructSpec] = "StructSpec";
   ASTNodeTypeName[kASTPointer] = "Pointer";
   ASTNodeTypeName[kASTDict] = "Dict";
   ASTNodeTypeName[kASTLocalVar] = "LocalVar";
@@ -85,6 +87,8 @@ GenToAST(DirectDecltor);
 GenToAST(Ident);
 GenToAST(Decl);
 GenToAST(ParamDecl);
+GenToAST(StructDecl);
+GenToAST(StructSpec);
 GenToAST(Pointer);
 GenToAST(Dict);
 GenToAST(LocalVar);
@@ -120,6 +124,8 @@ GenAllocAST(DirectDecltor);
 GenAllocAST(Ident);
 GenAllocAST(Decl);
 GenAllocAST(ParamDecl);
+GenAllocAST(StructDecl);
+GenAllocAST(StructSpec);
 GenAllocAST(Pointer);
 
 ASTDict* AllocASTDict(int capacity) {
@@ -338,6 +344,17 @@ void PrintASTNode(void* node, int depth) {
     ASTParamDecl* param_decl = ToASTParamDecl(n);
     PrintASTNodeWithName(depth + 1, "decl_specs=", param_decl->decl_specs);
     PrintASTNodeWithName(depth + 1, "decltor=", param_decl->decltor);
+  } else if (n->type == kASTStructDecl) {
+    ASTStructDecl* struct_decl = ToASTStructDecl(n);
+    PrintASTNodeWithName(depth + 1,
+                         "spec_qual_list=", struct_decl->spec_qual_list);
+    PrintASTNodeWithName(
+        depth + 1, "struct_decltor_list=", struct_decl->struct_decltor_list);
+  } else if (n->type == kASTStructSpec) {
+    ASTStructSpec* struct_spec = ToASTStructSpec(n);
+    PrintTokenWithName(depth + 1, "ident=", struct_spec->ident);
+    PrintASTNodeWithName(depth + 1,
+                         "struct_decl_list=", struct_spec->struct_decl_list);
   } else if (n->type == kASTPointer) {
     ASTPointer* pointer = ToASTPointer(n);
     PrintASTNodeWithName(depth + 1, "pointer=", pointer->pointer);

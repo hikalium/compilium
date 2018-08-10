@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,27 +13,36 @@ ASTNode *ParseStmt(TokenStream *stream);
 ASTCompStmt *ParseCompStmt(TokenStream *stream);
 ASTNode *ParseCastExpr(TokenStream *stream);
 ASTNode *ParseExpression(TokenStream *stream);
+ASTKeyword *ParseTypeQual(TokenStream *stream);
+ASTNode *ParseTypeSpec(TokenStream *stream);
 
 // Utils
 
 #define MAX_NUM_OF_NODES_IN_COMMA_SEPARATED_LIST 8
-ASTList *ParseCommaSeparatedList(TokenStream *stream,
-                                 ASTNode *(elem_parser)(TokenStream *stream)) {
-  // elem [, elem]*
+ASTList *ParseListSeparatedByToken(TokenStream *stream,
+                                   ASTNode *(elem_parser)(TokenStream *stream),
+                                   const char *separator) {
+  // elem [separator elem]*
   ASTList *list = AllocASTList(MAX_NUM_OF_NODES_IN_COMMA_SEPARATED_LIST);
   ASTNode *node = elem_parser(stream);
   if (!node) return NULL;
   PushASTNodeToList(list, node);
   for (;;) {
-    if (!ConsumeToken(stream, ",")) break;
+    DebugPrintTokenStream(__func__, stream);
+    if (!ConsumeToken(stream, separator)) break;
     node = elem_parser(stream);
     if (!node) {
-      UnpopToken(stream);  // ","
+      UnpopToken(stream);  // push back a separator
       break;
     }
     PushASTNodeToList(list, node);
   }
   return list;
+}
+ASTList *ParseCommaSeparatedList(TokenStream *stream,
+                                 ASTNode *(elem_parser)(TokenStream *stream)) {
+  // elem [, elem]*
+  return ParseListSeparatedByToken(stream, elem_parser, ",");
 }
 
 ASTNode *ParseLeftAssocBinOp(TokenStream *stream,
@@ -472,17 +482,58 @@ ASTNode *ParseDecltorNode(TokenStream *stream) {
   return ToASTNode(ParseDecltor(stream));
 }
 
+#define MAX_NODES_IN_DECL_SPECS 4
+ASTList *ParseSpecQualList(TokenStream *stream) {
+  DebugPrintTokenStream(__func__, stream);
+  // specifier-qualifier-list:
+  //  [type-specifier type-qualifier]+
+  ASTList *list = AllocASTList(MAX_NODES_IN_DECL_SPECS);
+  ASTNode *node;
+  for (;;) {
+    node = ParseTypeSpec(stream);
+    if (!node) node = ToASTNode(ParseTypeQual(stream));
+    if (!node) break;
+    PushASTNodeToList(list, node);
+  }
+  if (GetSizeOfASTList(list) == 0) return NULL;
+  return list;
+}
+
+ASTNode *ParseStructDecl(TokenStream *stream) {
+  DebugPrintTokenStream(__func__, stream);
+  ASTList *spec_qual_list = ParseSpecQualList(stream);
+  if (!spec_qual_list) return NULL;
+  ASTList *struct_decltor_list =
+      ParseCommaSeparatedList(stream, ParseDecltorNode);
+
+  ASTStructDecl *struct_decl = AllocASTStructDecl();
+  struct_decl->spec_qual_list = spec_qual_list;
+  struct_decl->struct_decltor_list = struct_decltor_list;
+  return ToASTNode(struct_decl);
+}
+
 ASTNode *ParseTypeSpec(TokenStream *stream) {
   // type-specifier
-  // ASTKeyword | ASTSpec
-  // TODO: Impl struct cases (ASTSpec)
   const static char *single_token_type_specs[] = {"void", "char", "int", NULL};
-  if (!IsNextTokenInList(stream, single_token_type_specs)) {
-    return NULL;
+  if (IsNextTokenInList(stream, single_token_type_specs)) {
+    ASTKeyword *kw = AllocASTKeyword();
+    kw->token = PopToken(stream);
+    return ToASTNode(kw);
+  } else if (ConsumeToken(stream, "struct")) {
+    ASTStructSpec *struct_spec = AllocASTStructSpec();
+    if (!IsNextToken(stream, "{")) {
+      struct_spec->ident = PopToken(stream);
+      assert(struct_spec->ident);
+      if (!IsNextToken(stream, "{")) return ToASTNode(struct_spec);
+    }
+    ExpectToken(stream, "{");
+    struct_spec->struct_decl_list =
+        ParseListSeparatedByToken(stream, ParseStructDecl, ";");
+    ExpectToken(stream, ";");
+    ExpectToken(stream, "}");
+    return ToASTNode(struct_spec);
   }
-  ASTKeyword *kw = AllocASTKeyword();
-  kw->token = PopToken(stream);
-  return ToASTNode(kw);
+  return NULL;
 }
 
 ASTKeyword *ParseTypeQual(TokenStream *stream) {

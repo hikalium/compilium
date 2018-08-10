@@ -15,7 +15,7 @@ void Error(const char *fmt, ...) {
   exit(EXIT_FAILURE);
 }
 
-void ErrorWithASTNode(ASTNode *node, const char *fmt, ...) {
+void ErrorWithASTNode(void *node, const char *fmt, ...) {
   fflush(stdout);
   fprintf(stderr, "Error: ");
   va_list ap;

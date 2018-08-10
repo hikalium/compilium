@@ -49,6 +49,7 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
     Error("decl_specs contains 2 tokens or more is not supported");
   }
   ASTKeyword *kw = ToASTKeyword(GetASTNodeAt(decl_specs, 0));
+  if (!kw) ErrorWithASTNode(decl_specs, "decl_specs[0] is not a Keyword");
   BasicType basic_type = kTypeNone;
   if (IsEqualToken(kw->token, "int")) {
     basic_type = kTypeInt;

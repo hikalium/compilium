@@ -51,6 +51,8 @@ typedef enum {
   kASTDecl,
   kASTParamDecl,
   kASTPointer,
+  kASTStructDecl,
+  kASTStructSpec,
   //
   kASTDict,
   kASTLocalVar,
@@ -303,6 +305,18 @@ typedef struct {
   ASTType *return_type;
 } ASTFuncDef;
 
+typedef struct {
+  ASTNodeType type;
+  ASTList *spec_qual_list;
+  ASTList *struct_decltor_list;
+} ASTStructDecl;
+
+typedef struct {
+  ASTNodeType type;
+  const Token *ident;
+  ASTList *struct_decl_list;
+} ASTStructSpec;
+
 struct AST_LOCAL_VAR {
   ASTNodeType type;
   int ofs_in_stack;
@@ -345,6 +359,8 @@ DefToAST(DirectDecltor);
 DefToAST(Ident);
 DefToAST(Decl);
 DefToAST(ParamDecl);
+DefToAST(StructDecl);
+DefToAST(StructSpec);
 DefToAST(Pointer);
 DefToAST(Dict);
 DefToAST(LocalVar);
@@ -372,6 +388,8 @@ DefAllocAST(DirectDecltor);
 DefAllocAST(Ident);
 DefAllocAST(Decl);
 DefAllocAST(ParamDecl);
+DefAllocAST(StructDecl);
+DefAllocAST(StructSpec);
 DefAllocAST(Pointer);
 ASTDict *AllocASTDict(int capacity);
 DefAllocAST(LocalVar);
@@ -414,7 +432,7 @@ ASTLabel *GetBreakLabelInContext(Context *context);
 
 // @error.c
 void Error(const char *fmt, ...);
-void ErrorWithASTNode(ASTNode *node, const char *fmt, ...);
+void ErrorWithASTNode(void *node, const char *fmt, ...);
 void Warning(const char *fmt, ...);
 
 // @generate.c
