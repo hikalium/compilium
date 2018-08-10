@@ -4,10 +4,9 @@
 
 #include "compilium.h"
 
-ASTType *AnalyzeNode(ASTNode *node, Context *context) {
+static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
   printf("Analyzing AST%s...\n", GetASTNodeTypeName(node));
   if (node->type == kASTList) {
-    // translation-unit
     ASTList *list = ToASTList(node);
     for (int i = 0; i < GetSizeOfASTList(list); i++) {
       ASTNode *child_node = GetASTNodeAt(list, i);
@@ -24,7 +23,6 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     ASTDirectDecltor *args_decltor = def->decltor->direct_decltor;
     ASTList *param_decl_list = ToASTList(args_decltor->data);
     if (param_decl_list) {
-      PrintASTNode(ToASTNode(param_decl_list), 0);
       for (int i = 0; i < GetSizeOfASTList(param_decl_list); i++) {
         ASTParamDecl *param_decl =
             ToASTParamDecl(GetASTNodeAt(param_decl_list, i));
@@ -60,14 +58,9 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     ASTExprBinOp *bin_op = ToASTExprBinOp(node);
     ASTType *left_type = AnalyzeNode(bin_op->left, context);
     ASTType *right_type = AnalyzeNode(bin_op->right, context);
-    PrintASTType(left_type);
-    putchar('\n');
-    PrintASTType(right_type);
-    putchar('\n');
     if (IsEqualToken(bin_op->op, "=")) {
       if (!IsBasicType(left_type, kTypeLValueOf)) {
-        PrintASTNode(node, 0);
-        Error("left operand should be an lvalue");
+        ErrorWithASTNode(node, "left operand should be an lvalue");
       }
       bin_op->expr_type = GetRValueTypeOf(right_type);
       return bin_op->expr_type;
@@ -75,39 +68,27 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     left_type = GetRValueTypeOf(left_type);
     right_type = GetRValueTypeOf(right_type);
     if (IsBasicType(left_type, kTypePointerOf)) {
-      if (!IsBasicType(right_type, kTypeInt)) {
-        PrintASTNode(node, 0);
-        Error("right operand should be an int");
-      }
+      if (!IsBasicType(right_type, kTypeInt))
+        ErrorWithASTNode(node, "right operand should be an int");
       bin_op->expr_type = left_type;
-      return bin_op->expr_type;
     } else if (IsBasicType(right_type, kTypePointerOf)) {
-      if (!IsBasicType(left_type, kTypeInt)) {
-        PrintASTNode(node, 0);
-        Error("left operand should be an int");
-      }
+      if (!IsBasicType(left_type, kTypeInt))
+        ErrorWithASTNode(node, "left operand should be an int");
       bin_op->expr_type = right_type;
-      return bin_op->expr_type;
     } else if (IsBasicType(left_type, kTypeArrayOf)) {
-      if (!IsBasicType(right_type, kTypeInt)) {
-        PrintASTNode(node, 0);
-        Error("right operand should be an int");
-      }
+      if (!IsBasicType(right_type, kTypeInt))
+        ErrorWithASTNode(node, "right operand should be an int");
       bin_op->expr_type = ConvertFromArrayToPointer(left_type);
-      return bin_op->expr_type;
     } else if (IsBasicType(right_type, kTypeArrayOf)) {
-      if (!IsBasicType(left_type, kTypeInt)) {
-        PrintASTNode(node, 0);
-        Error("left operand should be an int");
-      }
+      if (!IsBasicType(left_type, kTypeInt))
+        ErrorWithASTNode(node, "left operand should be an int");
       bin_op->expr_type = ConvertFromArrayToPointer(right_type);
-      return bin_op->expr_type;
     } else if (IsEqualASTType(left_type, right_type)) {
       bin_op->expr_type = left_type;
-      return bin_op->expr_type;
+    } else {
+      ErrorWithASTNode(node, "Type check failed");
     }
-    PrintASTNode(node, 0);
-    Error("Type check failed for ASTExprBinOp");
+    return bin_op->expr_type;
   } else if (node->type == kASTInteger) {
     return AllocAndInitBasicType(kTypeInt);
   } else if (node->type == kASTString) {
@@ -148,9 +129,8 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
       return NULL;
     } else if (IsEqualToken(jump_stmt->kw->token, "break")) {
       ASTLabel *break_label = GetBreakLabelInContext(context);
-      if (!break_label) {
+      if (!break_label)
         Error("break-stmt should be used within iteration-stmt");
-      }
       jump_stmt->param = ToASTNode(break_label);
       return NULL;
     }
@@ -164,9 +144,8 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
   } else if (node->type == kASTExprFuncCall) {
     ASTExprFuncCall *expr_func_call = ToASTExprFuncCall(node);
     // TODO: support func pointer
-    if (expr_func_call->func->type != kASTIdent) {
+    if (expr_func_call->func->type != kASTIdent)
       Error("Calling non-labeled function is not implemented.");
-    }
     if (expr_func_call->args) {
       ASTList *arg_list = ToASTList(expr_func_call->args);
       if (!arg_list) Error("arg_list is not an ASTList");
@@ -176,23 +155,21 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
         AnalyzeNode(arg_node, context);
       }
     }
-    return AllocAndInitBasicType(
-        kTypeInt);  // ToDo: Support other types of return value
+    // TODO: Support other types of return value
+    return AllocAndInitBasicType(kTypeInt);
   } else if (node->type == kASTExprUnaryPreOp) {
     ASTExprUnaryPreOp *op = ToASTExprUnaryPreOp(node);
     op->expr_type = AnalyzeNode(op->expr, context);
     if (IsEqualToken(op->op, "*")) {
       op->expr_type = GetDereferencedTypeOf(op->expr_type);
-      return op->expr_type;
     } else if (IsEqualToken(op->op, "&")) {
       op->expr_type =
           AllocAndInitASTTypePointerOf(GetRValueTypeOf(op->expr_type));
-      return op->expr_type;
     } else if (IsEqualToken(op->op, "sizeof")) {
       op->expr_type = AllocAndInitBasicType(kTypeInt);
-      return op->expr_type;
+    } else {
+      op->expr_type = GetRValueTypeOf(op->expr_type);
     }
-    op->expr_type = GetRValueTypeOf(op->expr_type);
     return op->expr_type;
   } else if (node->type == kASTExprUnaryPostOp) {
     ASTExprUnaryPostOp *op = ToASTExprUnaryPostOp(node);
@@ -204,9 +181,8 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     AnalyzeNode(cond_stmt->cond_expr, context);
     ASTType *true_expr_type = AnalyzeNode(cond_stmt->true_expr, context);
     ASTType *false_expr_type = AnalyzeNode(cond_stmt->false_expr, context);
-    if (!IsEqualASTType(true_expr_type, false_expr_type)) {
+    if (!IsEqualASTType(true_expr_type, false_expr_type))
       Error("expressions of condition-statement should have same types.");
-    }
     cond_stmt->expr_type = GetRValueTypeOf(true_expr_type);
     return cond_stmt->expr_type;
   } else if (node->type == kASTWhileStmt) {
@@ -223,9 +199,8 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     SetBreakLabelInContext(context, org_break_label);
     return NULL;
   }
-  PrintASTNode(node, 0);
-  putchar('\n');
-  Error("Analyzing AST%s is not implemented.", GetASTNodeTypeName(node));
+  ErrorWithASTNode(node, "Analyzing AST%s is not implemented.",
+                   GetASTNodeTypeName(node));
   return NULL;
 }
 

@@ -1,8 +1,8 @@
 #include <stdarg.h>
 #include <stdio.h>
+#include <stdlib.h>
 
-void exit(int);
-#define EXIT_FAILURE 1
+#include "compilium.h"
 
 void Error(const char *fmt, ...) {
   fflush(stdout);
@@ -13,6 +13,20 @@ void Error(const char *fmt, ...) {
   vfprintf(stderr, fmt, ap);
   va_end(ap);
   fputc('\n', stderr);
+  exit(EXIT_FAILURE);
+}
+
+void ErrorWithASTNode(ASTNode *node, const char *fmt, ...) {
+  fflush(stdout);
+
+  fprintf(stderr, "Error: ");
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  va_end(ap);
+  fputc('\n', stderr);
+  PrintASTNode(node, 0);
+  putchar('\n');
   exit(EXIT_FAILURE);
 }
 
