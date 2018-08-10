@@ -259,12 +259,14 @@ void PrintASTNode(ASTNode* node, int depth) {
   } else if (node->type == kASTExprUnaryPostOp) {
     ASTExprUnaryPostOp* expr_unary_post_op = ToASTExprUnaryPostOp(node);
     PrintTokenWithName(depth + 1, "op=", expr_unary_post_op->op);
+    PrintASTNodeWithName(
+        depth + 1, "expr_type=", ToASTNode(expr_unary_post_op->expr_type));
     PrintASTNodeWithName(depth + 1, "expr=", expr_unary_post_op->expr);
   } else if (node->type == kASTExprBinOp) {
     ASTExprBinOp* expr_bin_op = ToASTExprBinOp(node);
     PrintTokenWithName(depth + 1, "op=", expr_bin_op->op);
     PrintASTNodeWithName(depth + 1,
-                         "var_type=", ToASTNode(expr_bin_op->var_type));
+                         "expr_type=", ToASTNode(expr_bin_op->expr_type));
     PrintASTNodeWithName(depth + 1, "left=", expr_bin_op->left);
     PrintASTNodeWithName(depth + 1, "right=", expr_bin_op->right);
   } else if (node->type == kASTExprFuncCall) {

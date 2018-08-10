@@ -68,8 +68,8 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
         PrintASTNode(node, 0);
         Error("left operand should be an lvalue");
       }
-      bin_op->var_type = GetRValueTypeOf(right_type);
-      return bin_op->var_type;
+      bin_op->expr_type = GetRValueTypeOf(right_type);
+      return bin_op->expr_type;
     }
     left_type = GetRValueTypeOf(left_type);
     right_type = GetRValueTypeOf(right_type);
@@ -78,18 +78,18 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
         PrintASTNode(node, 0);
         Error("right operand should be an int");
       }
-      bin_op->var_type = GetRValueTypeOf(left_type);
-      return bin_op->var_type;
+      bin_op->expr_type = GetRValueTypeOf(left_type);
+      return bin_op->expr_type;
     } else if (IsBasicType(right_type, kTypePointerOf)) {
       if (!IsBasicType(left_type, kTypeInt)) {
         PrintASTNode(node, 0);
         Error("left operand should be an int");
       }
-      bin_op->var_type = GetRValueTypeOf(right_type);
-      return bin_op->var_type;
+      bin_op->expr_type = GetRValueTypeOf(right_type);
+      return bin_op->expr_type;
     } else if (IsEqualASTType(left_type, right_type)) {
-      bin_op->var_type = GetRValueTypeOf(left_type);
-      return bin_op->var_type;
+      bin_op->expr_type = GetRValueTypeOf(left_type);
+      return bin_op->expr_type;
     }
     PrintASTNode(node, 0);
     Error("Type check failed for ASTExprBinOp");
@@ -175,7 +175,8 @@ ASTType *AnalyzeNode(ASTNode *node, Context *context) {
   } else if (node->type == kASTExprUnaryPostOp) {
     ASTExprUnaryPostOp *op = ToASTExprUnaryPostOp(node);
     ASTType *expr_type = AnalyzeNode(op->expr, context);
-    return GetRValueTypeOf(expr_type);
+    op->expr_type = GetRValueTypeOf(expr_type);
+    return op->expr_type;
   } else if (node->type == kASTCondStmt) {
     ASTCondStmt *cond_stmt = ToASTCondStmt(node);
     AnalyzeNode(cond_stmt->cond_expr, context);

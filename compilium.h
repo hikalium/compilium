@@ -173,6 +173,7 @@ typedef struct {
   ASTNodeType type;
   const Token *op;
   ASTNode *expr;
+  ASTType *expr_type;
 } ASTExprUnaryPostOp;
 
 typedef struct {
@@ -180,7 +181,7 @@ typedef struct {
   const Token *op;
   ASTNode *left;
   ASTNode *right;
-  ASTType *var_type;
+  ASTType *expr_type;
 } ASTExprBinOp;
 
 typedef struct {
