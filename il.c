@@ -123,9 +123,9 @@ void GenerateILForFuncDef(ASTList *il, Register *dst, ASTNode *node) {
     PrintASTNode(ToASTNode(param_decl_list), 0);
     // TODO: Simplify this
     Register *var_regs[8];
-    ASTLocalVar *local_vars[8];
+    ASTVar *local_vars[8];
     for (int i = 0; i < GetSizeOfASTList(param_decl_list); i++) {
-      local_vars[i] = ToASTLocalVar(GetASTNodeAt(param_decl_list, i));
+      local_vars[i] = ToASTVar(GetASTNodeAt(param_decl_list, i));
       var_regs[i] = AllocRegister();
       EmitILOp(il, kILOpLoadArg, var_regs[i], NULL, NULL,
                ToASTNode(local_vars[i]));
@@ -519,7 +519,7 @@ void GenerateILFor(ASTList *il, Register *dst, ASTNode *node) {
     ASTIdent *ident = ToASTIdent(node);
     assert(ident->local_var);
     GenerateILFor(il, dst, ToASTNode(ident->local_var));
-  } else if (node->type == kASTLocalVar) {
+  } else if (node->type == kASTVar) {
     EmitILOp(il, kILOpLoadLocalVarAddr, dst, NULL, NULL, node);
   } else {
     PrintASTNode(node, 0);

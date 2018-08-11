@@ -53,7 +53,7 @@ void InitASTNodeTypeName() {
   ASTNodeTypeName[kASTStructSpec] = "StructSpec";
   ASTNodeTypeName[kASTPointer] = "Pointer";
   ASTNodeTypeName[kASTDict] = "Dict";
-  ASTNodeTypeName[kASTLocalVar] = "LocalVar";
+  ASTNodeTypeName[kASTVar] = "Var";
   ASTNodeTypeName[kASTLabel] = "Label";
   ASTNodeTypeName[kASTType] = "Type";
 }
@@ -91,7 +91,7 @@ GenToAST(StructDecl);
 GenToAST(StructSpec);
 GenToAST(Pointer);
 GenToAST(Dict);
-GenToAST(LocalVar);
+GenToAST(Var);
 GenToAST(Label);
 
 GenAllocAST(FuncDef);
@@ -136,7 +136,7 @@ ASTDict* AllocASTDict(int capacity) {
   return dict;
 }
 
-GenAllocAST(LocalVar);
+GenAllocAST(Var);
 GenAllocAST(Label);
 
 ASTInteger* AllocAndInitASTInteger(int value) {
@@ -179,10 +179,10 @@ ASTNode* AllocAndInitASTExprFuncCall(ASTNode* func, ASTNode* args) {
   return ToASTNode(node);
 }
 
-ASTLocalVar* AllocAndInitASTLocalVar(ASTList* decl_specs, ASTDecltor* decltor,
-                                     Context* struct_names) {
+ASTVar* AllocAndInitASTVar(ASTList* decl_specs, ASTDecltor* decltor,
+                           Context* struct_names) {
   const Token* ident_token = GetIdentTokenFromDecltor(decltor);
-  ASTLocalVar* local_var = AllocASTLocalVar();
+  ASTVar* local_var = AllocASTVar();
   local_var->name = ident_token->str;
   local_var->var_type = AllocAndInitASTType(decl_specs, decltor, struct_names);
   return local_var;
@@ -381,8 +381,8 @@ void PrintASTNode(void* node, int depth) {
   } else if (n->type == kASTLabel) {
     ASTLabel* label = ToASTLabel(n);
     PrintfWithPadding(depth + 1, "label_number=%d", label->label_number);
-  } else if (n->type == kASTLocalVar) {
-    ASTLocalVar* var = ToASTLocalVar(n);
+  } else if (n->type == kASTVar) {
+    ASTVar* var = ToASTVar(n);
     PrintASTNodeWithName(depth + 1, "type=", var->var_type);
     PrintfWithPadding(depth + 1, "name=%s", var->name);
     PrintfWithPadding(depth + 1, "ofs=%d", var->ofs);

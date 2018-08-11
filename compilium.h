@@ -55,7 +55,7 @@ typedef enum {
   kASTStructSpec,
   //
   kASTDict,
-  kASTLocalVar,
+  kASTVar,
   kASTLabel,
   kASTType,
   //
@@ -135,7 +135,7 @@ typedef struct AST_LIST ASTList;
 typedef struct AST_DICT ASTDict;
 typedef struct CONTEXT Context;
 typedef struct AST_LABEL ASTLabel;
-typedef struct AST_LOCAL_VAR ASTLocalVar;
+typedef struct AST_VAR ASTVar;
 typedef struct AST_TYPE ASTType;
 
 typedef struct {
@@ -264,7 +264,7 @@ typedef struct {
 typedef struct {
   ASTNodeType type;
   const Token *token;
-  ASTLocalVar *local_var;
+  ASTVar *local_var;
   ASTType *var_type;
 } ASTIdent;
 
@@ -321,7 +321,7 @@ typedef struct {
   ASTList *struct_decl_list;
 } ASTStructSpec;
 
-struct AST_LOCAL_VAR {
+struct AST_VAR {
   ASTNodeType type;
   int ofs;
   const char *name;
@@ -367,7 +367,7 @@ DefToAST(StructDecl);
 DefToAST(StructSpec);
 DefToAST(Pointer);
 DefToAST(Dict);
-DefToAST(LocalVar);
+DefToAST(Var);
 DefToAST(Label);
 
 DefAllocAST(FuncDef);
@@ -396,7 +396,7 @@ DefAllocAST(StructDecl);
 DefAllocAST(StructSpec);
 DefAllocAST(Pointer);
 ASTDict *AllocASTDict(int capacity);
-DefAllocAST(LocalVar);
+DefAllocAST(Var);
 DefAllocAST(Label);
 
 ASTInteger *AllocAndInitASTInteger(int value);
@@ -406,8 +406,8 @@ ASTKeyword *AllocAndInitASTKeyword(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
 ASTNode *AllocAndInitASTExprFuncCall(ASTNode *func, ASTNode *args);
-ASTLocalVar *AllocAndInitASTLocalVar(ASTList *decl_specs, ASTDecltor *decltor,
-                                     Context *struct_names);
+ASTVar *AllocAndInitASTVar(ASTList *decl_specs, ASTDecltor *decltor,
+                           Context *struct_names);
 
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
@@ -434,12 +434,10 @@ ASTNode *FindInContext(const Context *context, const char *key);
 ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident);
 int GetSizeOfContext(const Context *context);
 int GetAlignOfContext(const Context *context);
-ASTLocalVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
-                                     ASTDecltor *decltor,
-                                     Context *struct_names);
-ASTLocalVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
-                                         ASTDecltor *decltor,
-                                         Context *struct_names);
+ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
+                                ASTDecltor *decltor, Context *struct_names);
+ASTVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
+                                    ASTDecltor *decltor, Context *struct_names);
 void AppendTypeToContext(Context *context, const char *name, ASTType *type);
 void SetBreakLabelInContext(Context *context, ASTLabel *label);
 ASTLabel *GetBreakLabelInContext(Context *context);

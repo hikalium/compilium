@@ -28,7 +28,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
         ASTParamDecl *param_decl =
             ToASTParamDecl(GetASTNodeAt(param_decl_list, i));
         ASTDecltor *param_decltor = ToASTDecltor(param_decl->decltor);
-        ASTLocalVar *local_var = AppendLocalVarToContext(
+        ASTVar *local_var = AppendLocalVarToContext(
             context, param_decl->decl_specs, param_decltor, struct_names);
         SetASTNodeAt(param_decl_list, i, ToASTNode(local_var));
       }
@@ -112,11 +112,11 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
   } else if (node->type == kASTIdent) {
     ASTIdent *ident = ToASTIdent(node);
     ASTNode *var = FindIdentInContext(context, ident);
-    if (!var || (var->type != kASTLocalVar)) {
+    if (!var || (var->type != kASTVar)) {
       // TODO: Add func ident check
       return NULL;
     }
-    ident->local_var = ToASTLocalVar(var);
+    ident->local_var = ToASTVar(var);
     ident->var_type = AllocAndInitASTTypeLValueOf(ident->local_var->var_type);
     return ident->var_type;
   } else if (node->type == kASTForStmt) {

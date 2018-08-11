@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -505,8 +506,8 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
       } break;
       case kILOpLoadLocalVarAddr: {
         const char *dst = AssignRegister(fp, op->dst);
-        ASTLocalVar *var = ToASTLocalVar(op->ast_node);
-        if (!var) Error("var is not an ASTLocalVar");
+        ASTVar *var = ToASTVar(op->ast_node);
+        assert(var);
         int byte_ofs = var->ofs + GetByteSizeOfSpillArea();
         fprintf(fp, "lea %s, [rbp - %d] # local_var[%s]\n", dst, byte_ofs,
                 var->name);

@@ -237,8 +237,8 @@ ASTType *GetExprTypeOfASTNode(ASTNode *node) {
     return AllocAndInitBasicType(kTypeInt);
   } else if (node->type == kASTCondStmt) {
     return ToASTCondStmt(node)->expr_type;
-  } else if (node->type == kASTLocalVar) {
-    return ToASTLocalVar(node)->var_type;
+  } else if (node->type == kASTVar) {
+    return ToASTVar(node)->var_type;
   }
   PrintASTNode(node, 0);
   Error("GetExprTypeOfASTNode is not implemented for this AST type");

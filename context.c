@@ -30,8 +30,7 @@ ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident) {
 int GetSizeOfContext(const Context *context) {
   int size = 0;
   for (int i = 0; i < GetSizeOfASTDict(context->dict); i++) {
-    ASTLocalVar *local_var =
-        ToASTLocalVar(GetASTNodeInDictAt(context->dict, i));
+    ASTVar *local_var = ToASTVar(GetASTNodeInDictAt(context->dict, i));
     if (!local_var) Error("GetStackSizeForContext: local_var is NULL");
     size += GetSizeOfType(local_var->var_type);
   }
@@ -45,30 +44,26 @@ static int imax(int a, int b) { return a > b ? a : b; }
 int GetAlignOfContext(const Context *context) {
   int max_align_size = 1;
   for (int i = 0; i < GetSizeOfASTDict(context->dict); i++) {
-    ASTLocalVar *local_var =
-        ToASTLocalVar(GetASTNodeInDictAt(context->dict, i));
+    ASTVar *local_var = ToASTVar(GetASTNodeInDictAt(context->dict, i));
     if (!local_var) Error("GetStackSizeForContext: local_var is NULL");
     max_align_size = imax(max_align_size, GetAlignOfType(local_var->var_type));
   }
   return max_align_size;
 }
 
-ASTLocalVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
-                                     ASTDecltor *decltor,
-                                     Context *struct_names) {
-  ASTLocalVar *local_var =
-      AllocAndInitASTLocalVar(decl_specs, decltor, struct_names);
+ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
+                                ASTDecltor *decltor, Context *struct_names) {
+  ASTVar *local_var = AllocAndInitASTVar(decl_specs, decltor, struct_names);
   local_var->ofs =
       GetSizeOfContext(context) + GetSizeOfType(local_var->var_type);
   AppendASTNodeToDict(context->dict, local_var->name, ToASTNode(local_var));
   return local_var;
 }
 
-ASTLocalVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
-                                         ASTDecltor *decltor,
-                                         Context *struct_names) {
-  ASTLocalVar *local_var =
-      AllocAndInitASTLocalVar(decl_specs, decltor, struct_names);
+ASTVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
+                                    ASTDecltor *decltor,
+                                    Context *struct_names) {
+  ASTVar *local_var = AllocAndInitASTVar(decl_specs, decltor, struct_names);
   local_var->ofs = GetSizeOfContext(context);
   AppendASTNodeToDict(context->dict, local_var->name, ToASTNode(local_var));
   return local_var;
