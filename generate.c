@@ -22,8 +22,12 @@
 #define REAL_REG_R10 8
 #define REAL_REG_R11 9
 
-const char *ScratchRegNames[NUM_OF_SCRATCH_REGS + 1] = {
+const char *ScratchRegNames64[NUM_OF_SCRATCH_REGS + 1] = {
     "NULL", "rax", "rdi", "rsi", "rdx", "rcx", "r8", "r9", "r10", "r11"};
+const char *ScratchRegNames32[NUM_OF_SCRATCH_REGS + 1] = {
+    "NULL", "eax", "edi", "esi", "edx", "ecx", "r8d", "r9d", "r10d", "r11d"};
+const char *ScratchRegNames8[NUM_OF_SCRATCH_REGS + 1] = {
+    "NULL", "al", "dil", "sil", "dl", "cl", "r8b", "r9b", "r10b", "r11b"};
 
 int GetLabelNumber() {
   static int num = 1;
@@ -59,9 +63,9 @@ void PrintRegisterAssignment() {
   for (int i = 1; i < NUM_OF_SCRATCH_REGS + 1; i++) {
     if (RealRegToVirtualReg[i]) {
       printf("\treg[%d] => %s (%d)\n", RealRegToVirtualReg[i]->vreg_id,
-             ScratchRegNames[i], RealRegRefOrder[i]);
+             ScratchRegNames64[i], RealRegRefOrder[i]);
     } else {
-      printf("\tnone => %s (%d)\n", ScratchRegNames[i], RealRegRefOrder[i]);
+      printf("\tnone => %s (%d)\n", ScratchRegNames64[i], RealRegRefOrder[i]);
     }
   }
   puts("==== END OF ASSIGNMENT ====");
@@ -71,7 +75,7 @@ Register *SelectVirtualRegisterToSpill() {
   for (int i = 1; i < NUM_OF_SCRATCH_REGS + 1; i++) {
     if (RealRegToVirtualReg[i]) {
       printf("\tvreg[%d] => %s (%d)\n", RealRegToVirtualReg[i]->vreg_id,
-             ScratchRegNames[i], RealRegRefOrder[i]);
+             ScratchRegNames64[i], RealRegRefOrder[i]);
     }
     if (RealRegToVirtualReg[i] &&
         RealRegRefOrder[i] <= order_count - NUM_OF_SCRATCH_REGS)
@@ -85,7 +89,7 @@ void SpillVirtualRegister(FILE *fp, Register *reg) {
   if (!reg->spill_index) reg->spill_index = NewSpillIndex();
 
   fprintf(fp, "mov [rbp - %d], %s\n", 8 * reg->spill_index,
-          ScratchRegNames[reg->real_reg]);
+          ScratchRegNames64[reg->real_reg]);
 
   RealRegToVirtualReg[reg->real_reg] = NULL;
   reg->real_reg = 0;
@@ -130,32 +134,45 @@ void AssignVirtualRegToRealReg(FILE *fp, Register *reg, int real_reg) {
   // next, assign virtual reg to real reg.
   if (reg->real_reg) {
     printf("\tvreg[%d] is stored on %s, moving...\n", reg->vreg_id,
-           ScratchRegNames[reg->real_reg]);
-    fprintf(fp, "mov %s, %s # vreg %d\n", ScratchRegNames[real_reg],
-            ScratchRegNames[reg->real_reg], reg->vreg_id);
+           ScratchRegNames64[reg->real_reg]);
+    fprintf(fp, "mov %s, %s # vreg %d\n", ScratchRegNames64[real_reg],
+            ScratchRegNames64[reg->real_reg], reg->vreg_id);
     RealRegToVirtualReg[reg->real_reg] = NULL;
   } else if (reg->spill_index) {
     printf("\tvreg[%d] is stored at label %d, restoring...\n", reg->vreg_id,
            reg->spill_index);
-    fprintf(fp, "mov %s, [rbp - %d]\n", ScratchRegNames[real_reg],
+    fprintf(fp, "mov %s, [rbp - %d]\n", ScratchRegNames64[real_reg],
             8 * reg->spill_index);
   }
   RealRegToVirtualReg[real_reg] = reg;
   RealRegRefOrder[real_reg] = order_count++;
   reg->real_reg = real_reg;
-  printf("\tvirtual_reg[%d] => %s\n", reg->vreg_id, ScratchRegNames[real_reg]);
+  printf("\tvirtual_reg[%d] => %s\n", reg->vreg_id,
+         ScratchRegNames64[real_reg]);
 }
 
-const char *AssignRegister(FILE *fp, Register *reg) {
+int AssignRegister(FILE *fp, Register *reg) {
   printf("requested vreg_id = %d\n", reg->vreg_id);
   if (reg->real_reg) {
-    printf("\texisted on %s\n", ScratchRegNames[reg->real_reg]);
+    printf("\texisted on %s\n", ScratchRegNames64[reg->real_reg]);
     RealRegRefOrder[reg->real_reg] = order_count++;
-    return ScratchRegNames[reg->real_reg];
+    return reg->real_reg;
   }
   int real_reg = FindFreeRealReg(fp);
   AssignVirtualRegToRealReg(fp, reg, real_reg);
-  return ScratchRegNames[real_reg];
+  return real_reg;
+}
+
+const char *AssignRegister64(FILE *fp, Register *reg) {
+  return ScratchRegNames64[AssignRegister(fp, reg)];
+}
+
+const char *AssignRegister32(FILE *fp, Register *reg) {
+  return ScratchRegNames32[AssignRegister(fp, reg)];
+}
+
+const char *AssignRegister8(FILE *fp, Register *reg) {
+  return ScratchRegNames8[AssignRegister(fp, reg)];
 }
 
 const char *GetParamRegister(int param_index) {
@@ -163,7 +180,7 @@ const char *GetParamRegister(int param_index) {
   if (param_index < 1 || NUM_OF_SCRATCH_REGS <= param_index) {
     Error("param_index exceeded (%d)", param_index);
   }
-  return ScratchRegNames[param_index];
+  return ScratchRegNames64[param_index];
 }
 
 void GenerateFuncEpilogue(FILE *fp) {
@@ -232,40 +249,37 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         GenerateFuncEpilogue(fp);
         break;
       case kILOpLoad8: {
-        const char *left = AssignRegister(fp, op->left);
-        const char *dst = AssignRegister(fp, op->dst);
+        const char *dst = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
         fprintf(fp, "movsx %s, byte ptr [%s]\n", dst, left);
       } break;
       case kILOpLoad32: {
-        // TODO: dst can be any registers which can access as a dword reg
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
-        const char *left = AssignRegister(fp, op->left);
-        fprintf(fp, "mov eax, [%s]\n", left);
+        const char *dst = AssignRegister32(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
+        fprintf(fp, "mov %s, [%s]\n", dst, left);
       } break;
       case kILOpLoad64: {
-        const char *left = AssignRegister(fp, op->left);
-        const char *dst = AssignRegister(fp, op->dst);
+        const char *dst = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
         fprintf(fp, "mov %s, [%s]\n", dst, left);
       } break;
       case kILOpStore8: {
-        // TODO: dst can be any registers which can access as a byte reg
-        AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
-        const char *dst = AssignRegister(fp, op->dst);
-        fprintf(fp, "mov [%s], al\n", dst);
+        const char *dst = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister8(fp, op->left);
+        fprintf(fp, "mov [%s], %s\n", dst, left);
       } break;
       case kILOpStore32: {
-        // TODO: dst can be any registers which can access as a dword reg
-        AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
-        const char *dst = AssignRegister(fp, op->dst);
-        fprintf(fp, "mov [%s], eax\n", dst);
+        const char *dst = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister32(fp, op->left);
+        fprintf(fp, "mov [%s], %s\n", dst, left);
       } break;
       case kILOpStore64: {
-        const char *left = AssignRegister(fp, op->left);
-        const char *dst = AssignRegister(fp, op->dst);
+        const char *dst = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
         fprintf(fp, "mov [%s], %s\n", dst, left);
       } break;
       case kILOpLoadImm: {
-        const char *dst_name = AssignRegister(fp, op->dst);
+        const char *dst_name = AssignRegister64(fp, op->dst);
         if (op->ast_node->type == kASTInteger) {
           ASTInteger *ast_int = ToASTInteger(op->ast_node);
           fprintf(fp, "mov %s, %d\n", dst_name, ast_int->value);
@@ -284,7 +298,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         }
       } break;
       case kILOpLoadIdent: {
-        const char *dst_name = AssignRegister(fp, op->dst);
+        const char *dst_name = AssignRegister64(fp, op->dst);
         //
         ASTIdent *ident = ToASTIdent(op->ast_node);
         switch (ident->token->type) {
@@ -298,28 +312,28 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         }
       } break;
       case kILOpLoadArg: {
-        AssignVirtualRegToRealReg(
-            fp, op->dst, REAL_REG_RDI + func_param_requested++);  // TODO:
+        AssignVirtualRegToRealReg(fp, op->dst,
+                                  REAL_REG_RDI + func_param_requested++);
       } break;
       case kILOpAdd: {
-        const char *dst = AssignRegister(fp, op->dst);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
+        const char *dst = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
+        const char *right = AssignRegister64(fp, op->right);
         fprintf(fp, "add %s, %s\n", left, right);
         fprintf(fp, "mov %s, %s\n", dst, left);
       } break;
       case kILOpSub: {
-        const char *dst = AssignRegister(fp, op->dst);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
+        const char *dst = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
+        const char *right = AssignRegister64(fp, op->right);
         fprintf(fp, "sub %s, %s\n", left, right);
         fprintf(fp, "mov %s, %s\n", dst, left);
       } break;
       case kILOpMul: {
         // rdx:rax <- rax * r/m
         AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
-        const char *dst = AssignRegister(fp, op->dst);
-        const char *right = AssignRegister(fp, op->right);
+        const char *dst = AssignRegister64(fp, op->dst);
+        const char *right = AssignRegister64(fp, op->right);
         fprintf(fp, "push rdx\n");
         fprintf(fp, "imul %s\n", right);
         fprintf(fp, "pop rdx\n");
@@ -344,141 +358,105 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RDX);
       } break;
       case kILOpAnd: {
-        const char *dst = AssignRegister(fp, op->dst);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
+        const char *dst = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
+        const char *right = AssignRegister64(fp, op->right);
         fprintf(fp, "and %s, %s\n", left, right);
         fprintf(fp, "mov %s, %s\n", dst, left);
       } break;
       case kILOpXor: {
-        const char *dst = AssignRegister(fp, op->dst);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
+        const char *dst = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
+        const char *right = AssignRegister64(fp, op->right);
         fprintf(fp, "xor %s, %s\n", left, right);
         fprintf(fp, "mov %s, %s\n", dst, left);
       } break;
       case kILOpOr: {
-        const char *dst = AssignRegister(fp, op->dst);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
+        const char *dst = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
+        const char *right = AssignRegister64(fp, op->right);
         fprintf(fp, "or %s, %s\n", left, right);
         fprintf(fp, "mov %s, %s\n", dst, left);
       } break;
       case kILOpNot: {
-        const char *left = AssignRegister(fp, op->left);
+        const char *left = AssignRegister64(fp, op->left);
         AssignVirtualRegToRealReg(fp, op->dst, op->left->real_reg);
         fprintf(fp, "not %s\n", left);
       } break;
       case kILOpNegate: {
-        const char *left = AssignRegister(fp, op->left);
+        const char *left = AssignRegister64(fp, op->left);
         AssignVirtualRegToRealReg(fp, op->dst, op->left->real_reg);
         fprintf(fp, "neg %s\n", left);
       } break;
       case kILOpLogicalAnd: {
-        // TODO: dst can be any registers which can access as a byte reg
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
+        const char *dst = AssignRegister8(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
+        const char *right = AssignRegister64(fp, op->right);
         fprintf(fp, "cmp %s, 0\n", left);
         fprintf(fp, " %s, %s\n", left, right);
-        fprintf(fp, "setnz al\n");
+        fprintf(fp, "setnz %s\n", dst);
       } break;
       case kILOpLogicalOr: {
-        // TODO: dst can be any registers which can access as a byte reg
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
+        const char *dst = AssignRegister8(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
+        const char *right = AssignRegister64(fp, op->right);
         fprintf(fp, "xor rax, rax\n");
         fprintf(fp, "or %s, %s\n", left, right);
-        fprintf(fp, "setnz al\n");
+        fprintf(fp, "setnz %s\n", dst);
       } break;
       case kILOpLogicalNot: {
-        // TODO: dst can be any registers which can access as a byte reg
-        AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
-        fprintf(fp, "cmp rax, 0\n");
-        fprintf(fp, "setz al\n");
-        fprintf(fp, "and rax, 1\n");
+        const char *dst8 = AssignRegister8(fp, op->dst);
+        const char *dst64 = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
+        fprintf(fp, "cmp %s, 0\n", left);
+        fprintf(fp, "setz %s\n", dst8);
+        fprintf(fp, "and %s, 1\n", dst64);
       } break;
       case kILOpShiftLeft: {
         // r/m <<= CL
-        // TODO: left and dst can be any register
-        AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
         AssignVirtualRegToRealReg(fp, op->right, REAL_REG_RCX);
-        fprintf(fp, "SAL rax, cl\n");
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
+        const char *left = AssignRegister64(fp, op->left);
+        AssignVirtualRegToRealReg(fp, op->dst, op->left->real_reg);
+        fprintf(fp, "SAL %s, cl\n", left);
       } break;
       case kILOpShiftRight: {
         // r/m >>= CL
-        // TODO: left and dst can be any register
-        AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
         AssignVirtualRegToRealReg(fp, op->right, REAL_REG_RCX);
-        fprintf(fp, "SAR rax, cl\n");
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
+        const char *left = AssignRegister64(fp, op->left);
+        AssignVirtualRegToRealReg(fp, op->dst, op->left->real_reg);
+        fprintf(fp, "SAR %s, cl\n", left);
       } break;
       case kILOpIncrement: {
-        const char *left = AssignRegister(fp, op->left);
+        const char *left = AssignRegister64(fp, op->left);
         AssignVirtualRegToRealReg(fp, op->dst, op->left->real_reg);
         fprintf(fp, "inc %s\n", left);
       } break;
       case kILOpDecrement: {
-        const char *left = AssignRegister(fp, op->left);
+        const char *left = AssignRegister64(fp, op->left);
         AssignVirtualRegToRealReg(fp, op->dst, op->left->real_reg);
         fprintf(fp, "dec %s\n", left);
       } break;
-      case kILOpCmpG: {
-        // TODO: dst can be any registers which can access as a byte reg
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
-        fprintf(fp, "xor rax, rax\n");
-        fprintf(fp, "cmp %s, %s\n", left, right);
-        fprintf(fp, "setg al\n");
-      } break;
-      case kILOpCmpGE: {
-        // TODO: dst can be any registers which can access as a byte reg
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
-        fprintf(fp, "xor rax, rax\n");
-        fprintf(fp, "cmp %s, %s\n", left, right);
-        fprintf(fp, "setge al\n");
-      } break;
-      case kILOpCmpL: {
-        // TODO: dst can be any registers which can access as a byte reg
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
-        fprintf(fp, "xor rax, rax\n");
-        fprintf(fp, "cmp %s, %s\n", left, right);
-        fprintf(fp, "setl al\n");
-      } break;
-      case kILOpCmpLE: {
-        // TODO: dst can be any registers which can access as a byte reg
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
-        fprintf(fp, "xor rax, rax\n");
-        fprintf(fp, "cmp %s, %s\n", left, right);
-        fprintf(fp, "setle al\n");
-      } break;
-      case kILOpCmpE: {
-        // TODO: dst can be any registers which can access as a byte reg
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
-        fprintf(fp, "xor rax, rax\n");
-        fprintf(fp, "cmp %s, %s\n", left, right);
-        fprintf(fp, "sete al\n");
-      } break;
+      case kILOpCmpG:
+      case kILOpCmpGE:
+      case kILOpCmpL:
+      case kILOpCmpLE:
+      case kILOpCmpE:
       case kILOpCmpNE: {
-        // TODO: dst can be any registers which can access as a byte reg
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
-        const char *left = AssignRegister(fp, op->left);
-        const char *right = AssignRegister(fp, op->right);
-        fprintf(fp, "xor rax, rax\n");
+        const char *cc = NULL;
+        if (op->op == kILOpCmpG) cc = "g";
+        if (op->op == kILOpCmpGE) cc = "ge";
+        if (op->op == kILOpCmpL) cc = "l";
+        if (op->op == kILOpCmpLE) cc = "le";
+        if (op->op == kILOpCmpE) cc = "e";
+        if (op->op == kILOpCmpNE) cc = "ne";
+        assert(cc);
+        const char *dst8 = AssignRegister8(fp, op->dst);
+        const char *dst64 = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
+        const char *right = AssignRegister64(fp, op->right);
+        fprintf(fp, "xor %s, %s\n", dst64, dst64);
         fprintf(fp, "cmp %s, %s\n", left, right);
-        fprintf(fp, "setne al\n");
+        fprintf(fp, "set%s %s\n", cc, dst8);
       } break;
       case kILOpReturn:
         // left: reg which have return value (can be NULL)
@@ -505,7 +483,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         call_param_used = 0;
       } break;
       case kILOpLoadLocalVarAddr: {
-        const char *dst = AssignRegister(fp, op->dst);
+        const char *dst = AssignRegister64(fp, op->dst);
         ASTVar *var = ToASTVar(op->ast_node);
         assert(var);
         int byte_ofs = var->ofs + GetByteSizeOfSpillArea();
@@ -527,7 +505,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "jmp L%d\n", label->label_number);
       } break;
       case kILOpJmpIfZero: {
-        const char *left = AssignRegister(fp, op->left);
+        const char *left = AssignRegister64(fp, op->left);
         ASTLabel *label = ToASTLabel(op->ast_node);
         if (!label) Error("Label is null");
         if (!label->label_number) label->label_number = GetLabelNumber();
@@ -536,7 +514,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "je L%d\n", label->label_number);
       } break;
       case kILOpJmpIfNotZero: {
-        const char *left = AssignRegister(fp, op->left);
+        const char *left = AssignRegister64(fp, op->left);
         ASTLabel *label = ToASTLabel(op->ast_node);
         if (!label) Error("Label is null");
         if (!label->label_number) label->label_number = GetLabelNumber();
@@ -545,16 +523,16 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "jne L%d\n", label->label_number);
       } break;
       case kILOpSetLogicalValue: {
-        // TODO: dst can be any registers which can access as a byte reg
-        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
-        const char *left = AssignRegister(fp, op->left);
-        fprintf(fp, "xor rax, rax\n");
+        const char *dst8 = AssignRegister8(fp, op->dst);
+        const char *dst64 = AssignRegister64(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
+        fprintf(fp, "xor %s, %s\n", dst64, dst64);
         fprintf(fp, "cmp %s, 0\n", left);
-        fprintf(fp, "setne al\n");
+        fprintf(fp, "setne %s\n", dst8);
       } break;
       case kILOpAssign: {
-        const char *left = AssignRegister(fp, op->left);
-        const char *dst = AssignRegister(fp, op->dst);
+        const char *left = AssignRegister64(fp, op->left);
+        const char *dst = AssignRegister64(fp, op->dst);
         fprintf(fp, "mov %s, %s\n", dst, left);
       } break;
       default:
