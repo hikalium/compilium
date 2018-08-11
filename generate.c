@@ -235,6 +235,12 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         const char *dst = AssignRegister(fp, op->dst);
         fprintf(fp, "movsx %s, byte ptr [%s]\n", dst, left);
       } break;
+      case kILOpLoad32: {
+        // TODO: dst can be any registers which can access as a dword reg
+        AssignVirtualRegToRealReg(fp, op->dst, REAL_REG_RAX);
+        const char *left = AssignRegister(fp, op->left);
+        fprintf(fp, "mov eax, [%s]\n", left);
+      } break;
       case kILOpLoad64: {
         const char *left = AssignRegister(fp, op->left);
         const char *dst = AssignRegister(fp, op->dst);
@@ -245,6 +251,12 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
         const char *dst = AssignRegister(fp, op->dst);
         fprintf(fp, "mov [%s], al\n", dst);
+      } break;
+      case kILOpStore32: {
+        // TODO: dst can be any registers which can access as a dword reg
+        AssignVirtualRegToRealReg(fp, op->left, REAL_REG_RAX);
+        const char *dst = AssignRegister(fp, op->dst);
+        fprintf(fp, "mov [%s], eax\n", dst);
       } break;
       case kILOpStore64: {
         const char *left = AssignRegister(fp, op->left);

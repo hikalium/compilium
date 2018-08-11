@@ -41,8 +41,10 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpCmpE] = "CmpE";
   ILOpTypeName[kILOpCmpNE] = "CmpNE";
   ILOpTypeName[kILOpLoad8] = "Load8";
+  ILOpTypeName[kILOpLoad32] = "Load32";
   ILOpTypeName[kILOpLoad64] = "Load64";
   ILOpTypeName[kILOpStore8] = "Store8";
+  ILOpTypeName[kILOpStore32] = "Store32";
   ILOpTypeName[kILOpStore64] = "Store64";
   ILOpTypeName[kILOpLoadImm] = "LoadImm";
   ILOpTypeName[kILOpLoadIdent] = "LoadIdent";
@@ -84,9 +86,24 @@ void EmitILOp(ASTList *il, ILOpType type, Register *dst, Register *left,
 }
 
 // generators
-void GenerateILForLocalVar(ASTList *il, Register *dst, ASTNode *node);
 void GenerateILRValueFor(ASTList *il, Register *dst, ASTNode *node);
 void GenerateILFor(ASTList *il, Register *dst, ASTNode *node);
+
+Register *GenerateILForAssignmentOp(ASTList *il, ASTNode *left,
+                                    Register *rvalue, int operand_size) {
+  Register *lvalue = AllocRegister();
+  GenerateILFor(il, lvalue, left);
+  if (operand_size == 8) {
+    EmitILOp(il, kILOpStore64, lvalue, rvalue, NULL, NULL);
+  } else if (operand_size == 4) {
+    EmitILOp(il, kILOpStore32, lvalue, rvalue, NULL, NULL);
+  } else if (operand_size == 1) {
+    EmitILOp(il, kILOpStore8, lvalue, rvalue, NULL, NULL);
+  } else {
+    Error("Assign to operand size %d is not implemented", operand_size);
+  }
+  return rvalue;
+}
 
 void GenerateILForCompStmt(ASTList *il, Register *dst, ASTNode *node) {
   ASTCompStmt *comp = ToASTCompStmt(node);
@@ -114,10 +131,9 @@ void GenerateILForFuncDef(ASTList *il, Register *dst, ASTNode *node) {
                ToASTNode(local_vars[i]));
     }
     for (int i = 0; i < GetSizeOfASTList(param_decl_list); i++) {
-      Register *var_addr = AllocRegister();
-      EmitILOp(il, kILOpLoadLocalVarAddr, var_addr, NULL, NULL,
-               ToASTNode(local_vars[i]));
-      EmitILOp(il, kILOpStore64, var_addr, var_regs[i], NULL, NULL);
+      GenerateILForAssignmentOp(
+          il, ToASTNode(local_vars[i]), var_regs[i],
+          GetSizeOfType(GetExprTypeOfASTNode(ToASTNode(local_vars[i]))));
     }
   }
   GenerateILForCompStmt(il, AllocRegister(), ToASTNode(def->comp_stmt));
@@ -144,18 +160,6 @@ PairOfStrAndILOpType comp_assign_op_list[] = {
     {">>=", kILOpShiftRight}, {"&=", kILOpAnd}, {"^=", kILOpXor},
     {"|=", kILOpOr},          {NULL, kILOpNop},
 };
-
-Register *GenerateILForAssignmentOp(ASTList *il, ASTNode *left,
-                                    Register *rvalue, int operand_size) {
-  Register *lvalue = AllocRegister();
-  GenerateILFor(il, lvalue, left);
-  if (operand_size == 8) {
-    EmitILOp(il, kILOpStore64, lvalue, rvalue, NULL, NULL);
-  } else {
-    Error("Assign to operand size %d is not implemented", operand_size);
-  }
-  return rvalue;
-}
 
 Register *GenerateILForExprUnaryPreOp(ASTList *il, Register *dst,
                                       ASTNode *node) {
@@ -202,6 +206,8 @@ Register *GenerateILForExprUnaryPreOp(ASTList *il, Register *dst,
     int size = GetSizeOfType(type);
     if (size == 8) {
       EmitILOp(il, kILOpLoad64, dst, tmp_reg, NULL, NULL);
+    } else if (size == 4) {
+      EmitILOp(il, kILOpLoad32, dst, tmp_reg, NULL, NULL);
     } else if (size == 1) {
       EmitILOp(il, kILOpLoad8, dst, tmp_reg, NULL, NULL);
     } else {
@@ -353,12 +359,6 @@ Register *GenerateILForExprFuncCall(ASTList *il, Register *dst, ASTNode *node) {
   return dst;
 }
 
-void GenerateILForLocalVar(ASTList *il, Register *dst, ASTNode *node) {
-  Register *var_addr = AllocRegister();
-  EmitILOp(il, kILOpLoadLocalVarAddr, var_addr, NULL, NULL, node);
-  EmitILOp(il, kILOpLoad64, dst, var_addr, NULL, NULL);
-}
-
 void GenerateILForExprStmt(ASTList *il, Register *dst, ASTNode *node) {
   const ASTExprStmt *expr_stmt = ToASTExprStmt(node);
   if (!expr_stmt) Error("expr_stmt is NULL");
@@ -466,6 +466,9 @@ void GenerateILRValueFor(ASTList *il, Register *dst, ASTNode *node) {
   if (size == 8) {
     EmitILOp(il, kILOpLoad64, dst, lvalue_reg, NULL, NULL);
     return;
+  } else if (size == 4) {
+    EmitILOp(il, kILOpLoad32, dst, lvalue_reg, NULL, NULL);
+    return;
   } else if (size == 1) {
     EmitILOp(il, kILOpLoad8, dst, lvalue_reg, NULL, NULL);
     return;
@@ -515,8 +518,9 @@ void GenerateILFor(ASTList *il, Register *dst, ASTNode *node) {
   } else if (node->type == kASTIdent) {
     ASTIdent *ident = ToASTIdent(node);
     assert(ident->local_var);
-    EmitILOp(il, kILOpLoadLocalVarAddr, dst, NULL, NULL,
-             ToASTNode(ident->local_var));
+    GenerateILFor(il, dst, ToASTNode(ident->local_var));
+  } else if (node->type == kASTLocalVar) {
+    EmitILOp(il, kILOpLoadLocalVarAddr, dst, NULL, NULL, node);
   } else {
     PrintASTNode(node, 0);
     putchar('\n');

@@ -69,5 +69,7 @@ test_statements 'char *p; p = "text"; p++; return *p;' 101
 test_statements 'char *p; p = "text"; return *(p + 1);' 101
 
 test_statements 'char array[10]; return sizeof(array);' 10
-test_statements 'int array[10]; return sizeof(array);' 80
+test_statements 'int array[10]; return sizeof(array);' 40
 test_statements 'char *array[10]; return sizeof(array);' 80
+
+test_statements 'struct KV { const char *key; int value; } kv; return sizeof(kv);' 16

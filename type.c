@@ -187,10 +187,30 @@ int GetSizeOfType(ASTType *node) {
   } else if (node->basic_type == kTypeChar) {
     return 1;
   } else if (node->basic_type == kTypeInt) {
-    // TODO: Change this from 8 to 4
-    return 8;
+    return 4;
   }
   Error("GetSizeOfType: Not implemented for basic_type %d", node->basic_type);
+  return -1;
+}
+
+int GetAlignOfType(ASTType *node) {
+  node = GetRValueTypeOf(node);
+  if (node->basic_type == kTypePointerOf) {
+    return 8;
+  } else if (node->basic_type == kTypeArrayOf) {
+    return GetAlignOfType(node->array_of);
+  } else if (node->basic_type == kTypeStruct) {
+    if (!node->struct_members) {
+      DebugPrintASTType(node);
+      Error("Cannot take size of incomplete type");
+    }
+    return GetAlignOfContext(node->struct_members);
+  } else if (node->basic_type == kTypeChar) {
+    return 1;
+  } else if (node->basic_type == kTypeInt) {
+    return 4;
+  }
+  Error("GetAlignOfType: Not implemented for basic_type %d", node->basic_type);
   return -1;
 }
 
@@ -217,6 +237,8 @@ ASTType *GetExprTypeOfASTNode(ASTNode *node) {
     return AllocAndInitBasicType(kTypeInt);
   } else if (node->type == kASTCondStmt) {
     return ToASTCondStmt(node)->expr_type;
+  } else if (node->type == kASTLocalVar) {
+    return ToASTLocalVar(node)->var_type;
   }
   PrintASTNode(node, 0);
   Error("GetExprTypeOfASTNode is not implemented for this AST type");

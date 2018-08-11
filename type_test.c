@@ -11,7 +11,7 @@ void TestSizeOfASTType() {
   assert(GetSizeOfType(type) == 1);
 
   type = AllocAndInitBasicType(kTypeInt);
-  assert(GetSizeOfType(type) == 8);
+  assert(GetSizeOfType(type) == 4);
 
   type = AllocAndInitASTTypePointerOf(AllocAndInitBasicType(kTypeChar));
   assert(GetSizeOfType(type) == 8);
@@ -23,7 +23,7 @@ void TestSizeOfASTType() {
   assert(GetSizeOfType(type) == 3);
 
   type = AllocAndInitASTTypeArrayOf(AllocAndInitBasicType(kTypeInt), 3);
-  assert(GetSizeOfType(type) == 24);
+  assert(GetSizeOfType(type) == 12);
 
   type = AllocAndInitASTTypePointerOf(
       AllocAndInitASTTypeArrayOf(AllocAndInitBasicType(kTypeChar), 3));

@@ -100,8 +100,10 @@ typedef enum {
   kILOpCmpE,
   kILOpCmpNE,
   kILOpLoad8,
+  kILOpLoad32,
   kILOpLoad64,
   kILOpStore8,
+  kILOpStore32,
   kILOpStore64,
   kILOpLoadImm,
   kILOpLoadIdent,
@@ -431,6 +433,7 @@ Context *AllocContext(const Context *parent);
 ASTNode *FindInContext(const Context *context, const char *key);
 ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident);
 int GetSizeOfContext(const Context *context);
+int GetAlignOfContext(const Context *context);
 ASTLocalVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
                                      ASTDecltor *decltor,
                                      Context *struct_names);
@@ -505,6 +508,7 @@ ASTType *GetRValueTypeOf(ASTType *node);
 ASTType *GetDereferencedTypeOf(ASTType *node);
 ASTType *ConvertFromArrayToPointer(ASTType *node);
 int GetSizeOfType(ASTType *node);
+int GetAlignOfType(ASTType *node);
 const char *GetStructTagFromType(ASTType *type);
 ASTType *GetExprTypeOfASTNode(ASTNode *node);
 void PrintASTType(ASTType *node);

@@ -35,7 +35,22 @@ int GetSizeOfContext(const Context *context) {
     if (!local_var) Error("GetStackSizeForContext: local_var is NULL");
     size += GetSizeOfType(local_var->var_type);
   }
+  int max_align_size = GetAlignOfContext(context);
+  size = (size + max_align_size - 1) / max_align_size * max_align_size;
   return size;
+}
+
+static int imax(int a, int b) { return a > b ? a : b; }
+
+int GetAlignOfContext(const Context *context) {
+  int max_align_size = 1;
+  for (int i = 0; i < GetSizeOfASTDict(context->dict); i++) {
+    ASTLocalVar *local_var =
+        ToASTLocalVar(GetASTNodeInDictAt(context->dict, i));
+    if (!local_var) Error("GetStackSizeForContext: local_var is NULL");
+    max_align_size = imax(max_align_size, GetAlignOfType(local_var->var_type));
+  }
+  return max_align_size;
 }
 
 ASTLocalVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
