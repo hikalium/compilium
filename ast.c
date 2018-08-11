@@ -179,6 +179,15 @@ ASTNode* AllocAndInitASTExprFuncCall(ASTNode* func, ASTNode* args) {
   return ToASTNode(node);
 }
 
+ASTLocalVar* AllocAndInitASTLocalVar(ASTList* decl_specs, ASTDecltor* decltor,
+                                     Context* struct_names) {
+  const Token* ident_token = GetIdentTokenFromDecltor(decltor);
+  ASTLocalVar* local_var = AllocASTLocalVar();
+  local_var->name = ident_token->str;
+  local_var->var_type = AllocAndInitASTType(decl_specs, decltor, struct_names);
+  return local_var;
+}
+
 const Token* GetIdentTokenFromDirectDecltor(ASTDirectDecltor* direct_decltor) {
   if (!direct_decltor) return NULL;
   if (direct_decltor->direct_decltor)
@@ -237,6 +246,17 @@ void PrintASTNode(void* node, int depth) {
     }
     PrintASTNodePadding(depth);
     putchar(']');
+    return;
+  } else if (n->type == kASTDict) {
+    ASTDict* dict = ToASTDict(n);
+    putchar('{');
+    for (int i = 0; i < dict->size; i++) {
+      PrintASTNodePadding(depth + 1);
+      printf("\"%s\" : ", dict->entries[i].key);
+      PrintASTNode(dict->entries[i].value, depth + 1);
+    }
+    PrintASTNodePadding(depth);
+    putchar('}');
     return;
   } else if (n->type < kNumOfASTNodeType) {
     printf("(%s:", ASTNodeTypeName[n->type]);
@@ -365,15 +385,21 @@ void PrintASTNode(void* node, int depth) {
     ASTLocalVar* var = ToASTLocalVar(n);
     PrintASTNodeWithName(depth + 1, "type=", var->var_type);
     PrintfWithPadding(depth + 1, "name=%s", var->name);
-    PrintfWithPadding(depth + 1, "ofs_in_stack=%d", var->ofs_in_stack);
+    PrintfWithPadding(depth + 1, "ofs=%d", var->ofs);
   } else if (n->type == kASTType) {
     PrintASTType(ToASTType(n));
     putchar(')');
+    return;
   } else {
     Error("PrintASTNode not implemented for type %d (%s)", n->type,
           GetASTNodeTypeName(n));
   }
   PrintfWithPadding(depth, ")");
+}
+
+void DebugPrintASTNode(void* node) {
+  PrintASTNode(node, 0);
+  putchar('\n');
 }
 
 // ASTList

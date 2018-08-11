@@ -11,6 +11,9 @@ struct AST_TYPE {
   ASTType *lvalue_of;
   ASTType *array_of;
   int num_of_elements;
+  const Token *struct_ident;
+  Context *struct_members;
+  ASTType *func_return_type;
 };
 
 GenToAST(Type);
@@ -44,37 +47,93 @@ ASTType *AllocAndInitASTTypeArrayOf(ASTType *array_of, int num_of_elements) {
   return node;
 }
 
-ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
-  if (GetSizeOfASTList(decl_specs) != 1) {
-    Error("decl_specs contains 2 tokens or more is not supported");
+ASTType *AllocAndInitASTTypeStruct(const Token *struct_ident,
+                                   Context *struct_members) {
+  ASTType *node = AllocASTType();
+  node->basic_type = kTypeStruct;
+  node->struct_ident = struct_ident;
+  node->struct_members = struct_members;
+  return node;
+}
+
+ASTType *AllocAndInitASTTypeFunction(ASTType *func_return_type) {
+  ASTType *node = AllocASTType();
+  node->basic_type = kTypeFunction;
+  node->func_return_type = func_return_type;
+  return node;
+}
+
+ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor,
+                             Context *struct_names) {
+  ASTType *type = NULL;
+  for (int t = 0; t < GetSizeOfASTList(decl_specs); t++) {
+    ASTNode *type_node = GetASTNodeAt(decl_specs, t);
+    if (type_node->type == kASTKeyword) {
+      ASTKeyword *kw = ToASTKeyword(type_node);
+      if (IsEqualToken(kw->token, "const")) {
+        continue;
+      }
+      assert(!type);
+      BasicType basic_type = kTypeNone;
+      if (IsEqualToken(kw->token, "int")) {
+        basic_type = kTypeInt;
+      } else if (IsEqualToken(kw->token, "char")) {
+        basic_type = kTypeChar;
+      } else if (IsEqualToken(kw->token, "void")) {
+        basic_type = kTypeChar;
+      }
+      if (basic_type == kTypeNone) {
+        Error("Type %s is not implemented", kw->token->str);
+      }
+      type = AllocAndInitBasicType(basic_type);
+      continue;
+    } else if (type_node->type == kASTStructSpec) {
+      assert(!type);
+      ASTStructSpec *spec = ToASTStructSpec(type_node);
+      Context *context = NULL;
+      if (spec->struct_decl_list) {
+        context = AllocContext(NULL);
+        for (int i = 0; i < GetSizeOfASTList(spec->struct_decl_list); i++) {
+          ASTStructDecl *decl =
+              ToASTStructDecl(GetASTNodeAt(spec->struct_decl_list, i));
+          assert(decl);
+          for (int k = 0; k < GetSizeOfASTList(decl->struct_decltor_list);
+               k++) {
+            ASTDecltor *decltor =
+                ToASTDecltor(GetASTNodeAt(decl->struct_decltor_list, k));
+            assert(decltor);
+            AppendStructMemberToContext(context, decl->spec_qual_list, decltor,
+                                        struct_names);
+          }
+        }
+      }
+      type = AllocAndInitASTTypeStruct(spec->ident, context);
+      if (struct_names && spec->ident) {
+        ASTType *resolved_type =
+            ToASTType(FindInContext(struct_names, spec->ident->str));
+        if (resolved_type) type = resolved_type;
+      }
+      continue;
+    }
+    ErrorWithASTNode(type_node, "not implemented type of decl_specs[0]");
   }
-  ASTKeyword *kw = ToASTKeyword(GetASTNodeAt(decl_specs, 0));
-  if (!kw) ErrorWithASTNode(decl_specs, "decl_specs[0] is not a Keyword");
-  BasicType basic_type = kTypeNone;
-  if (IsEqualToken(kw->token, "int")) {
-    basic_type = kTypeInt;
-  } else if (IsEqualToken(kw->token, "char")) {
-    basic_type = kTypeChar;
-  } else if (IsEqualToken(kw->token, "void")) {
-    basic_type = kTypeChar;
-  }
-  if (basic_type == kTypeNone) {
-    Error("Type %s is not implemented", kw->token->str);
-  }
-  ASTType *node = AllocAndInitBasicType(basic_type);
+  if (!decltor) return type;
   for (ASTPointer *ptr = decltor->pointer; ptr; ptr = ptr->pointer) {
-    node = AllocAndInitASTTypePointerOf(node);
+    type = AllocAndInitASTTypePointerOf(type);
   }
   for (ASTDirectDecltor *d = decltor->direct_decltor; d;
        d = d->direct_decltor) {
     if (IsEqualToken(d->bracket_token, "[")) {
       ASTInteger *integer = ToASTInteger(d->data);
       if (!integer) Error("Array size should be an integer");
-      node = AllocAndInitASTTypeArrayOf(node, integer->value);
+      type = AllocAndInitASTTypeArrayOf(type, integer->value);
+    } else if (IsEqualToken(d->bracket_token, "(")) {
+      type = AllocAndInitASTTypeFunction(type);
+      // TODO: Add types of args
     }
   }
 
-  return node;
+  return type;
 }
 
 int IsEqualASTType(ASTType *a, ASTType *b) {
@@ -119,6 +178,12 @@ int GetSizeOfType(ASTType *node) {
     return 8;
   } else if (node->basic_type == kTypeArrayOf) {
     return node->num_of_elements * GetSizeOfType(node->array_of);
+  } else if (node->basic_type == kTypeStruct) {
+    if (!node->struct_members) {
+      DebugPrintASTType(node);
+      Error("Cannot take size of incomplete type");
+    }
+    return GetSizeOfContext(node->struct_members);
   } else if (node->basic_type == kTypeChar) {
     return 1;
   } else if (node->basic_type == kTypeInt) {
@@ -127,6 +192,11 @@ int GetSizeOfType(ASTType *node) {
   }
   Error("GetSizeOfType: Not implemented for basic_type %d", node->basic_type);
   return -1;
+}
+
+const char *GetStructTagFromType(ASTType *type) {
+  assert(type->basic_type == kTypeStruct);
+  return type->struct_ident ? type->struct_ident->str : NULL;
 }
 
 ASTType *GetExprTypeOfASTNode(ASTNode *node) {
@@ -165,6 +235,12 @@ void PrintASTType(ASTType *node) {
   } else if (node->basic_type == kTypeArrayOf) {
     printf("array[%d] of ", node->num_of_elements);
     PrintASTType(node->array_of);
+  } else if (node->basic_type == kTypeStruct) {
+    printf("struct %s", node->struct_ident->str);
+    if (!node->struct_members) printf("(incomplete)");
+  } else if (node->basic_type == kTypeFunction) {
+    printf("function returns ");
+    PrintASTType(node->func_return_type);
   } else if (node->basic_type == kTypeChar) {
     printf("char");
   } else if (node->basic_type == kTypeInt) {
@@ -172,4 +248,9 @@ void PrintASTType(ASTType *node) {
   } else {
     Error("PrintASTType: Not implemented for basic_type %d", node->basic_type);
   }
+}
+
+void DebugPrintASTType(ASTType *type) {
+  PrintASTType(type);
+  putchar('\n');
 }

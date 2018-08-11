@@ -148,6 +148,7 @@ const Token *ConsumeToken(TokenStream *stream, const char *str) {
 const Token *ExpectToken(TokenStream *stream, const char *str) {
   if (!IsNextToken(stream, str)) {
     const Token *t = PeekToken(stream);
+    if (!t) Error("Expected %s but got (null)", str);
     Error("%s:%d Expected %s but got %s", t->filename, t->line, str, t->str);
   }
   return PopToken(stream);

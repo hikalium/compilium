@@ -4,7 +4,7 @@
 
 #include "compilium.h"
 
-void TestASTType() {
+void TestSizeOfASTType() {
   ASTType *type;
 
   type = AllocAndInitBasicType(kTypeChar);
@@ -29,10 +29,54 @@ void TestASTType() {
       AllocAndInitASTTypeArrayOf(AllocAndInitBasicType(kTypeChar), 3));
   assert(GetSizeOfType(type) == 8);
 
-  puts("PASS TestASTType");
+  puts("PASS Size of ASTType");
+}
+
+ASTDecl *ParseDecl(TokenStream *stream);
+
+ASTType *ParseDeclAndGetType(TokenList *tokens, const char *src) {
+  SetSizeOfTokenList(tokens, 0);
+  Tokenize(tokens, src, NULL);
+  TokenStream *stream = AllocAndInitTokenStream(tokens);
+  ASTDecl *decl = ParseDecl(stream);
+  assert(decl);
+  ASTDecltor *first_decltor =
+      decl->init_decltors ? ToASTDecltor(GetASTNodeAt(decl->init_decltors, 0))
+                          : NULL;
+  return AllocAndInitASTType(decl->decl_specs, first_decltor, NULL);
+}
+
+void TestParsingDeclIntoASTType() {
+  TokenList *tokens = AllocTokenList(32);
+  ASTType *type;
+
+  type = ParseDeclAndGetType(tokens, "int a;");
+  assert(IsEqualASTType(type, AllocAndInitBasicType(kTypeInt)));
+
+  type = ParseDeclAndGetType(tokens, "char a;");
+  assert(IsEqualASTType(type, AllocAndInitBasicType(kTypeChar)));
+
+  type = ParseDeclAndGetType(tokens, "int *a;");
+  assert(IsEqualASTType(
+      type, AllocAndInitASTTypePointerOf(AllocAndInitBasicType(kTypeInt))));
+
+  type = ParseDeclAndGetType(tokens,
+                             "struct KeyValue {"
+                             "  char *key;"
+                             "  int value;"
+                             "};");
+  assert(GetSizeOfType(type) == 16);
+
+  type = ParseDeclAndGetType(tokens, "int puts(const char *s);");
+  assert(IsBasicType(type, kTypeFunction));
+
+  puts("PASS Parsing Decl into ASTType");
 }
 
 int main(int argc, char *argv[]) {
-  TestASTType();
+  InitASTNodeTypeName();
+
+  TestSizeOfASTType();
+  TestParsingDeclIntoASTType();
   return 0;
 }

@@ -9,6 +9,8 @@ UNIT_TEST_TARGETS = $(addsuffix .unittest, $(UNIT_TESTS))
 
 .PHONY: FORCE default
 
+.PRECIOUS: %_test
+
 default: compilium
 	@true
 
@@ -20,9 +22,11 @@ compilium: $(MAIN_SRCS) $(SRCS) $(HEADERS) Makefile
 compilium_dbg: $(MAIN_SRCS) $(SRCS) $(HEADERS) Makefile
 	$(CC) $(CFLAGS) -g -o $@ $(MAIN_SRCS) $(SRCS)
 
-%.unittest : %_test.c $(SRCS) $(HEADERS) Makefile FORCE
-	@ $(CC) $(CFLAGS) -o $@ $(SRCS) $*_test.c
-	@ ./$@
+%_test : %_test.c $(SRCS) $(HEADERS) Makefile FORCE
+	@ $(CC) $(CFLAGS) -g -o $@ $(SRCS) $*_test.c
+
+%.unittest : %_test Makefile FORCE
+	@ ./$*_test
 
 run: compilium
 	make -C $(dir $(RUN_TARGET)) $(notdir $(RUN_TARGET)).compilium.bin; \

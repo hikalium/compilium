@@ -28,7 +28,6 @@ ASTList *ParseListSeparatedByToken(TokenStream *stream,
   if (!node) return NULL;
   PushASTNodeToList(list, node);
   for (;;) {
-    DebugPrintTokenStream(__func__, stream);
     if (!ConsumeToken(stream, separator)) break;
     node = elem_parser(stream);
     if (!node) {
@@ -484,7 +483,6 @@ ASTNode *ParseDecltorNode(TokenStream *stream) {
 
 #define MAX_NODES_IN_DECL_SPECS 4
 ASTList *ParseSpecQualList(TokenStream *stream) {
-  DebugPrintTokenStream(__func__, stream);
   // specifier-qualifier-list:
   //  [type-specifier type-qualifier]+
   ASTList *list = AllocASTList(MAX_NODES_IN_DECL_SPECS);
@@ -500,7 +498,6 @@ ASTList *ParseSpecQualList(TokenStream *stream) {
 }
 
 ASTNode *ParseStructDecl(TokenStream *stream) {
-  DebugPrintTokenStream(__func__, stream);
   ASTList *spec_qual_list = ParseSpecQualList(stream);
   if (!spec_qual_list) return NULL;
   ASTList *struct_decltor_list =

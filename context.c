@@ -10,21 +10,24 @@ struct CONTEXT {
 };
 
 Context *AllocContext(const Context *parent) {
-  printf("AllocContext\n");
   Context *context = malloc(sizeof(Context));
   context->parent = parent;
   context->dict = AllocASTDict(8);
   return context;
 }
 
-ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident) {
+ASTNode *FindInContext(const Context *context, const char *key) {
   if (!context) return NULL;
-  ASTNode *result = FindASTNodeInDict(context->dict, ident->token->str);
+  ASTNode *result = FindASTNodeInDict(context->dict, key);
   if (result) return result;
-  return FindIdentInContext(context->parent, ident);
+  return FindInContext(context->parent, key);
 }
 
-int GetStackSizeForContext(const Context *context) {
+ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident) {
+  return FindInContext(context, ident->token->str);
+}
+
+int GetSizeOfContext(const Context *context) {
   int size = 0;
   for (int i = 0; i < GetSizeOfASTDict(context->dict); i++) {
     ASTLocalVar *local_var =
@@ -35,18 +38,29 @@ int GetStackSizeForContext(const Context *context) {
   return size;
 }
 
-ASTLocalVar *AppendLocalVarInContext(Context *context, ASTList *decl_specs,
-                                     ASTDecltor *decltor) {
-  const Token *ident_token = GetIdentTokenFromDecltor(decltor);
-  ASTLocalVar *local_var = AllocASTLocalVar();
-  local_var->name = ident_token->str;
-  local_var->var_type = AllocAndInitASTType(decl_specs, decltor);
-  local_var->ofs_in_stack =
-      GetStackSizeForContext(context) + GetSizeOfType(local_var->var_type);
-  AppendASTNodeToDict(context->dict, ident_token->str, ToASTNode(local_var));
-  PrintASTNode(ToASTNode(local_var), 0);
-  putchar('\n');
+ASTLocalVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
+                                     ASTDecltor *decltor,
+                                     Context *struct_names) {
+  ASTLocalVar *local_var =
+      AllocAndInitASTLocalVar(decl_specs, decltor, struct_names);
+  local_var->ofs =
+      GetSizeOfContext(context) + GetSizeOfType(local_var->var_type);
+  AppendASTNodeToDict(context->dict, local_var->name, ToASTNode(local_var));
   return local_var;
+}
+
+ASTLocalVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
+                                         ASTDecltor *decltor,
+                                         Context *struct_names) {
+  ASTLocalVar *local_var =
+      AllocAndInitASTLocalVar(decl_specs, decltor, struct_names);
+  local_var->ofs = GetSizeOfContext(context);
+  AppendASTNodeToDict(context->dict, local_var->name, ToASTNode(local_var));
+  return local_var;
+}
+
+void AppendTypeToContext(Context *context, const char *name, ASTType *type) {
+  AppendASTNodeToDict(context->dict, name, ToASTNode(type));
 }
 
 void SetBreakLabelInContext(Context *context, ASTLabel *label) {
@@ -56,3 +70,5 @@ void SetBreakLabelInContext(Context *context, ASTLabel *label) {
 ASTLabel *GetBreakLabelInContext(Context *context) {
   return context->break_label;
 }
+
+void PrintContext(const Context *context) { DebugPrintASTNode(context->dict); }

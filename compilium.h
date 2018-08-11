@@ -67,6 +67,8 @@ typedef enum {
   kTypeLValueOf,
   kTypePointerOf,
   kTypeArrayOf,
+  kTypeStruct,
+  kTypeFunction,
   kTypeVoid,
   kTypeChar,
   kTypeInt,
@@ -319,7 +321,7 @@ typedef struct {
 
 struct AST_LOCAL_VAR {
   ASTNodeType type;
-  int ofs_in_stack;
+  int ofs;
   const char *name;
   ASTType *var_type;
 };
@@ -402,12 +404,15 @@ ASTKeyword *AllocAndInitASTKeyword(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
 ASTNode *AllocAndInitASTExprFuncCall(ASTNode *func, ASTNode *args);
+ASTLocalVar *AllocAndInitASTLocalVar(ASTList *decl_specs, ASTDecltor *decltor,
+                                     Context *struct_names);
 
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetFuncNameTokenFromFuncDef(ASTFuncDef *func_def);
 
 void PrintASTNode(void *node, int depth);
+void DebugPrintASTNode(void *node);
 
 void PushASTNodeToList(ASTList *list, ASTNode *node);
 ASTNode *PopASTNodeFromList(ASTList *list);
@@ -423,12 +428,19 @@ int GetSizeOfASTDict(const ASTDict *dict);
 
 // @context.c
 Context *AllocContext(const Context *parent);
+ASTNode *FindInContext(const Context *context, const char *key);
 ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident);
-int GetStackSizeForContext(const Context *context);
-ASTLocalVar *AppendLocalVarInContext(Context *context, ASTList *decl_specs,
-                                     ASTDecltor *decltor);
+int GetSizeOfContext(const Context *context);
+ASTLocalVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
+                                     ASTDecltor *decltor,
+                                     Context *struct_names);
+ASTLocalVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
+                                         ASTDecltor *decltor,
+                                         Context *struct_names);
+void AppendTypeToContext(Context *context, const char *name, ASTType *type);
 void SetBreakLabelInContext(Context *context, ASTLabel *label);
 ASTLabel *GetBreakLabelInContext(Context *context);
+void PrintContext(const Context *context);
 
 // @error.c
 void Error(const char *fmt, ...);
@@ -485,12 +497,15 @@ ASTType *AllocAndInitBasicType(BasicType basic_type);
 ASTType *AllocAndInitASTTypePointerOf(ASTType *pointer_of);
 ASTType *AllocAndInitASTTypeLValueOf(ASTType *lvalue_of);
 ASTType *AllocAndInitASTTypeArrayOf(ASTType *array_of, int num_of_elements);
-ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor);
+ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor,
+                             Context *struct_names);
 int IsEqualASTType(ASTType *a, ASTType *b);
 int IsBasicType(ASTType *node, BasicType type);
 ASTType *GetRValueTypeOf(ASTType *node);
 ASTType *GetDereferencedTypeOf(ASTType *node);
 ASTType *ConvertFromArrayToPointer(ASTType *node);
 int GetSizeOfType(ASTType *node);
+const char *GetStructTagFromType(ASTType *type);
 ASTType *GetExprTypeOfASTNode(ASTNode *node);
 void PrintASTType(ASTType *node);
+void DebugPrintASTType(ASTType *type);

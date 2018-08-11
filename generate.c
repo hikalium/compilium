@@ -224,8 +224,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         fprintf(fp, "mov     rax, 0xf\n");
         fprintf(fp, "not     rax\n");
         fprintf(fp, "sub     rsp, %d\n",
-                GetByteSizeOfSpillArea() +
-                    GetStackSizeForContext(func_def->context));
+                GetByteSizeOfSpillArea() + GetSizeOfContext(func_def->context));
         fprintf(fp, "and     rsp, rax\n");
       } break;
       case kILOpFuncEnd:
@@ -496,7 +495,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         const char *dst = AssignRegister(fp, op->dst);
         ASTLocalVar *var = ToASTLocalVar(op->ast_node);
         if (!var) Error("var is not an ASTLocalVar");
-        int byte_ofs = var->ofs_in_stack + GetByteSizeOfSpillArea();
+        int byte_ofs = var->ofs + GetByteSizeOfSpillArea();
         fprintf(fp, "lea %s, [rbp - %d] # local_var[%s]\n", dst, byte_ofs,
                 var->name);
       } break;
