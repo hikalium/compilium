@@ -28,6 +28,14 @@ ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident) {
   return FindInContext(context, ident->token->str);
 }
 
+static int GetNextBaseForLocalVarContext(const Context *context) {
+  if (GetSizeOfASTDict(context->dict) == 0) return 0;
+  ASTVar *var = ToASTVar(
+      GetASTNodeInDictAt(context->dict, GetSizeOfASTDict(context->dict) - 1));
+  assert(var);
+  return var->ofs;
+}
+
 static int GetNextOfsForStructContext(const Context *context) {
   if (GetSizeOfASTDict(context->dict) == 0) return 0;
   ASTVar *var = ToASTVar(
@@ -64,8 +72,10 @@ int GetAlignOfContext(const Context *context) {
 ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
                                 ASTDecltor *decltor, Context *struct_names) {
   ASTVar *local_var = AllocAndInitASTVar(decl_specs, decltor, struct_names);
-  local_var->ofs =
-      GetSizeOfContext(context) + GetSizeOfType(local_var->var_type);
+  int base = GetNextBaseForLocalVarContext(context);
+  int align = GetAlignOfType(local_var->var_type);
+  int ofs = base + GetSizeOfType(local_var->var_type);
+  local_var->ofs = (ofs + align - 1) / align * align;
   AppendASTNodeToDict(context->dict, local_var->name, ToASTNode(local_var));
   return local_var;
 }
