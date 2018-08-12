@@ -129,7 +129,7 @@ GenAllocAST(StructSpec);
 GenAllocAST(Pointer);
 
 ASTDict* AllocASTDict(int capacity) {
-  ASTDict* dict = calloc(1, sizeof(ASTDict) + sizeof(ASTDictEntry*) * capacity);
+  ASTDict* dict = calloc(1, sizeof(ASTDict) + sizeof(ASTDictEntry) * capacity);
   dict->type = kASTDict;
   dict->capacity = capacity;
   dict->size = 0;
@@ -266,7 +266,7 @@ void PrintASTNode(void* node, int depth) {
   }
   if (n->type == kASTFuncDef) {
     ASTFuncDef* func_def = ToASTFuncDef(n);
-    PrintASTNodeWithName(depth + 1, "return_type=", func_def->return_type);
+    PrintASTNodeWithName(depth + 1, "func_type=", func_def->func_type);
     PrintASTNodeWithName(depth + 1, "decl_specs=", func_def->decl_specs);
     PrintASTNodeWithName(depth + 1, "decltor=", func_def->decltor);
     PrintASTNodeWithName(depth + 1, "comp_stmt=", func_def->comp_stmt);

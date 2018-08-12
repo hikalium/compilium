@@ -17,7 +17,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     return NULL;
   } else if (node->type == kASTFuncDef) {
     ASTFuncDef *def = ToASTFuncDef(node);
-    def->return_type =
+    def->func_type =
         AllocAndInitASTType(def->decl_specs, def->decltor, struct_names);
     context = AllocContext(context);
     def->context = context;

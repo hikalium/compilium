@@ -306,7 +306,7 @@ typedef struct {
   ASTDecltor *decltor;
   ASTCompStmt *comp_stmt;
   Context *context;
-  ASTType *return_type;
+  ASTType *func_type;
 } ASTFuncDef;
 
 typedef struct {

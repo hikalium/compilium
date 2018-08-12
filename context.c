@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -27,12 +28,21 @@ ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident) {
   return FindInContext(context, ident->token->str);
 }
 
+static int GetNextOfsForStructContext(const Context *context) {
+  if (GetSizeOfASTDict(context->dict) == 0) return 0;
+  ASTVar *var = ToASTVar(
+      GetASTNodeInDictAt(context->dict, GetSizeOfASTDict(context->dict) - 1));
+  assert(var);
+  return var->ofs + GetSizeOfType(var->var_type);
+}
+
 int GetSizeOfContext(const Context *context) {
   int size = 0;
-  for (int i = 0; i < GetSizeOfASTDict(context->dict); i++) {
-    ASTVar *local_var = ToASTVar(GetASTNodeInDictAt(context->dict, i));
-    if (!local_var) Error("GetStackSizeForContext: local_var is NULL");
-    size += GetSizeOfType(local_var->var_type);
+  if (GetSizeOfASTDict(context->dict)) {
+    ASTVar *var = ToASTVar(
+        GetASTNodeInDictAt(context->dict, GetSizeOfASTDict(context->dict) - 1));
+    assert(var);
+    size = var->ofs + GetSizeOfType(var->var_type);
   }
   int max_align_size = GetAlignOfContext(context);
   size = (size + max_align_size - 1) / max_align_size * max_align_size;
@@ -44,9 +54,9 @@ static int imax(int a, int b) { return a > b ? a : b; }
 int GetAlignOfContext(const Context *context) {
   int max_align_size = 1;
   for (int i = 0; i < GetSizeOfASTDict(context->dict); i++) {
-    ASTVar *local_var = ToASTVar(GetASTNodeInDictAt(context->dict, i));
-    if (!local_var) Error("GetStackSizeForContext: local_var is NULL");
-    max_align_size = imax(max_align_size, GetAlignOfType(local_var->var_type));
+    ASTVar *var = ToASTVar(GetASTNodeInDictAt(context->dict, i));
+    assert(var);
+    max_align_size = imax(max_align_size, GetAlignOfType(var->var_type));
   }
   return max_align_size;
 }
@@ -63,10 +73,12 @@ ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
 ASTVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
                                     ASTDecltor *decltor,
                                     Context *struct_names) {
-  ASTVar *local_var = AllocAndInitASTVar(decl_specs, decltor, struct_names);
-  local_var->ofs = GetSizeOfContext(context);
-  AppendASTNodeToDict(context->dict, local_var->name, ToASTNode(local_var));
-  return local_var;
+  ASTVar *var = AllocAndInitASTVar(decl_specs, decltor, struct_names);
+  int ofs = GetNextOfsForStructContext(context);
+  int align = GetAlignOfType(var->var_type);
+  var->ofs = (ofs + align - 1) / align * align;
+  AppendASTNodeToDict(context->dict, var->name, ToASTNode(var));
+  return var;
 }
 
 void AppendTypeToContext(Context *context, const char *name, ASTType *type) {
