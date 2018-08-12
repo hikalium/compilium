@@ -140,27 +140,6 @@ void GenerateILForFuncDef(ASTList *il, Register *dst, ASTNode *node) {
   EmitILOp(il, kILOpFuncEnd, NULL, NULL, NULL, node);
 }
 
-typedef struct {
-  const char *str;
-  ILOpType il_op_type;
-} PairOfStrAndILOpType;
-
-PairOfStrAndILOpType bin_op_list[] = {
-    {"+", kILOpAdd},         {"-", kILOpSub},    {"*", kILOpMul},
-    {"/", kILOpDiv},         {"%", kILOpMod},    {"<<", kILOpShiftLeft},
-    {">>", kILOpShiftRight}, {">", kILOpCmpG},   {">=", kILOpCmpGE},
-    {"<", kILOpCmpL},        {"<=", kILOpCmpLE}, {"==", kILOpCmpE},
-    {"!=", kILOpCmpNE},      {"&", kILOpAnd},    {"^", kILOpXor},
-    {"|", kILOpOr},          {NULL, kILOpNop},
-};
-
-PairOfStrAndILOpType comp_assign_op_list[] = {
-    {"*=", kILOpMul},         {"/=", kILOpDiv}, {"%=", kILOpMod},
-    {"+=", kILOpAdd},         {"-=", kILOpSub}, {"<<=", kILOpShiftLeft},
-    {">>=", kILOpShiftRight}, {"&=", kILOpAnd}, {"^=", kILOpXor},
-    {"|=", kILOpOr},          {NULL, kILOpNop},
-};
-
 Register *GenerateILForExprUnaryPreOp(ASTList *il, Register *dst,
                                       ASTNode *node) {
   ASTExprUnaryPreOp *op = ToASTExprUnaryPreOp(node);
@@ -248,6 +227,27 @@ Register *GenerateILForExprUnaryPostOp(ASTList *il, Register *dst,
   return NULL;
 }
 
+typedef struct {
+  const char *str;
+  ILOpType il_op_type;
+} PairOfStrAndILOpType;
+
+PairOfStrAndILOpType bin_op_list[] = {
+    {"+", kILOpAdd},         {"-", kILOpSub},    {"*", kILOpMul},
+    {"/", kILOpDiv},         {"%", kILOpMod},    {"<<", kILOpShiftLeft},
+    {">>", kILOpShiftRight}, {">", kILOpCmpG},   {">=", kILOpCmpGE},
+    {"<", kILOpCmpL},        {"<=", kILOpCmpLE}, {"==", kILOpCmpE},
+    {"!=", kILOpCmpNE},      {"&", kILOpAnd},    {"^", kILOpXor},
+    {"|", kILOpOr},          {NULL, kILOpNop},
+};
+
+PairOfStrAndILOpType comp_assign_op_list[] = {
+    {"*=", kILOpMul},         {"/=", kILOpDiv}, {"%=", kILOpMod},
+    {"+=", kILOpAdd},         {"-=", kILOpSub}, {"<<=", kILOpShiftLeft},
+    {">>=", kILOpShiftRight}, {"&=", kILOpAnd}, {"^=", kILOpXor},
+    {"|=", kILOpOr},          {NULL, kILOpNop},
+};
+
 Register *GenerateILForExprBinOp(ASTList *il, Register *dst, ASTNode *node) {
   ASTExprBinOp *bin_op = ToASTExprBinOp(node);
   ILOpType il_op_type = kILOpNop;
@@ -263,6 +263,20 @@ Register *GenerateILForExprBinOp(ASTList *il, Register *dst, ASTNode *node) {
   if (il_op_type != kILOpNop) {
     GenerateILRValueFor(il, left, bin_op->left);
     GenerateILRValueFor(il, right, bin_op->right);
+    ASTType *left_type = GetExprTypeOfASTNode(bin_op->left);
+    if (IsTypePointer(left_type)) {
+      int delta =
+          GetSizeOfType(GetDereferencedTypeOf(GetExprTypeOfASTNode(node)));
+      if (delta != 1) {
+        ASTInteger *delta_int = AllocAndInitASTInteger(delta);
+        Register *delta_reg = AllocRegister();
+        Register *effective_ofs_reg = AllocRegister();
+        GenerateILFor(il, delta_reg, ToASTNode(delta_int));
+        EmitILOp(il, kILOpMul, effective_ofs_reg, right, delta_reg, NULL);
+        EmitILOp(il, il_op_type, dst, left, effective_ofs_reg, node);
+        return dst;
+      }
+    }
     EmitILOp(il, il_op_type, dst, left, right, node);
     return dst;
   }

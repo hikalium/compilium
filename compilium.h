@@ -502,6 +502,7 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor,
                              Context *struct_names);
 int IsEqualASTType(ASTType *a, ASTType *b);
 int IsBasicType(ASTType *node, BasicType type);
+int IsTypePointer(ASTType *node);
 ASTType *GetRValueTypeOf(ASTType *node);
 ASTType *GetDereferencedTypeOf(ASTType *node);
 ASTType *ConvertFromArrayToPointer(ASTType *node);

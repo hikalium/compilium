@@ -153,6 +153,11 @@ int IsBasicType(ASTType *node, BasicType type) {
   return node && node->basic_type == type;
 }
 
+int IsTypePointer(ASTType *node) {
+  ASTType *rtype = GetRValueTypeOf(node);
+  return IsBasicType(rtype, kTypePointerOf) || IsBasicType(rtype, kTypeArrayOf);
+}
+
 ASTType *GetRValueTypeOf(ASTType *node) {
   if (!node) return NULL;
   if (node->basic_type == kTypeLValueOf) {
