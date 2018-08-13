@@ -4,7 +4,7 @@
 
 #include "compilium.h"
 
-void Error(const char *fmt, ...) {
+_Noreturn void Error(const char *fmt, ...) {
   fflush(stdout);
   fprintf(stderr, "Error: ");
   va_list ap;
@@ -15,7 +15,7 @@ void Error(const char *fmt, ...) {
   exit(EXIT_FAILURE);
 }
 
-void ErrorWithASTNode(void *node, const char *fmt, ...) {
+_Noreturn void ErrorWithASTNode(void *node, const char *fmt, ...) {
   fflush(stdout);
   fprintf(stderr, "Error: ");
   va_list ap;

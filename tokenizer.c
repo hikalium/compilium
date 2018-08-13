@@ -4,7 +4,7 @@
 
 #include "compilium.h"
 
-const char *Preprocess(TokenList *tokens, const char *p);
+const char *Preprocess(TokenList *tokens, const char *p, int *line);
 
 char *ReadFile(const char *file_name) {
   // file_buf is allocated here.
@@ -46,7 +46,7 @@ int IsKeywordStr(const char *str) {
   ((c) == '_' || ('a' <= (c) && (c) <= 'z') || ('A' <= (c) && (c) <= 'Z'))
 #define IS_IDENT_DIGIT(c) (('0' <= (c) && (c) <= '9'))
 const char *CommonTokenizer(TokenList *tokens, const char *p,
-                            const char *filename, int line) {
+                            const char *filename, int *line) {
   static const char *single_char_punctuators = "[](){}~?:;,\\";
   const char *begin = NULL;
   if (IS_IDENT_NODIGIT(*p)) {
@@ -55,17 +55,21 @@ const char *CommonTokenizer(TokenList *tokens, const char *p,
       p++;
     }
     Token *token =
-        AllocTokenWithSubstring(begin, p, kIdentifier, filename, line);
+        AllocTokenWithSubstring(begin, p, kIdentifier, filename, *line);
     if (IsKeywordStr(token->str)) token->type = kKeyword;
     AppendTokenToList(tokens, token);
-  } else if (IS_IDENT_DIGIT(*p)) {
+    return p;
+  }
+  if (IS_IDENT_DIGIT(*p)) {
     begin = p++;
     while (IS_IDENT_DIGIT(*p)) {
       p++;
     }
     AppendTokenToList(
-        tokens, AllocTokenWithSubstring(begin, p, kInteger, filename, line));
-  } else if (*p == '"' || *p == '\'') {
+        tokens, AllocTokenWithSubstring(begin, p, kInteger, filename, *line));
+    return p;
+  }
+  if (*p == '"' || *p == '\'') {
     begin = p++;
     while (*p && *p != *begin) {
       if (*p == '\\') p++;
@@ -76,16 +80,27 @@ const char *CommonTokenizer(TokenList *tokens, const char *p,
     }
     TokenType type = (*begin == '"' ? kStringLiteral : kCharacterLiteral);
     AppendTokenToList(tokens, AllocTokenWithSubstring(begin + 1, p - 1, type,
-                                                      filename, line));
-  } else if (strchr(single_char_punctuators, *p)) {
-    // single character punctuator
+                                                      filename, *line));
+    return p;
+  }
+  if (strchr(single_char_punctuators, *p)) {
     begin = p++;
-    AppendTokenToList(
-        tokens, AllocTokenWithSubstring(begin, p, kPunctuator, filename, line));
-  } else if (*p == '#') {
+    AppendTokenToList(tokens, AllocTokenWithSubstring(begin, p, kPunctuator,
+                                                      filename, *line));
+    return p;
+  }
+  if (*p == '#') {
     p++;
-    p = Preprocess(tokens, p);
-  } else if (*p == '|' || *p == '&' || *p == '+' || *p == '/') {
+    return Preprocess(tokens, p, line);
+  }
+  if (*p == '/' && *(p + 1) == '*') {
+    while (*p) {
+      if (*p == '*' && *(p + 1) == '/') return p + 2;
+      p++;
+    }
+    Error("*/ expected but got EOF");
+  }
+  if (*p == '|' || *p == '&' || *p == '+' || *p == '/') {
     // | || |=
     // & && &=
     // + ++ +=
@@ -93,18 +108,26 @@ const char *CommonTokenizer(TokenList *tokens, const char *p,
     begin = p++;
     if (*p == *begin || *p == '=') {
       p++;
+      if (*begin == '/' && *begin == *(begin + 1)) {
+        while (*p && *p != '\n') p++;
+        return p;
+      }
     }
-    AppendTokenToList(
-        tokens, AllocTokenWithSubstring(begin, p, kPunctuator, filename, line));
-  } else if (*p == '-') {
+    AppendTokenToList(tokens, AllocTokenWithSubstring(begin, p, kPunctuator,
+                                                      filename, *line));
+    return p;
+  }
+  if (*p == '-') {
     // - -- -= ->
     begin = p++;
     if (*p == *begin || *p == '-' || *p == '=' || *p == '>') {
       p++;
     }
-    AppendTokenToList(
-        tokens, AllocTokenWithSubstring(begin, p, kPunctuator, filename, line));
-  } else if (*p == '=' || *p == '!' || *p == '*' || *p == '%' || *p == '^') {
+    AppendTokenToList(tokens, AllocTokenWithSubstring(begin, p, kPunctuator,
+                                                      filename, *line));
+    return p;
+  }
+  if (*p == '=' || *p == '!' || *p == '*' || *p == '%' || *p == '^') {
     // = ==
     // ! !=
     // * *=
@@ -114,9 +137,11 @@ const char *CommonTokenizer(TokenList *tokens, const char *p,
     if (*p == '=') {
       p++;
     }
-    AppendTokenToList(
-        tokens, AllocTokenWithSubstring(begin, p, kPunctuator, filename, line));
-  } else if (*p == '<' || *p == '>') {
+    AppendTokenToList(tokens, AllocTokenWithSubstring(begin, p, kPunctuator,
+                                                      filename, *line));
+    return p;
+  }
+  if (*p == '<' || *p == '>') {
     // < << <= <<=
     // > >> >= >>=
     begin = p++;
@@ -128,30 +153,33 @@ const char *CommonTokenizer(TokenList *tokens, const char *p,
     } else if (*p == '=') {
       p++;
     }
-    AppendTokenToList(
-        tokens, AllocTokenWithSubstring(begin, p, kPunctuator, filename, line));
-  } else if (*p == '.') {
+    AppendTokenToList(tokens, AllocTokenWithSubstring(begin, p, kPunctuator,
+                                                      filename, *line));
+    return p;
+  }
+  if (*p == '.') {
     // .
     // ...
     begin = p++;
     if (p[0] == '.' && p[1] == '.') {
       p += 2;
     }
-    AppendTokenToList(
-        tokens, AllocTokenWithSubstring(begin, p, kPunctuator, filename, line));
-  } else {
-    Error("Unexpected char '%c'\n", *p);
+    AppendTokenToList(tokens, AllocTokenWithSubstring(begin, p, kPunctuator,
+                                                      filename, *line));
+    return p;
   }
-  return p;
+  Error("Unexpected char '%c'\n", *p);
 }
 
-const char *Preprocess(TokenList *tokens, const char *p) {
+const char *Preprocess(TokenList *tokens, const char *p, int *line) {
   int org_num_of_token = GetSizeOfTokenList(tokens);
+  int dummy_line;
   do {
     if (*p == ' ' || *p == '\t') {
       p++;
     } else if (*p == '\n') {
       p++;
+      (*line)++;
       break;
     } else if (*p == '\\') {
       // if "\\\n", continue parsing beyond the lines.
@@ -161,8 +189,9 @@ const char *Preprocess(TokenList *tokens, const char *p) {
         Error("Unexpected char '%c'\n", *p);
       }
       p++;
+      (*line)++;
     } else {
-      p = CommonTokenizer(tokens, p, "(preprocess)", 1);
+      p = CommonTokenizer(tokens, p, "(preprocess)", &dummy_line);
     }
   } while (*p);
   const Token *directive = GetTokenAt(tokens, org_num_of_token);
@@ -171,11 +200,10 @@ const char *Preprocess(TokenList *tokens, const char *p) {
     SetSizeOfTokenList(tokens, org_num_of_token);
     char *input = ReadFile(file_name->str);
     Tokenize(tokens, input, file_name->str);
-  } else {
-    Error("Unknown preprocessor directive '%s'",
-          directive ? directive->str : "(null)");
+    return p;
   }
-  return p;
+  Error("Unknown preprocessor directive '%s'",
+        directive ? directive->str : "(null)");
 }
 
 void Tokenize(TokenList *tokens, const char *p, const char *filename) {
@@ -187,7 +215,7 @@ void Tokenize(TokenList *tokens, const char *p, const char *filename) {
       p++;
       line++;
     } else {
-      p = CommonTokenizer(tokens, p, filename, line);
+      p = CommonTokenizer(tokens, p, filename, &line);
     }
   } while (*p);
 }

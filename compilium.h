@@ -444,8 +444,8 @@ ASTLabel *GetBreakLabelInContext(Context *context);
 void PrintContext(const Context *context);
 
 // @error.c
-void Error(const char *fmt, ...);
-void ErrorWithASTNode(void *node, const char *fmt, ...);
+_Noreturn void Error(const char *fmt, ...);
+_Noreturn void ErrorWithASTNode(void *node, const char *fmt, ...);
 void Warning(const char *fmt, ...);
 
 // @generate.c
