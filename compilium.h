@@ -162,6 +162,13 @@ typedef struct {
 
 typedef struct {
   ASTNodeType type;
+  const Token *token;
+  ASTVar *local_var;
+  ASTType *var_type;
+} ASTIdent;
+
+typedef struct {
+  ASTNodeType type;
   ASTList *root_list;
 } ASTRoot;
 
@@ -260,13 +267,6 @@ typedef struct {
   Register *right;
   ASTNode *ast_node;
 } ASTILOp;
-
-typedef struct {
-  ASTNodeType type;
-  const Token *token;
-  ASTVar *local_var;
-  ASTType *var_type;
-} ASTIdent;
 
 typedef struct AST_DIRECT_DECLTOR ASTDirectDecltor;
 struct AST_DIRECT_DECLTOR {
@@ -503,12 +503,14 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor,
 int IsEqualASTType(ASTType *a, ASTType *b);
 int IsBasicType(ASTType *node, BasicType type);
 int IsTypePointer(ASTType *node);
+int IsTypeStructLValue(ASTType *type);
 ASTType *GetRValueTypeOf(ASTType *node);
 ASTType *GetDereferencedTypeOf(ASTType *node);
 ASTType *ConvertFromArrayToPointer(ASTType *node);
 int GetSizeOfType(ASTType *node);
 int GetAlignOfType(ASTType *node);
 const char *GetStructTagFromType(ASTType *type);
+Context *GetStructContextFromType(ASTType *type);
 ASTType *GetExprTypeOfASTNode(ASTNode *node);
 void PrintASTType(ASTType *node);
 void DebugPrintASTType(ASTType *type);

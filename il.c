@@ -326,9 +326,8 @@ Register *GenerateILForExprBinOp(ASTList *il, Register *dst, ASTNode *node) {
     GenerateILRValueFor(il, dst, bin_op->right);
     return dst;
   } else if (IsEqualToken(bin_op->op, "(")) {
-    if (bin_op->left->type != kASTIdent) {
+    if (bin_op->left->type != kASTIdent)
       Error("Calling non-labeled function is not implemented.");
-    }
     if (bin_op->right) {
       ASTList *arg_list = ToASTList(bin_op->right);
       if (!arg_list) Error("arg_list is not an ASTList");
@@ -345,9 +344,31 @@ Register *GenerateILForExprBinOp(ASTList *il, Register *dst, ASTNode *node) {
     }
     EmitILOp(il, kILOpCall, dst, NULL, NULL, ToASTNode(bin_op->left));
     return dst;
+  } else if (IsEqualToken(bin_op->op, ".")) {
+    ASTType *left_type = GetExprTypeOfASTNode(bin_op->left);
+    Context *struct_members = GetStructContextFromType(left_type);
+    ASTVar *member =
+        ToASTVar(FindIdentInContext(struct_members, ToASTIdent(bin_op->right)));
+    assert(member);
+    GenerateILFor(il, left, bin_op->left);
+    GenerateILRValueFor(il, right,
+                        ToASTNode(AllocAndInitASTInteger(member->ofs)));
+    EmitILOp(il, kILOpAdd, dst, left, right, node);
+    return dst;
+  } else if (IsEqualToken(bin_op->op, "->")) {
+    ASTType *left_type = GetExprTypeOfASTNode(bin_op->left);
+    Context *struct_members =
+        GetStructContextFromType(GetDereferencedTypeOf(left_type));
+    ASTVar *member =
+        ToASTVar(FindIdentInContext(struct_members, ToASTIdent(bin_op->right)));
+    assert(member);
+    GenerateILRValueFor(il, left, bin_op->left);
+    GenerateILRValueFor(il, right,
+                        ToASTNode(AllocAndInitASTInteger(member->ofs)));
+    EmitILOp(il, kILOpAdd, dst, left, right, node);
+    return dst;
   }
   Error("Not implemented GenerateILForExprBinOp (op: %s)", bin_op->op->str);
-  return NULL;
 }
 
 Register *GenerateILForExprFuncCall(ASTList *il, Register *dst, ASTNode *node) {

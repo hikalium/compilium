@@ -60,6 +60,26 @@ ASTNode *ParseLeftAssocBinOp(TokenStream *stream,
 
 // Parser
 
+ASTIdent *ParseIdent(TokenStream *stream) {
+  const Token *token;
+  token = PeekToken(stream);
+  if (token->type != kIdentifier) {
+    return NULL;
+  }
+  PopToken(stream);
+  ASTIdent *ident = AllocASTIdent();
+  ident->token = token;
+  return ident;
+}
+
+ASTNode *ParseIdentNode(TokenStream *stream) {
+  return ToASTNode(ParseIdent(stream));
+}
+
+ASTList *ParseIdentList(TokenStream *stream) {
+  return ParseCommaSeparatedList(stream, ParseIdentNode);
+}
+
 ASTNode *ParsePrimaryExpr(TokenStream *stream) {
   const Token *token = PeekToken(stream);
   if (token->type == kInteger) {
@@ -94,6 +114,7 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
   //   primary-expression
   //   postfix-expression ( argument-expression-list_opt )
   const static char *ops[] = {"++", "--", NULL};
+  const static char *ops_followed_by_ident[] = {".", "->", NULL};
   ASTNode *last = ParsePrimaryExpr(stream);
   if (!last) return NULL;
   for (;;) {
@@ -116,6 +137,9 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
       op->op = PopToken(stream);
       op->expr = last;
       last = ToASTNode(op);
+    } else if (IsNextTokenInList(stream, ops_followed_by_ident)) {
+      const Token *op_token = PopToken(stream);
+      last = AllocAndInitASTExprBinOp(op_token, last, ParseIdentNode(stream));
     } else {
       break;
     }
@@ -351,26 +375,6 @@ ASTCompStmt *ParseCompStmt(TokenStream *stream) {
   comp_stmt->stmt_list = stmt_list;
   ExpectToken(stream, "}");
   return comp_stmt;
-}
-
-ASTIdent *ParseIdent(TokenStream *stream) {
-  const Token *token;
-  token = PeekToken(stream);
-  if (token->type != kIdentifier) {
-    return NULL;
-  }
-  PopToken(stream);
-  ASTIdent *ident = AllocASTIdent();
-  ident->token = token;
-  return ident;
-}
-
-ASTNode *ParseIdentNode(TokenStream *stream) {
-  return ToASTNode(ParseIdent(stream));
-}
-
-ASTList *ParseIdentList(TokenStream *stream) {
-  return ParseCommaSeparatedList(stream, ParseIdentNode);
 }
 
 ASTParamDecl *ParseParamDecl(TokenStream *stream) {

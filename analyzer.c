@@ -80,6 +80,23 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
       }
       bin_op->expr_type = GetRValueTypeOf(right_type);
       return bin_op->expr_type;
+    } else if (IsEqualToken(bin_op->op, ".")) {
+      ASTType *left_type = AnalyzeNode(bin_op->left, context);
+      Context *struct_members = GetStructContextFromType(left_type);
+      ASTVar *member = ToASTVar(
+          FindIdentInContext(struct_members, ToASTIdent(bin_op->right)));
+      if (!member) ErrorWithASTNode(bin_op, "A member not found");
+      bin_op->expr_type = AllocAndInitASTTypeLValueOf(member->var_type);
+      return bin_op->expr_type;
+    } else if (IsEqualToken(bin_op->op, "->")) {
+      ASTType *left_type = AnalyzeNode(bin_op->left, context);
+      ASTType *left_deref_type = GetDereferencedTypeOf(left_type);
+      Context *struct_members = GetStructContextFromType(left_deref_type);
+      ASTVar *member = ToASTVar(
+          FindIdentInContext(struct_members, ToASTIdent(bin_op->right)));
+      if (!member) ErrorWithASTNode(bin_op, "A member not found");
+      bin_op->expr_type = AllocAndInitASTTypeLValueOf(member->var_type);
+      return bin_op->expr_type;
     }
     left_type = GetRValueTypeOf(left_type);
     right_type = GetRValueTypeOf(right_type);

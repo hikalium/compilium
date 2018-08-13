@@ -158,6 +158,11 @@ int IsTypePointer(ASTType *node) {
   return IsBasicType(rtype, kTypePointerOf) || IsBasicType(rtype, kTypeArrayOf);
 }
 
+int IsTypeStructLValue(ASTType *type) {
+  return IsBasicType(type, kTypeLValueOf) &&
+         IsBasicType(type->lvalue_of, kTypeStruct);
+}
+
 ASTType *GetRValueTypeOf(ASTType *node) {
   if (!node) return NULL;
   if (node->basic_type == kTypeLValueOf) {
@@ -220,8 +225,15 @@ int GetAlignOfType(ASTType *node) {
 }
 
 const char *GetStructTagFromType(ASTType *type) {
+  type = GetRValueTypeOf(type);
   assert(type->basic_type == kTypeStruct);
-  return type->struct_ident ? type->struct_ident->str : NULL;
+  return type->struct_ident ? type->struct_ident->str : "(anonymous)";
+}
+
+Context *GetStructContextFromType(ASTType *type) {
+  type = GetRValueTypeOf(type);
+  assert(type->basic_type == kTypeStruct);
+  return type->struct_members;
 }
 
 ASTType *GetExprTypeOfASTNode(ASTNode *node) {
