@@ -1,5 +1,3 @@
-#include <stdio.h>
-
 #include "compilium.h"
 
 void TestTokenStream() {
@@ -55,6 +53,7 @@ void TestTokenStream() {
 }
 
 int main(int argc, char *argv[]) {
+  InitStd();
   TestTokenStream();
   return 0;
 }

@@ -1,5 +1,5 @@
 CFLAGS=-Wall -Wpedantic -std=c11 -Wno-extra-semi
-SRCS=analyzer.c ast.c context.c error.c generate.c il.c parser.c token.c tokenizer.c type.c
+SRCS=analyzer.c ast.c context.c error.c generate.c il.c parser.c std.c token.c tokenizer.c type.c
 MAIN_SRCS=compilium.c
 HEADERS=compilium.h
 RUN_TARGET ?= Tests/hello_world
@@ -27,6 +27,12 @@ compilium_dbg: $(MAIN_SRCS) $(SRCS) $(HEADERS) Makefile
 
 %.unittest : %_test Makefile FORCE
 	@ ./$*_test
+
+%.self.c : %.c $(HEADERS) Makefile FORCE
+	@ gcc -P -E $*.c > $@
+
+%.self.S : %.self.c $(HEADERS) Makefile compilium FORCE
+	@ ./compilium -o $@ --prefix_type `uname` $*.self.c
 
 run: compilium
 	make -C $(dir $(RUN_TARGET)) $(notdir $(RUN_TARGET)).compilium.bin; \

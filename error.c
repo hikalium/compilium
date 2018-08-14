@@ -1,7 +1,3 @@
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "compilium.h"
 
 _Noreturn void Error(const char *fmt, ...) {
@@ -36,4 +32,8 @@ void Warning(const char *fmt, ...) {
   vfprintf(stderr, fmt, ap);
   va_end(ap);
   fputc('\n', stderr);
+}
+
+void assert(int value) {
+  if (!value) Error("Assertion failed!");
 }

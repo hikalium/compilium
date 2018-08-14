@@ -1,7 +1,3 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "compilium.h"
 
 int next_vreg_id = 1;

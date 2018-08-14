@@ -1,6 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "compilium.h"
 
 void ExpectASTIdent(ASTNode *node, const char *expected_str) {
@@ -35,6 +32,7 @@ void TestASTDict() {
 }
 
 int main(int argc, char *argv[]) {
+  InitStd();
   TestASTDict();
   return 0;
 }

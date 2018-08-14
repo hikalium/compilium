@@ -1,7 +1,3 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "compilium.h"
 
 ASTExprStmt *ParseExprStmt(TokenStream *stream);
@@ -379,11 +375,11 @@ ASTCompStmt *ParseCompStmt(TokenStream *stream) {
 
 ASTParamDecl *ParseParamDecl(TokenStream *stream) {
   // parameter-declaration
-  // TODO: Impl abstract case.
+  //   declaration-specifiers declarator
+  //   declaration-specifiers
   ASTList *decl_specs = ParseDeclSpecs(stream);
   if (!decl_specs) return NULL;
   ASTDecltor *decltor = ParseDecltor(stream);
-  if (!decltor) return NULL;
 
   ASTParamDecl *param_decl = AllocASTParamDecl();
   param_decl->decl_specs = decl_specs;
@@ -444,7 +440,6 @@ ASTDirectDecltor *ParseDirectDecltor(TokenStream *stream) {
       }
       // direct-declarator ( parameter_type_list )
       ASTList *list = ParseParamTypeList(stream);
-      if (!list) Error("ParseParamTypeList should not be empty");
       ExpectToken(stream, ")");
       direct_decltor->data = ToASTNode(list);
       last_direct_decltor = direct_decltor;
@@ -522,7 +517,8 @@ ASTNode *ParseStorageClassSpec(TokenStream *stream) {
 
 ASTNode *ParseTypeSpec(TokenStream *stream) {
   // type-specifier
-  const static char *single_token_type_specs[] = {"void", "char", "int", NULL};
+  const static char *single_token_type_specs[] = {"void", "char",     "int",
+                                                  "long", "unsigned", NULL};
   if (IsNextTokenInList(stream, single_token_type_specs)) {
     return ToASTNode(AllocAndInitASTKeyword(PopToken(stream)));
   } else if (ConsumeToken(stream, "struct")) {
@@ -613,7 +609,6 @@ ASTDecl *ParseDecl(TokenStream *stream) {
     assert(GetSizeOfASTList(decl->init_decltors) == 1);
     ASTDecltor *typedef_decltor =
         ToASTDecltor(GetASTNodeAt(decl->init_decltors, 0));
-    DebugPrintASTNode(typedef_decltor);
     ASTType *type = AllocAndInitASTType(decl_specs, typedef_decltor);
     AppendTypeToContext(identifiers,
                         GetIdentTokenFromDecltor(typedef_decltor)->str, type);

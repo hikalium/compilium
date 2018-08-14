@@ -1,7 +1,3 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "compilium.h"
 
 void TestSizeOfASTType() {
@@ -74,6 +70,7 @@ void TestParsingDeclIntoASTType() {
 }
 
 int main(int argc, char *argv[]) {
+  InitStd();
   InitASTNodeTypeName();
 
   TestSizeOfASTType();

@@ -1,11 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "compilium.h"
 
-#define MAX_TOKENS 2048
+#define MAX_TOKENS 16384
 int main(int argc, char *argv[]) {
+  InitStd();
   KernelType kernel_type = kKernelDarwin;
   int is_parse_only = 0;
   const char *src_file = NULL;

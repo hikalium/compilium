@@ -1,7 +1,3 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "compilium.h"
 
 struct AST_TYPE {
@@ -70,12 +66,13 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
     if (type_node->type == kASTKeyword) {
       ASTKeyword *kw = ToASTKeyword(type_node);
       if (IsEqualToken(kw->token, "const") ||
-          IsEqualToken(kw->token, "typedef")) {
+          IsEqualToken(kw->token, "typedef") ||
+          IsEqualToken(kw->token, "unsigned")) {
         continue;
       }
       assert(!type);
       BasicType basic_type = kTypeNone;
-      if (IsEqualToken(kw->token, "int")) {
+      if (IsEqualToken(kw->token, "int") || IsEqualToken(kw->token, "long")) {
         basic_type = kTypeInt;
       } else if (IsEqualToken(kw->token, "char")) {
         basic_type = kTypeChar;

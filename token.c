@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "compilium.h"
 
 static void CopyTokenStr(Token *token, const char *s, size_t len) {
