@@ -82,15 +82,12 @@ Register *SelectVirtualRegisterToSpill() {
       return RealRegToVirtualReg[i];
   }
   Error("SelectVirtualRegisterToSpill: NOT_REACHED");
-  return NULL;
 }
 
 void SpillVirtualRegister(FILE *fp, Register *reg) {
   if (!reg->spill_index) reg->spill_index = NewSpillIndex();
-
   fprintf(fp, "mov [rbp - %d], %s\n", 8 * reg->spill_index,
           ScratchRegNames64[reg->real_reg]);
-
   RealRegToVirtualReg[reg->real_reg] = NULL;
   reg->real_reg = 0;
   printf("\tvreg[%d] is spilled to spill[%d]\n", reg->vreg_id,
@@ -98,9 +95,8 @@ void SpillVirtualRegister(FILE *fp, Register *reg) {
 }
 
 void SpillRealRegister(FILE *fp, int rreg) {
-  if (RealRegToVirtualReg[rreg]) {
-    SpillVirtualRegister(fp, RealRegToVirtualReg[rreg]);
-  }
+  if (!RealRegToVirtualReg[rreg]) return;
+  SpillVirtualRegister(fp, RealRegToVirtualReg[rreg]);
 }
 
 void SpillAllRealRegisters(FILE *fp) {
@@ -120,7 +116,6 @@ int FindFreeRealReg(FILE *fp) {
     if (!RealRegToVirtualReg[i]) return i;
   }
   Error("FindFreeRealReg: NOT_REACHED");
-  return 0;
 }
 
 void AssignVirtualRegToRealReg(FILE *fp, Register *reg, int real_reg) {
@@ -209,9 +204,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
     if (op->op == kILOpFuncBegin) {
       const char *func_name =
           GetFuncNameTokenFromFuncDef(ToASTFuncDef(op->ast_node))->str;
-      if (!func_name) {
-        Error("func_name is null");
-      }
+      assert(func_name);
       fprintf(fp, ".global %s%s\n", kernel_type == kKernelDarwin ? "_" : "",
               func_name);
     }
@@ -220,9 +213,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
   for (int i = 0; i < GetSizeOfASTList(il); i++) {
     ASTNode *node = GetASTNodeAt(il, i);
     ASTILOp *op = ToASTILOp(node);
-    if (!op) {
-      Error("op is null!");
-    }
+    assert(op);
     switch (op->op) {
       case kILOpFuncBegin: {
         ClearRegisterAllocation();
@@ -283,6 +274,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         if (op->ast_node->type == kASTInteger) {
           ASTInteger *ast_int = ToASTInteger(op->ast_node);
           fprintf(fp, "mov %s, %d\n", dst_name, ast_int->value);
+          break;
         } else if (op->ast_node->type == kASTString) {
           ASTString *ast_str = ToASTString(op->ast_node);
           int label_for_skip = GetLabelNumber();
@@ -292,24 +284,17 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
           fprintf(fp, ".asciz  \"%s\"\n", ast_str->str);
           fprintf(fp, "L%d:\n", label_for_skip);
           fprintf(fp, "lea     %s, [rip + L%d]\n", dst_name, label_str);
-        } else {
-          Error("kILOpLoadImm: not implemented for AST type %d",
-                op->ast_node->type);
+          break;
         }
+        Error("kILOpLoadImm: not implemented for AST type %d",
+              op->ast_node->type);
       } break;
       case kILOpLoadIdent: {
         const char *dst_name = AssignRegister64(fp, op->dst);
-        //
         ASTIdent *ident = ToASTIdent(op->ast_node);
-        switch (ident->token->type) {
-          case kIdentifier: {
-            fprintf(fp, "lea     %s, [rip + %s%s]\n", dst_name,
-                    kernel_type == kKernelDarwin ? "_" : "", ident->token->str);
-          } break;
-          default:
-            Error("kILOpLoadIdent: not implemented for token type %d",
-                  ident->token->type);
-        }
+        assert(ident);
+        fprintf(fp, "lea     %s, [rip + %s%s]\n", dst_name,
+                kernel_type == kKernelDarwin ? "_" : "", ident->token->str);
       } break;
       case kILOpLoadArg: {
         AssignVirtualRegToRealReg(fp, op->dst,
@@ -473,7 +458,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
       case kILOpCall: {
         // ast_node: func_ident
         ASTIdent *func_ident = ToASTIdent(op->ast_node);
-        if (!func_ident) Error("op->ast_node is NULL");
+        assert(func_ident);
         fprintf(fp, ".global %s%s\n", kernel_type == kKernelDarwin ? "_" : "",
                 func_ident->token->str);
         SpillAllRealRegisters(fp);
@@ -492,14 +477,14 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
       } break;
       case kILOpLabel: {
         ASTLabel *label = ToASTLabel(op->ast_node);
-        if (!label) Error("Label is null");
+        assert(label);
         if (!label->label_number) label->label_number = GetLabelNumber();
         SpillAllRealRegisters(fp);
         fprintf(fp, "L%d:\n", label->label_number);
       } break;
       case kILOpJmp: {
         ASTLabel *label = ToASTLabel(op->ast_node);
-        if (!label) Error("Label is null");
+        assert(label);
         if (!label->label_number) label->label_number = GetLabelNumber();
         SpillAllRealRegisters(fp);
         fprintf(fp, "jmp L%d\n", label->label_number);
@@ -507,7 +492,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
       case kILOpJmpIfZero: {
         const char *left = AssignRegister64(fp, op->left);
         ASTLabel *label = ToASTLabel(op->ast_node);
-        if (!label) Error("Label is null");
+        assert(label);
         if (!label->label_number) label->label_number = GetLabelNumber();
         SpillAllRealRegisters(fp);
         fprintf(fp, "cmp %s, 0\n", left);
@@ -516,7 +501,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
       case kILOpJmpIfNotZero: {
         const char *left = AssignRegister64(fp, op->left);
         ASTLabel *label = ToASTLabel(op->ast_node);
-        if (!label) Error("Label is null");
+        assert(label);
         if (!label->label_number) label->label_number = GetLabelNumber();
         SpillAllRealRegisters(fp);
         fprintf(fp, "cmp %s, 0\n", left);

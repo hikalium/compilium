@@ -234,7 +234,6 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
   }
   ErrorWithASTNode(node, "Analyzing AST%s is not implemented.",
                    GetASTNodeTypeName(node));
-  return NULL;
 }
 
 void Analyze(ASTNode *root) {
