@@ -513,13 +513,18 @@ ASTNode *ParseStructDecl(TokenStream *stream) {
   return ToASTNode(struct_decl);
 }
 
+ASTNode *ParseStorageClassSpec(TokenStream *stream) {
+  // storage-class-specifier
+  const static char *storage_class_specs[] = {"typedef", NULL};
+  if (!IsNextTokenInList(stream, storage_class_specs)) return NULL;
+  return ToASTNode(AllocAndInitASTKeyword(PopToken(stream)));
+}
+
 ASTNode *ParseTypeSpec(TokenStream *stream) {
   // type-specifier
   const static char *single_token_type_specs[] = {"void", "char", "int", NULL};
   if (IsNextTokenInList(stream, single_token_type_specs)) {
-    ASTKeyword *kw = AllocASTKeyword();
-    kw->token = PopToken(stream);
-    return ToASTNode(kw);
+    return ToASTNode(AllocAndInitASTKeyword(PopToken(stream)));
   } else if (ConsumeToken(stream, "struct")) {
     ASTStructSpec *struct_spec = AllocASTStructSpec();
     if (!IsNextToken(stream, "{")) {
@@ -534,18 +539,19 @@ ASTNode *ParseTypeSpec(TokenStream *stream) {
     ExpectToken(stream, "}");
     return ToASTNode(struct_spec);
   }
-  return NULL;
+  const Token *token = PeekToken(stream);
+  if (!token) return NULL;
+  ASTNode *typedef_type = FindInContext(identifiers, token->str);
+  if (!typedef_type) return NULL;
+  PopToken(stream);
+  return typedef_type;
 }
 
 ASTKeyword *ParseTypeQual(TokenStream *stream) {
   // type-qualifier
   // ASTKeyword
-  if (!IsNextToken(stream, "const")) {
-    return NULL;
-  }
-  ASTKeyword *kw = AllocASTKeyword();
-  kw->token = PopToken(stream);
-  return kw;
+  if (!IsNextToken(stream, "const")) return NULL;
+  return AllocAndInitASTKeyword(PopToken(stream));
 }
 
 #define MAX_NODES_IN_DECL_SPECS 4
@@ -556,7 +562,8 @@ ASTList *ParseDeclSpecs(TokenStream *stream) {
   ASTList *list = AllocASTList(MAX_NODES_IN_DECL_SPECS);
   ASTNode *node;
   for (;;) {
-    node = ParseTypeSpec(stream);
+    node = ParseStorageClassSpec(stream);
+    if (!node) node = ParseTypeSpec(stream);
     if (!node) node = ToASTNode(ParseTypeQual(stream));
     if (!node) break;
     PushASTNodeToList(list, node);
@@ -594,15 +601,24 @@ ASTDecl *ParseDecl(TokenStream *stream) {
   // declaration:
   //   declaration-specifiers init-declarator-list_opt ;
   ASTList *decl_specs = ParseDeclSpecs(stream);
-  if (!decl_specs) {
-    return NULL;
-  }
+  if (!decl_specs) return NULL;
   ASTList *init_decltors = ParseInitDecltors(stream);
   // init_decltors is optional
   ExpectToken(stream, ";");
   ASTDecl *decl = AllocASTDecl();
   decl->decl_specs = decl_specs;
   decl->init_decltors = init_decltors;
+
+  if (IsTypedefDeclSpecs(decl_specs)) {
+    assert(GetSizeOfASTList(decl->init_decltors) == 1);
+    ASTDecltor *typedef_decltor =
+        ToASTDecltor(GetASTNodeAt(decl->init_decltors, 0));
+    DebugPrintASTNode(typedef_decltor);
+    ASTType *type = AllocAndInitASTType(decl_specs, typedef_decltor);
+    AppendTypeToContext(identifiers,
+                        GetIdentTokenFromDecltor(typedef_decltor)->str, type);
+    PrintContext(identifiers);
+  }
   return decl;
 }
 
@@ -633,6 +649,7 @@ ASTList *ParseTranslationUnit(TokenStream *stream) {
 }
 
 ASTNode *Parse(TokenList *tokens) {
+  identifiers = AllocContext(NULL);
   TokenStream *stream = AllocAndInitTokenStream(tokens);
   return ToASTNode(ParseTranslationUnit(stream));
 }

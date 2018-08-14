@@ -43,7 +43,7 @@ ASTType *ParseDeclAndGetType(TokenList *tokens, const char *src) {
   ASTDecltor *first_decltor =
       decl->init_decltors ? ToASTDecltor(GetASTNodeAt(decl->init_decltors, 0))
                           : NULL;
-  return AllocAndInitASTType(decl->decl_specs, first_decltor, NULL);
+  return AllocAndInitASTType(decl->decl_specs, first_decltor);
 }
 
 void TestParsingDeclIntoASTType() {

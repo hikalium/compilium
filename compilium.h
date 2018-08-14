@@ -406,12 +406,11 @@ ASTKeyword *AllocAndInitASTKeyword(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
 ASTNode *AllocAndInitASTExprFuncCall(ASTNode *func, ASTNode *args);
-ASTVar *AllocAndInitASTVar(ASTList *decl_specs, ASTDecltor *decltor,
-                           Context *struct_names);
+ASTVar *AllocAndInitASTVar(ASTList *decl_specs, ASTDecltor *decltor);
 
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
-const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetFuncNameTokenFromFuncDef(ASTFuncDef *func_def);
+int IsTypedefDeclSpecs(ASTList *decl_specs);
 
 void PrintASTNode(void *node, int depth);
 void DebugPrintASTNode(void *node);
@@ -429,15 +428,18 @@ ASTNode *GetASTNodeInDictAt(const ASTDict *dict, int index);
 int GetSizeOfASTDict(const ASTDict *dict);
 
 // @context.c
+extern Context *identifiers;
+extern Context *struct_names;
+void InitGlobalContext();
 Context *AllocContext(const Context *parent);
 ASTNode *FindInContext(const Context *context, const char *key);
 ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident);
 int GetSizeOfContext(const Context *context);
 int GetAlignOfContext(const Context *context);
 ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
-                                ASTDecltor *decltor, Context *struct_names);
+                                ASTDecltor *decltor);
 ASTVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
-                                    ASTDecltor *decltor, Context *struct_names);
+                                    ASTDecltor *decltor);
 void AppendTypeToContext(Context *context, const char *name, ASTType *type);
 void SetBreakLabelInContext(Context *context, ASTLabel *label);
 ASTLabel *GetBreakLabelInContext(Context *context);
@@ -498,8 +500,7 @@ ASTType *AllocAndInitBasicType(BasicType basic_type);
 ASTType *AllocAndInitASTTypePointerOf(ASTType *pointer_of);
 ASTType *AllocAndInitASTTypeLValueOf(ASTType *lvalue_of);
 ASTType *AllocAndInitASTTypeArrayOf(ASTType *array_of, int num_of_elements);
-ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor,
-                             Context *struct_names);
+ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor);
 int IsEqualASTType(ASTType *a, ASTType *b);
 int IsBasicType(ASTType *node, BasicType type);
 int IsTypePointer(ASTType *node);

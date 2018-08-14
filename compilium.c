@@ -37,6 +37,7 @@ int main(int argc, char *argv[]) {
 
   InitASTNodeTypeName();
   InitILOpTypeName();
+  InitGlobalContext();
 
   char *input = ReadFile(src_file);
   TokenList *tokens = AllocTokenList(MAX_TOKENS);

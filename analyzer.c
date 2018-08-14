@@ -4,8 +4,6 @@
 
 #include "compilium.h"
 
-static Context *struct_names;
-
 static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
   printf("Analyzing AST%s...\n", GetASTNodeTypeName(node));
   if (node->type == kASTList) {
@@ -17,8 +15,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     return NULL;
   } else if (node->type == kASTFuncDef) {
     ASTFuncDef *def = ToASTFuncDef(node);
-    def->func_type =
-        AllocAndInitASTType(def->decl_specs, def->decltor, struct_names);
+    def->func_type = AllocAndInitASTType(def->decl_specs, def->decltor);
     context = AllocContext(context);
     def->context = context;
     ASTDirectDecltor *args_decltor = def->decltor->direct_decltor;
@@ -29,7 +26,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
             ToASTParamDecl(GetASTNodeAt(param_decl_list, i));
         ASTDecltor *param_decltor = ToASTDecltor(param_decl->decltor);
         ASTVar *local_var = AppendLocalVarToContext(
-            context, param_decl->decl_specs, param_decltor, struct_names);
+            context, param_decl->decl_specs, param_decltor);
         SetASTNodeAt(param_decl_list, i, ToASTNode(local_var));
       }
     }
@@ -44,9 +41,10 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     return NULL;
   } else if (node->type == kASTDecl) {
     ASTDecl *decl = ToASTDecl(node);
+    if (IsTypedefDeclSpecs(decl->decl_specs)) return NULL;
     if (!decl->init_decltors) {
       // Declaration only
-      ASTType *type = AllocAndInitASTType(decl->decl_specs, NULL, struct_names);
+      ASTType *type = AllocAndInitASTType(decl->decl_specs, NULL);
       if (IsBasicType(type, kTypeStruct)) {
         AppendTypeToContext(struct_names, GetStructTagFromType(type), type);
         PrintContext(struct_names);
@@ -56,13 +54,12 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     }
     for (int i = 0; i < GetSizeOfASTList(decl->init_decltors); i++) {
       ASTDecltor *decltor = ToASTDecltor(GetASTNodeAt(decl->init_decltors, i));
-      ASTType *type =
-          AllocAndInitASTType(decl->decl_specs, decltor, struct_names);
+      ASTType *type = AllocAndInitASTType(decl->decl_specs, decltor);
       if (IsBasicType(type, kTypeFunction)) {
         // TODO: Impl func def
         return NULL;
       }
-      AppendLocalVarToContext(context, decl->decl_specs, decltor, struct_names);
+      AppendLocalVarToContext(context, decl->decl_specs, decltor);
     }
     return NULL;
   } else if (node->type == kASTExprStmt) {
@@ -238,6 +235,5 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
 
 void Analyze(ASTNode *root) {
   Context *context = AllocContext(NULL);
-  struct_names = AllocContext(NULL);
   AnalyzeNode(root, context);
 }

@@ -179,12 +179,11 @@ ASTNode* AllocAndInitASTExprFuncCall(ASTNode* func, ASTNode* args) {
   return ToASTNode(node);
 }
 
-ASTVar* AllocAndInitASTVar(ASTList* decl_specs, ASTDecltor* decltor,
-                           Context* struct_names) {
+ASTVar* AllocAndInitASTVar(ASTList* decl_specs, ASTDecltor* decltor) {
   const Token* ident_token = GetIdentTokenFromDecltor(decltor);
   ASTVar* local_var = AllocASTVar();
   local_var->name = ident_token->str;
-  local_var->var_type = AllocAndInitASTType(decl_specs, decltor, struct_names);
+  local_var->var_type = AllocAndInitASTType(decl_specs, decltor);
   return local_var;
 }
 
@@ -205,6 +204,12 @@ const Token* GetIdentTokenFromDecltor(ASTDecltor* decltor) {
 const Token* GetFuncNameTokenFromFuncDef(ASTFuncDef* func_def) {
   if (!func_def) return NULL;
   return GetIdentTokenFromDecltor(func_def->decltor);
+}
+
+int IsTypedefDeclSpecs(ASTList* decl_specs) {
+  ASTNode* node = GetASTNodeAt(decl_specs, 0);
+  return node->type == kASTKeyword &&
+         IsEqualToken(ToASTKeyword(node)->token, "typedef");
 }
 
 static void PrintASTNodePadding(int depth) {

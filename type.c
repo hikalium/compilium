@@ -63,14 +63,14 @@ ASTType *AllocAndInitASTTypeFunction(ASTType *func_return_type) {
   return node;
 }
 
-ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor,
-                             Context *struct_names) {
+ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
   ASTType *type = NULL;
   for (int t = 0; t < GetSizeOfASTList(decl_specs); t++) {
     ASTNode *type_node = GetASTNodeAt(decl_specs, t);
     if (type_node->type == kASTKeyword) {
       ASTKeyword *kw = ToASTKeyword(type_node);
-      if (IsEqualToken(kw->token, "const")) {
+      if (IsEqualToken(kw->token, "const") ||
+          IsEqualToken(kw->token, "typedef")) {
         continue;
       }
       assert(!type);
@@ -102,8 +102,7 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor,
             ASTDecltor *decltor =
                 ToASTDecltor(GetASTNodeAt(decl->struct_decltor_list, k));
             assert(decltor);
-            AppendStructMemberToContext(context, decl->spec_qual_list, decltor,
-                                        struct_names);
+            AppendStructMemberToContext(context, decl->spec_qual_list, decltor);
           }
         }
       }
@@ -113,6 +112,13 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor,
             ToASTType(FindInContext(struct_names, spec->ident->str));
         if (resolved_type) type = resolved_type;
       }
+      continue;
+    } else if (type_node->type == kASTType) {
+      type = ToASTType(type_node);
+      const char *typedef_name = GetStructTagFromType(type);
+      ASTType *resolved_type =
+          ToASTType(FindInContext(struct_names, typedef_name));
+      if (resolved_type) type = resolved_type;
       continue;
     }
     ErrorWithASTNode(type_node, "not implemented type of decl_specs[0]");

@@ -10,6 +10,14 @@ struct CONTEXT {
   ASTLabel *break_label;
 };
 
+Context *struct_names;
+Context *identifiers;
+
+void InitGlobalContext() {
+  struct_names = AllocContext(NULL);
+  identifiers = AllocContext(NULL);
+}
+
 Context *AllocContext(const Context *parent) {
   Context *context = malloc(sizeof(Context));
   context->parent = parent;
@@ -70,8 +78,8 @@ int GetAlignOfContext(const Context *context) {
 }
 
 ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
-                                ASTDecltor *decltor, Context *struct_names) {
-  ASTVar *local_var = AllocAndInitASTVar(decl_specs, decltor, struct_names);
+                                ASTDecltor *decltor) {
+  ASTVar *local_var = AllocAndInitASTVar(decl_specs, decltor);
   int base = GetNextBaseForLocalVarContext(context);
   int align = GetAlignOfType(local_var->var_type);
   int ofs = base + GetSizeOfType(local_var->var_type);
@@ -81,9 +89,8 @@ ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
 }
 
 ASTVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
-                                    ASTDecltor *decltor,
-                                    Context *struct_names) {
-  ASTVar *var = AllocAndInitASTVar(decl_specs, decltor, struct_names);
+                                    ASTDecltor *decltor) {
+  ASTVar *var = AllocAndInitASTVar(decl_specs, decltor);
   int ofs = GetNextOfsForStructContext(context);
   int align = GetAlignOfType(var->var_type);
   var->ofs = (ofs + align - 1) / align * align;
