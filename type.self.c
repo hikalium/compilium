@@ -1,10 +1,34 @@
 
+
 void assert();
-typedef void FILE;
+typedef struct __sFILE FILE;
+typedef unsigned long size_t;
 void *calloc(unsigned long, unsigned long);
 int printf(const char *, ...);
 int putchar(int);
+char *strchr(const char *s, int c);
+int fclose(FILE *stream);
+size_t fread(void *, size_t, size_t, FILE *);
+void *malloc(size_t size);
+int strcmp(const char *s1, const char *s2);
+FILE *fopen(const char *path, const char *mode);
+size_t strlen(const char *);
+char *strncpy(char *dst, const char *src, size_t len);
+long strtol(const char *str, char **endptr, int base);
+int fputs(const char *s, FILE *stream);
+int fprintf(FILE *stream, const char *format, ...);
+int puts(const char *s);
+int fflush(FILE *stream);
+extern FILE *stdin;
+extern FILE *stdout;
+extern FILE *stderr;
+int vfprintf(FILE *stream, const char *format, __builtin_va_list ap);
+_Noreturn void exit(int);
+int fputc(int, FILE *);
+void free(void *);
+FILE *fdopen(int fildes, const char *mode);
 
+void InitStd();
 typedef enum {
   kIdentifier,
   kStringLiteral,

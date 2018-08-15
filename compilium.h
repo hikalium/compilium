@@ -1,13 +1,16 @@
 #define NULL 0
-#define EXIT_FAILURE 0
-#define va_start(v, l) __builtin_stdarg_start((v), l)
+#define EXIT_FAILURE 1
+
+typedef struct __sFILE FILE;
+
+#define va_start(v, l) __builtin_va_start((v), l)
 #define va_end __builtin_va_end
 #define va_arg __builtin_va_arg
 #define va_copy(d, s) __builtin_va_copy((d), (s))
 #define va_list __builtin_va_list
+int vfprintf(FILE *stream, const char *format, va_list ap);
 
 void assert();
-typedef struct __sFILE FILE;
 typedef unsigned long size_t;
 void *calloc(unsigned long, unsigned long);
 int printf(const char *, ...);
@@ -17,22 +20,21 @@ int fclose(FILE *stream);
 size_t fread(void *, size_t, size_t, FILE *);
 void *malloc(size_t size);
 int strcmp(const char *s1, const char *s2);
-FILE *fopen(const char *restrict path, const char *restrict mode);
+FILE *fopen(const char *path, const char *mode);
 size_t strlen(const char *);
 char *strncpy(char *dst, const char *src, size_t len);
-long strtol(const char *restrict str, char **restrict endptr, int base);
-int fputs(const char *restrict s, FILE *restrict stream);
-int fprintf(FILE *restrict stream, const char *restrict format, ...);
-int puts(const char *restrict s);
-int fflush(FILE *stream);
+long strtol(const char *str, char **endptr, int base);
+int puts(const char *s);
 extern FILE *stdin;
 extern FILE *stdout;
 extern FILE *stderr;
-int vfprintf(FILE *restrict stream, const char *restrict format, va_list ap);
 _Noreturn void exit(int);
-int fputc(int, FILE *);
 void free(void *);
 FILE *fdopen(int fildes, const char *mode);
+int fflush(FILE *stream);
+int fprintf(FILE *stream, const char *format, ...);
+int fputs(const char *s, FILE *stream);
+int fputc(int, FILE *);
 
 void InitStd();
 

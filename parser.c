@@ -517,8 +517,8 @@ ASTNode *ParseStorageClassSpec(TokenStream *stream) {
 
 ASTNode *ParseTypeSpec(TokenStream *stream) {
   // type-specifier
-  const static char *single_token_type_specs[] = {"void", "char",     "int",
-                                                  "long", "unsigned", NULL};
+  const static char *single_token_type_specs[] = {
+      "void", "char", "int", "long", "unsigned", "extern", NULL};
   if (IsNextTokenInList(stream, single_token_type_specs)) {
     return ToASTNode(AllocAndInitASTKeyword(PopToken(stream)));
   } else if (ConsumeToken(stream, "struct")) {
