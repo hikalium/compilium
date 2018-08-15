@@ -112,10 +112,11 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
       continue;
     } else if (type_node->type == kASTType) {
       type = ToASTType(type_node);
-      const char *typedef_name = GetStructTagFromType(type);
-      ASTType *resolved_type =
-          ToASTType(FindInContext(struct_names, typedef_name));
-      if (resolved_type) type = resolved_type;
+      if (IsBasicType(type, kTypeStruct)) {
+        ASTType *resolved_type =
+            ToASTType(FindInContext(struct_names, GetStructTagFromType(type)));
+        if (resolved_type) type = resolved_type;
+      }
       continue;
     }
     ErrorWithASTNode(type_node, "not implemented type of decl_specs[0]");

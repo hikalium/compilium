@@ -35,5 +35,7 @@ void Warning(const char *fmt, ...) {
 }
 
 void assert(int value) {
-  if (!value) Error("Assertion failed!");
+  if (!value) {
+    Error("Assertion failed!");
+  }
 }

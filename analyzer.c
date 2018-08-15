@@ -18,8 +18,17 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     ASTList *param_decl_list = ToASTList(args_decltor->data);
     if (param_decl_list) {
       for (int i = 0; i < GetSizeOfASTList(param_decl_list); i++) {
-        ASTParamDecl *param_decl =
-            ToASTParamDecl(GetASTNodeAt(param_decl_list, i));
+        ASTNode *param_node = GetASTNodeAt(param_decl_list, i);
+        if (param_node->type == kASTKeyword) {
+          if (!IsEqualToken(ToASTKeyword(param_node)->token, "..."))
+            ErrorWithASTNode(param_node, "Unexpected node in param_decl_list");
+          if (i != GetSizeOfASTList(param_decl_list) - 1)
+            ErrorWithASTNode(param_node,
+                             "... can be appeared only at end of arguments");
+          break;
+        }
+        ASTParamDecl *param_decl = ToASTParamDecl(param_node);
+        assert(param_decl);
         ASTDecltor *param_decltor = ToASTDecltor(param_decl->decltor);
         ASTVar *local_var = AppendLocalVarToContext(
             context, param_decl->decl_specs, param_decltor);
