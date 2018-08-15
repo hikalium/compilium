@@ -1,3 +1,5 @@
+int printf(const char *, ...);
+
 typedef struct KEY_VALUE KeyValue;
 struct KEY_VALUE {
   const char *key;

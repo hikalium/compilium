@@ -121,6 +121,8 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     } else if (IsEqualASTType(left_type, right_type)) {
       bin_op->expr_type = left_type;
     } else {
+      PrintASTType(left_type);
+      PrintASTType(right_type);
       ErrorWithASTNode(node, "Type check failed");
     }
     return bin_op->expr_type;
@@ -239,6 +241,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
 }
 
 void Analyze(ASTNode *root) {
+  PrintContext(identifiers);
   Context *context = AllocContext(NULL);
   AnalyzeNode(root, context);
 }
