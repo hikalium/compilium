@@ -518,7 +518,8 @@ ASTNode *ParseStorageClassSpec(TokenStream *stream) {
 ASTNode *ParseTypeSpec(TokenStream *stream) {
   // type-specifier
   const static char *single_token_type_specs[] = {
-      "void", "char", "int", "long", "unsigned", "extern", NULL};
+      "void", "char", "int", "long", "unsigned", "extern", "__builtin_va_list",
+      NULL};
   if (IsNextTokenInList(stream, single_token_type_specs)) {
     return ToASTNode(AllocAndInitASTKeyword(PopToken(stream)));
   } else if (ConsumeToken(stream, "struct")) {
@@ -545,8 +546,13 @@ ASTNode *ParseTypeSpec(TokenStream *stream) {
 
 ASTKeyword *ParseTypeQual(TokenStream *stream) {
   // type-qualifier
-  // ASTKeyword
   if (!IsNextToken(stream, "const")) return NULL;
+  return AllocAndInitASTKeyword(PopToken(stream));
+}
+
+ASTKeyword *ParseFuncSpec(TokenStream *stream) {
+  // function-specifier
+  if (!IsNextToken(stream, "_Noreturn")) return NULL;
   return AllocAndInitASTKeyword(PopToken(stream));
 }
 
@@ -561,6 +567,7 @@ ASTList *ParseDeclSpecs(TokenStream *stream) {
     node = ParseStorageClassSpec(stream);
     if (!node) node = ParseTypeSpec(stream);
     if (!node) node = ToASTNode(ParseTypeQual(stream));
+    if (!node) node = ToASTNode(ParseFuncSpec(stream));
     if (!node) break;
     PushASTNodeToList(list, node);
   }

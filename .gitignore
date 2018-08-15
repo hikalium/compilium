@@ -59,3 +59,5 @@ compilium_unittest
 *.unittest
 *_test
 .DS_Store
+*.self.c
+*.S
