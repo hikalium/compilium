@@ -65,6 +65,8 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
         return NULL;
       }
       AppendLocalVarToContext(context, decl->decl_specs, decltor);
+      if (decltor->initializer)
+        AnalyzeNode(ToASTNode(decltor->initializer), context);
     }
     return NULL;
   } else if (node->type == kASTExprStmt) {

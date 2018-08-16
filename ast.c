@@ -190,13 +190,23 @@ ASTVar* AllocAndInitASTVar(ASTList* decl_specs, ASTDecltor* decltor) {
   return local_var;
 }
 
-const Token* GetIdentTokenFromDirectDecltor(ASTDirectDecltor* direct_decltor) {
+ASTIdent* GetIdentFromDirectDecltor(ASTDirectDecltor* direct_decltor) {
   if (!direct_decltor) return NULL;
   if (direct_decltor->direct_decltor)
-    return GetIdentTokenFromDirectDecltor(direct_decltor->direct_decltor);
+    return GetIdentFromDirectDecltor(direct_decltor->direct_decltor);
   ASTIdent* ident = ToASTIdent(direct_decltor->data);
   if (!ident) return NULL;
-  return ident->token;
+  return ident;
+}
+
+ASTIdent* GetIdentFromDecltor(ASTDecltor* decltor) {
+  if (!decltor) return NULL;
+  return GetIdentFromDirectDecltor(decltor->direct_decltor);
+}
+
+const Token* GetIdentTokenFromDirectDecltor(ASTDirectDecltor* direct_decltor) {
+  ASTIdent* ident = GetIdentFromDirectDecltor(direct_decltor);
+  return ident ? ident->token : NULL;
 }
 
 const Token* GetIdentTokenFromDecltor(ASTDecltor* decltor) {
@@ -359,6 +369,7 @@ void PrintASTNode(void* node, int depth) {
     ASTDecltor* decltor = ToASTDecltor(n);
     PrintASTNodeWithName(depth + 1, "pointer=", decltor->pointer);
     PrintASTNodeWithName(depth + 1, "direct_decltor=", decltor->direct_decltor);
+    PrintASTNodeWithName(depth + 1, "initializer=", decltor->initializer);
   } else if (n->type == kASTDirectDecltor) {
     ASTDirectDecltor* direct_decltor = ToASTDirectDecltor(n);
     PrintTokenWithName(depth + 1,

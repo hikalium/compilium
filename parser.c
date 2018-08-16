@@ -649,11 +649,21 @@ ASTNode *ParseFuncDef(TokenStream *stream) {
   return ToASTNode(func_def);
 }
 
-#define MAX_NODES_IN_INIT_DECLTORS 8
+ASTNode *ParseInitDecltorNode(TokenStream *stream) {
+  // init-declarator
+  ASTDecltor *decltor = ParseDecltor(stream);
+  if (!decltor || !ConsumeToken(stream, "=")) return ToASTNode(decltor);
+  ASTIdent *decl_ident = GetIdentFromDecltor(decltor);
+  decltor->initializer = ToASTNode(AllocAndInitASTExprBinOp(
+      AllocToken("=", kPunctuator), ToASTNode(decl_ident),
+      ToASTNode(ParseAssignExpr(stream))));
+  return ToASTNode(decltor);
+}
+
 ASTList *ParseInitDecltors(TokenStream *stream) {
-  // ASTList<ASTKeyword>
-  // declaration-specifiers
-  return ParseCommaSeparatedList(stream, ParseDecltorNode);
+  // ASTList<Decltor>
+  // init-declarator-list
+  return ParseCommaSeparatedList(stream, ParseInitDecltorNode);
 }
 
 ASTDecl *ParseDecl(TokenStream *stream) {

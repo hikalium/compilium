@@ -309,6 +309,7 @@ typedef struct {
   ASTNodeType type;
   ASTPointer *pointer;
   ASTDirectDecltor *direct_decltor;
+  ASTNode *initializer;
 } ASTDecltor;
 
 typedef struct {
@@ -428,6 +429,7 @@ ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
 ASTNode *AllocAndInitASTExprFuncCall(ASTNode *func, ASTNode *args);
 ASTVar *AllocAndInitASTVar(ASTList *decl_specs, ASTDecltor *decltor);
 
+ASTIdent *GetIdentFromDecltor(ASTDecltor *decltor);
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetFuncNameTokenFromFuncDef(ASTFuncDef *func_def);
 int IsTypedefDeclSpecs(ASTList *decl_specs);

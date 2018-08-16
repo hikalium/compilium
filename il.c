@@ -537,6 +537,14 @@ void GenerateILFor(ASTList *il, Register *dst, ASTNode *node) {
   } else if (node->type == kASTCondStmt) {
     GenerateILForCondStmt(il, dst, node);
   } else if (node->type == kASTDecl) {
+    ASTDecl *decl = ToASTDecl(node);
+    if (!decl->init_decltors) return;
+    for (int i = 0; i < GetSizeOfASTList(decl->init_decltors); i++) {
+      ASTDecltor *decltor = ToASTDecltor(GetASTNodeAt(decl->init_decltors, i));
+      if (decltor->initializer)
+        GenerateILFor(il, dst, ToASTNode(decltor->initializer));
+    }
+    return;
     // do nothing
   } else if (node->type == kASTWhileStmt) {
     GenerateILForWhileStmt(il, dst, node);
