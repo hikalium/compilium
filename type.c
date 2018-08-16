@@ -235,7 +235,8 @@ int GetAlignOfType(ASTType *node) {
   } else if (node->basic_type == kTypeInt) {
     return 4;
   }
-  Error("GetAlignOfType: Not implemented for basic_type %d", node->basic_type);
+  ErrorWithASTNode(node, "GetAlignOfType: Not implemented for basic_type %d",
+                   node->basic_type);
   return -1;
 }
 

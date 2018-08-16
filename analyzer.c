@@ -29,6 +29,13 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
         }
         ASTParamDecl *param_decl = ToASTParamDecl(param_node);
         assert(param_decl);
+        ASTKeyword *first_decl_spec =
+            ToASTKeyword(GetASTNodeAt(param_decl->decl_specs, 0));
+        if (IsEqualToken(first_decl_spec->token, "void")) {
+          if (i != 0 || GetSizeOfASTList(param_decl->decl_specs) != 1)
+            Error("func args should be (void)");
+          break;
+        }
         ASTDecltor *param_decltor = ToASTDecltor(param_decl->decltor);
         ASTVar *local_var = AppendLocalVarToContext(
             context, param_decl->decl_specs, param_decltor);

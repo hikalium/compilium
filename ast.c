@@ -248,7 +248,7 @@ static void PrintTokenWithName(int depth, const char* name,
                                const Token* token) {
   PrintfWithPadding(depth, name);
   putchar('"');
-  PrintToken(token);
+  DebugPrintToken(token);
   putchar('"');
 }
 
