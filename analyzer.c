@@ -250,4 +250,7 @@ void Analyze(ASTNode *root) {
   PrintContext(identifiers);
   Context *context = AllocContext(NULL);
   AnalyzeNode(root, context);
+
+  puts("\nAST after Analyze:");
+  DebugPrintASTNode(root);
 }

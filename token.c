@@ -87,6 +87,12 @@ void PrintTokenList(const TokenList *list) {
   }
 }
 
+void DebugPrintTokenList(const TokenList *list) {
+  puts("\nTokens:");
+  PrintTokenList(list);
+  putchar('\n');
+}
+
 // TokenStream
 
 struct TOKEN_STREAM {

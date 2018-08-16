@@ -487,6 +487,7 @@ const Token *GetTokenAt(const TokenList *list, int index);
 int GetSizeOfTokenList(const TokenList *list);
 void SetSizeOfTokenList(TokenList *list, int size);
 void PrintTokenList(const TokenList *list);
+void DebugPrintTokenList(const TokenList *list);
 
 TokenStream *AllocAndInitTokenStream(const TokenList *list);
 const Token *PopToken(TokenStream *stream);
@@ -503,6 +504,7 @@ void DebugPrintTokenStream(const char *s, const TokenStream *stream);
 // @tokenizer.c
 char *ReadFile(const char *file_name);
 void Tokenize(TokenList *tokens, const char *p, const char *filename);
+void TokenizeFile(TokenList *tokens, const char *filename);
 
 // @type.c
 DefToAST(Type);

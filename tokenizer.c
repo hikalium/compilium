@@ -215,3 +215,7 @@ void Tokenize(TokenList *tokens, const char *p, const char *filename) {
     }
   } while (*p);
 }
+
+void TokenizeFile(TokenList *tokens, const char *filename) {
+  Tokenize(tokens, ReadFile(filename), filename);
+}

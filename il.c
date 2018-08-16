@@ -570,5 +570,10 @@ void GenerateILFor(ASTList *il, Register *dst, ASTNode *node) {
 ASTList *GenerateIL(ASTNode *root) {
   ASTList *il = AllocASTList(MAX_IL_NODES);
   GenerateILFor(il, NULL, root);
+
+  puts("\nIL:");
+  PrintASTNode(ToASTNode(il), 0);
+  putchar('\n');
+
   return il;
 }
