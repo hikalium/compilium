@@ -1,4 +1,3 @@
-
 int func(int, int);
 int func_unsigned(int, unsigned int);
 int func_unsigned_vaarg(int, unsigned int, ...);
@@ -12,6 +11,8 @@ int main()
   int a;
   unsigned int b;
   const char *c;
+  int array1[3 + 4];
+  int array2[3 * 4];
 
   return 0;
 }

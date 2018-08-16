@@ -11,15 +11,16 @@ ASTNode *ParseCastExpr(TokenStream *stream);
 ASTNode *ParseExpression(TokenStream *stream);
 ASTKeyword *ParseTypeQual(TokenStream *stream);
 ASTNode *ParseTypeSpec(TokenStream *stream);
+ASTList *ParseSpecQualList(TokenStream *stream);
+ASTPointer *ParsePointer(TokenStream *stream);
 
 // Utils
 
-#define MAX_NUM_OF_NODES_IN_COMMA_SEPARATED_LIST 8
 ASTList *ParseListSeparatedByToken(TokenStream *stream,
                                    ASTNode *(elem_parser)(TokenStream *stream),
                                    const char *separator) {
   // elem [separator elem]*
-  ASTList *list = AllocASTList(MAX_NUM_OF_NODES_IN_COMMA_SEPARATED_LIST);
+  ASTList *list = AllocASTList();
   ASTNode *node = elem_parser(stream);
   if (!node) return NULL;
   PushASTNodeToList(list, node);
@@ -48,7 +49,8 @@ ASTNode *ParseLeftAssocBinOp(TokenStream *stream,
     if (!IsNextTokenInList(stream, ops)) break;
     const Token *op = PopToken(stream);
     ASTNode *node = sub_parser(stream);
-    if (!node) Error("node should not be NULL");
+    if (!node)
+      ErrorWithASTNode(last, "node should not be NULL for op %s", op->str);
     last = AllocAndInitASTExprBinOp(op, last, node);
   }
   return last;
@@ -57,9 +59,13 @@ ASTNode *ParseLeftAssocBinOp(TokenStream *stream,
 // Parser
 
 ASTIdent *ParseIdent(TokenStream *stream) {
+  DebugPrintTokenStream(__func__, stream);
   const Token *token;
   token = PeekToken(stream);
   if (token->type != kIdentifier) {
+    return NULL;
+  }
+  if (FindInContext(identifiers, token->str)) {
     return NULL;
   }
   PopToken(stream);
@@ -77,6 +83,7 @@ ASTList *ParseIdentList(TokenStream *stream) {
 }
 
 ASTNode *ParsePrimaryExpr(TokenStream *stream) {
+  DebugPrintTokenStream(__func__, stream);
   const Token *token = PeekToken(stream);
   if (token->type == kInteger) {
     PopToken(stream);
@@ -94,11 +101,19 @@ ASTNode *ParsePrimaryExpr(TokenStream *stream) {
     PopToken(stream);
     return ToASTNode(AllocAndInitASTString(token->str));
   } else if (token->type == kIdentifier) {
-    PopToken(stream);
-    return ToASTNode(AllocAndInitASTIdent(token));
+    ASTInteger *enum_value =
+        ToASTInteger(FindInContext(identifiers, token->str));
+    if (enum_value) {
+      PopToken(stream);
+      return ToASTNode(enum_value);
+    }
+    return ParseIdentNode(stream);
   } else if (ConsumeToken(stream, "(")) {
     ASTNode *expr = ParseExpression(stream);
-    if (!expr) Error("Expected expression");
+    if (!expr) {
+      UnpopToken(stream);
+      return NULL;
+    }
     ExpectToken(stream, ")");
     return expr;
   }
@@ -164,7 +179,31 @@ ASTNode *ParseUnaryExpr(TokenStream *stream) {
   return ParsePostExpr(stream);
 }
 
-ASTNode *ParseCastExpr(TokenStream *stream) { return ParseUnaryExpr(stream); }
+ASTDecltor *ParseAbstractDecltor(TokenStream *stream) {
+  // abstract-declarator
+  ASTPointer *pointer = ParsePointer(stream);
+  if (!pointer) return NULL;
+  ASTDecltor *decltor = AllocASTDecltor();
+  decltor->pointer = pointer;
+  return decltor;
+}
+
+ASTNode *ParseCastExpr(TokenStream *stream) {
+  // cast-expression
+  if (ConsumeToken(stream, "(")) {
+    ASTList *spec_qual_list = ParseSpecQualList(stream);
+    if (spec_qual_list) {
+      ASTDecltor *abst_decltor = ParseAbstractDecltor(stream);
+      ExpectToken(stream, ")");
+      ASTExprCast *cast = AllocASTExprCast();
+      cast->to_expr_type = AllocAndInitASTType(spec_qual_list, abst_decltor);
+      cast->expr = ParseCastExpr(stream);
+      return ToASTNode(cast);
+    }
+    UnpopToken(stream);
+  }
+  return ParseUnaryExpr(stream);
+}
 
 ASTNode *ParseMultiplicativeExpr(TokenStream *stream) {
   const static char *ops[] = {"*", "/", "%", NULL};
@@ -217,6 +256,7 @@ ASTNode *ParseLogicalOrExpr(TokenStream *stream) {
 }
 
 ASTNode *ParseConditionalExpr(TokenStream *stream) {
+  DebugPrintTokenStream(__func__, stream);
   ASTNode *cond_expr = ParseLogicalOrExpr(stream);
   if (!ConsumeToken(stream, "?")) return cond_expr;
   ASTNode *true_expr = ParseExpression(stream);
@@ -235,11 +275,11 @@ ASTNode *ParseConditionalExpr(TokenStream *stream) {
 }
 
 ASTNode *ParseAssignExpr(TokenStream *stream) {
+  DebugPrintTokenStream(__func__, stream);
   // assignment-expression:
   // [unary-expression assignment-operator]* conditional-expression
   const static char *ops[] = {
       "=", "*=", "/=", "%=", "+=", "-=", "<<=", ">>=", "&=", "^=", "|=", NULL};
-  DebugPrintTokenStream(__func__, stream);
   int pos = GetStreamPos(stream);
   ASTNode *last = ParseUnaryExpr(stream);
   if (!last) {
@@ -251,7 +291,10 @@ ASTNode *ParseAssignExpr(TokenStream *stream) {
   };
   const Token *op = PopToken(stream);
   ASTNode *node = ParseAssignExpr(stream);
-  if (!node) Error("node should not be NULL");
+  if (!node) {
+    SeekStream(stream, pos);
+    return ParseConditionalExpr(stream);
+  }
   return AllocAndInitASTExprBinOp(op, last, node);
 }
 
@@ -355,12 +398,11 @@ ASTExprStmt *ParseExprStmt(TokenStream *stream) {
   return expr_stmt;
 }
 
-#define MAX_NUM_OF_STATEMENTS_IN_BLOCK 64
 ASTCompStmt *ParseCompStmt(TokenStream *stream) {
   // compound-statement:
   //   { [declaration | statement]* }
   if (!ConsumeToken(stream, "{")) return NULL;
-  ASTList *stmt_list = AllocASTList(MAX_NUM_OF_STATEMENTS_IN_BLOCK);
+  ASTList *stmt_list = AllocASTList();
   while (!IsNextToken(stream, "}")) {
     ASTNode *stmt = ToASTNode(ParseDecl(stream));
     if (!stmt) stmt = ParseStmt(stream);
@@ -480,11 +522,10 @@ ASTNode *ParseDecltorNode(TokenStream *stream) {
   return ToASTNode(ParseDecltor(stream));
 }
 
-#define MAX_NODES_IN_DECL_SPECS 4
 ASTList *ParseSpecQualList(TokenStream *stream) {
   // specifier-qualifier-list:
   //  [type-specifier type-qualifier]+
-  ASTList *list = AllocASTList(MAX_NODES_IN_DECL_SPECS);
+  ASTList *list = AllocASTList();
   ASTNode *node;
   for (;;) {
     node = ParseTypeSpec(stream);
@@ -572,12 +613,11 @@ ASTKeyword *ParseFuncSpec(TokenStream *stream) {
   return AllocAndInitASTKeyword(PopToken(stream));
 }
 
-#define MAX_NODES_IN_DECL_SPECS 4
 ASTList *ParseDeclSpecs(TokenStream *stream) {
   // ASTList<ASTKeyword>
   // declaration-specifiers:
   //  [type-specifier type-qualifier]+
-  ASTList *list = AllocASTList(MAX_NODES_IN_DECL_SPECS);
+  ASTList *list = AllocASTList();
   ASTNode *node;
   for (;;) {
     node = ParseStorageClassSpec(stream);
@@ -640,12 +680,11 @@ ASTDecl *ParseDecl(TokenStream *stream) {
   return decl;
 }
 
-#define MAX_NODES_IN_TRANSLATION_UNIT 64
 ASTList *ParseTranslationUnit(TokenStream *stream) {
   // ASTList<ASTFuncDef | ASTDecl>
   // translation-unit:
   //   [function-definition | declaration]+
-  ASTList *list = AllocASTList(MAX_NODES_IN_TRANSLATION_UNIT);
+  ASTList *list = AllocASTList();
   ASTNode *node;
   for (;;) {
     node = ParseFuncDef(stream);

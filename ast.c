@@ -29,6 +29,7 @@ void InitASTNodeTypeName() {
   ASTNodeTypeName[kASTExprUnaryPostOp] = "ExprUnaryPostOp";
   ASTNodeTypeName[kASTExprBinOp] = "ExprBinOp";
   ASTNodeTypeName[kASTExprFuncCall] = "ExprFuncCall";
+  ASTNodeTypeName[kASTExprCast] = "ExprCast";
   ASTNodeTypeName[kASTInteger] = "Integer";
   ASTNodeTypeName[kASTString] = "String";
   ASTNodeTypeName[kASTExprStmt] = "ExprStmt";
@@ -68,6 +69,7 @@ GenToAST(ExprUnaryPreOp);
 GenToAST(ExprUnaryPostOp);
 GenToAST(ExprBinOp);
 GenToAST(ExprFuncCall);
+GenToAST(ExprCast);
 GenToAST(Integer);
 GenToAST(String);
 GenToAST(ExprStmt);
@@ -98,6 +100,7 @@ GenAllocAST(ExprUnaryPreOp);
 GenAllocAST(ExprUnaryPostOp);
 GenAllocAST(ExprBinOp);
 GenAllocAST(ExprFuncCall);
+GenAllocAST(ExprCast);
 GenAllocAST(Integer);
 GenAllocAST(String);
 GenAllocAST(ExprStmt);
@@ -108,7 +111,8 @@ GenAllocAST(WhileStmt);
 GenAllocAST(ForStmt);
 GenAllocAST(ILOp);
 
-ASTList* AllocASTList(int capacity) {
+ASTList* AllocASTList(void) {
+  int capacity = 512;
   ASTList* list = calloc(1, sizeof(ASTList) + sizeof(ASTNode*) * capacity);
   list->type = kASTList;
   list->capacity = capacity;
@@ -225,6 +229,7 @@ static void PrintfWithPadding(int depth, const char* fmt, ...) {
 }
 
 static void PrintASTNodeWithName(int depth, const char* name, void* node) {
+  if (!node) return;
   PrintfWithPadding(depth, name);
   PrintASTNode(node, depth);
 }
@@ -232,7 +237,9 @@ static void PrintASTNodeWithName(int depth, const char* name, void* node) {
 static void PrintTokenWithName(int depth, const char* name,
                                const Token* token) {
   PrintfWithPadding(depth, name);
+  putchar('"');
   PrintToken(token);
+  putchar('"');
 }
 
 void PrintASTNode(void* node, int depth) {
@@ -298,6 +305,10 @@ void PrintASTNode(void* node, int depth) {
     ASTExprFuncCall* expr_func_call = ToASTExprFuncCall(n);
     PrintASTNodeWithName(depth + 1, "func=", expr_func_call->func);
     PrintASTNodeWithName(depth + 1, "args=", expr_func_call->args);
+  } else if (n->type == kASTExprCast) {
+    ASTExprCast* expr_cast = ToASTExprCast(n);
+    PrintASTNodeWithName(depth + 1, "to_expr_type=", expr_cast->to_expr_type);
+    PrintASTNodeWithName(depth + 1, "expr=", expr_cast->expr);
   } else if (n->type == kASTInteger) {
     ASTInteger* constant = ToASTInteger(n);
     PrintfWithPadding(depth + 1, "value=%d", constant->value);
@@ -409,6 +420,22 @@ void PrintASTNode(void* node, int depth) {
 void DebugPrintASTNode(void* node) {
   PrintASTNode(node, 0);
   putchar('\n');
+}
+
+int EvalConstantExpression(ASTNode* node) {
+  if (node->type == kASTExprBinOp) {
+    ASTExprBinOp* bin_op = ToASTExprBinOp(node);
+    if (IsEqualToken(bin_op->op, "+")) {
+      return EvalConstantExpression(bin_op->left) +
+             EvalConstantExpression(bin_op->right);
+    } else if (IsEqualToken(bin_op->op, "*")) {
+      return EvalConstantExpression(bin_op->left) *
+             EvalConstantExpression(bin_op->right);
+    }
+  } else if (node->type == kASTInteger) {
+    return ToASTInteger(node)->value;
+  }
+  ErrorWithASTNode(node, "EvalConstantExpression: not implemented");
 }
 
 // ASTList

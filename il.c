@@ -558,6 +558,8 @@ void GenerateILFor(ASTList *il, Register *dst, ASTNode *node) {
     GenerateILFor(il, dst, ToASTNode(enum_value));
   } else if (node->type == kASTVar) {
     EmitILOp(il, kILOpLoadLocalVarAddr, dst, NULL, NULL, node);
+  } else if (node->type == kASTExprCast) {
+    GenerateILRValueFor(il, dst, ToASTExprCast(node)->expr);
   } else {
     PrintASTNode(node, 0);
     putchar('\n');
@@ -566,9 +568,8 @@ void GenerateILFor(ASTList *il, Register *dst, ASTNode *node) {
   }
 }
 
-#define MAX_IL_NODES 2048
 ASTList *GenerateIL(ASTNode *root) {
-  ASTList *il = AllocASTList(MAX_IL_NODES);
+  ASTList *il = AllocASTList();
   GenerateILFor(il, NULL, root);
 
   puts("\nIL:");

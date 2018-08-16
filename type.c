@@ -12,8 +12,16 @@ struct AST_TYPE {
   ASTType *func_return_type;
 };
 
-GenToAST(Type);
-GenAllocAST(Type);
+ASTType *ToASTType(ASTNode *node) {
+  if (!node || node->type != kASTType) return 0;
+  return (ASTType *)node;
+}
+
+ASTType *AllocASTType(void) {
+  ASTType *node = (ASTType *)calloc(1, sizeof(ASTType));
+  node->type = kASTType;
+  return node;
+}
 
 ASTType *AllocAndInitBasicType(BasicType basic_type) {
   ASTType *node = AllocASTType();
@@ -79,7 +87,7 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
       } else if (IsEqualToken(kw->token, "char")) {
         basic_type = kTypeChar;
       } else if (IsEqualToken(kw->token, "void")) {
-        basic_type = kTypeChar;
+        basic_type = kTypeVoid;
       }
       if (basic_type == kTypeNone) {
         Error("Type %s is not implemented", kw->token->str);
@@ -133,9 +141,7 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
   for (ASTDirectDecltor *d = decltor->direct_decltor; d;
        d = d->direct_decltor) {
     if (IsEqualToken(d->bracket_token, "[")) {
-      ASTInteger *integer = ToASTInteger(d->data);
-      if (!integer) Error("Array size should be an integer");
-      type = AllocAndInitASTTypeArrayOf(type, integer->value);
+      type = AllocAndInitASTTypeArrayOf(type, EvalConstantExpression(d->data));
     } else if (IsEqualToken(d->bracket_token, "(")) {
       type = AllocAndInitASTTypeFunction(type);
       // TODO: Add types of args
@@ -265,6 +271,8 @@ ASTType *GetExprTypeOfASTNode(ASTNode *node) {
     return ToASTCondStmt(node)->expr_type;
   } else if (node->type == kASTVar) {
     return ToASTVar(node)->var_type;
+  } else if (node->type == kASTExprCast) {
+    return ToASTExprCast(node)->to_expr_type;
   }
   PrintASTNode(node, 0);
   Error("GetExprTypeOfASTNode is not implemented for this AST type");
@@ -293,6 +301,8 @@ void PrintASTType(ASTType *node) {
     printf("char");
   } else if (node->basic_type == kTypeInt) {
     printf("int");
+  } else if (node->basic_type == kTypeVoid) {
+    printf("void");
   } else {
     Error("PrintASTType: Not implemented for basic_type %d", node->basic_type);
   }

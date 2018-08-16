@@ -29,7 +29,7 @@ compilium_dbg: $(MAIN_SRCS) $(SRCS) $(HEADERS) Makefile
 	@ ./$*_test
 
 %.self.c : %.c $(HEADERS) Makefile FORCE
-	@ gcc -P -E $*.c > $@
+	@ $(CC) $(CFLAGS) -P -E $*.c > $@
 
 %.self.S : %.self.c $(HEADERS) Makefile compilium FORCE
 	@ ./compilium -o $@ --prefix_type `uname` $*.self.c

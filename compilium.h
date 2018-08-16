@@ -37,6 +37,7 @@ typedef enum {
   kASTExprUnaryPostOp,
   kASTExprBinOp,
   kASTExprFuncCall,
+  kASTExprCast,
   kASTInteger,
   kASTString,
   kASTExprStmt,
@@ -211,6 +212,12 @@ typedef struct {
 
 typedef struct {
   ASTNodeType type;
+  ASTNode *expr;
+  ASTType *to_expr_type;
+} ASTExprCast;
+
+typedef struct {
+  ASTNodeType type;
   int value;
 } ASTInteger;
 
@@ -356,6 +363,7 @@ DefToAST(ExprUnaryPreOp);
 DefToAST(ExprUnaryPostOp);
 DefToAST(ExprBinOp);
 DefToAST(ExprFuncCall);
+DefToAST(ExprCast);
 DefToAST(Integer);
 DefToAST(String);
 DefToAST(ExprStmt);
@@ -386,6 +394,7 @@ DefAllocAST(ExprUnaryPreOp);
 DefAllocAST(ExprUnaryPostOp);
 DefAllocAST(ExprBinOp);
 DefAllocAST(ExprFuncCall);
+DefAllocAST(ExprCast);
 DefAllocAST(Integer);
 DefAllocAST(String);
 DefAllocAST(ExprStmt);
@@ -395,7 +404,7 @@ DefAllocAST(IfStmt);
 DefAllocAST(WhileStmt);
 DefAllocAST(ForStmt);
 DefAllocAST(ILOp);
-ASTList *AllocASTList(int capacity);
+DefAllocAST(List);
 DefAllocAST(Keyword);
 DefAllocAST(Decltor);
 DefAllocAST(DirectDecltor);
@@ -425,6 +434,8 @@ int IsTypedefDeclSpecs(ASTList *decl_specs);
 
 void PrintASTNode(void *node, int depth);
 void DebugPrintASTNode(void *node);
+
+int EvalConstantExpression(ASTNode *node);
 
 void PushASTNodeToList(ASTList *list, ASTNode *node);
 ASTNode *PopASTNodeFromList(ASTList *list);

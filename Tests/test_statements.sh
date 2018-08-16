@@ -68,6 +68,8 @@ test_statements 'char *p; p = "text"; return *p;' 116
 test_statements 'char *p; p = "text"; p++; return *p;' 101
 test_statements 'char *p; p = "text"; return *(p + 1);' 101
 
+test_statements 'int a; a = 7; int *p; p = &a; return *(int *)(void *)p;' 7
+
 test_statements 'char array[10]; return sizeof(array);' 10
 test_statements 'int array[10]; return sizeof(array);' 40
 test_statements 'char *array[10]; return sizeof(array);' 80

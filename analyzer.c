@@ -36,6 +36,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
       }
     }
     AnalyzeNode(ToASTNode(def->comp_stmt), context);
+    PrintContext(def->context);
     return NULL;
   } else if (node->type == kASTCompStmt) {
     ASTCompStmt *comp = ToASTCompStmt(node);
@@ -53,9 +54,8 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
       if (IsBasicType(type, kTypeStruct)) {
         AppendTypeToContext(struct_names, GetStructTagFromType(type), type);
         PrintContext(struct_names);
-        return NULL;
       }
-      ErrorWithASTNode(node, "Not implemented Declaration");
+      return NULL;
     }
     for (int i = 0; i < GetSizeOfASTList(decl->init_decltors); i++) {
       ASTDecltor *decltor = ToASTDecltor(GetASTNodeAt(decl->init_decltors, i));
@@ -92,6 +92,8 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
       return bin_op->expr_type;
     } else if (IsEqualToken(bin_op->op, "->")) {
       ASTType *left_type = AnalyzeNode(bin_op->left, context);
+      if (!left_type)
+        ErrorWithASTNode(bin_op, "left operand of -> has null type");
       ASTType *left_deref_type = GetDereferencedTypeOf(left_type);
       Context *struct_members = GetStructContextFromType(left_deref_type);
       ASTVar *member = ToASTVar(
@@ -241,6 +243,10 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
 
     SetBreakLabelInContext(context, org_break_label);
     return NULL;
+  } else if (node->type == kASTExprCast) {
+    ASTExprCast *cast_expr = ToASTExprCast(node);
+    AnalyzeNode(cast_expr->expr, context);
+    return cast_expr->to_expr_type;
   }
   ErrorWithASTNode(node, "Analyzing AST%s is not implemented.",
                    GetASTNodeTypeName(node));
