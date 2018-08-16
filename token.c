@@ -140,6 +140,12 @@ int IsNextPunctuatorToken(TokenStream *stream, const char *str) {
   return IsEqualToken(token, str);
 }
 
+int IsNextKeywordToken(TokenStream *stream, const char *str) {
+  const Token *token = GetTokenAt(stream->list, stream->pos);
+  if (!token || token->type != kKeyword) return 0;
+  return IsEqualToken(token, str);
+}
+
 int IsNextTokenInList(TokenStream *stream, const char *list[]) {
   int i;
   for (i = 0; list[i]; i++) {

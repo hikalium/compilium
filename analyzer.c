@@ -155,15 +155,19 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
 
     stmt->begin_label = AllocASTLabel();
     stmt->end_label = AllocASTLabel();
+    stmt->continue_label = AllocASTLabel();
 
     ASTLabel *org_break_label = GetBreakLabelInContext(context);
+    ASTLabel *org_continue_label = GetContinueLabelInContext(context);
     SetBreakLabelInContext(context, stmt->end_label);
+    SetContinueLabelInContext(context, stmt->continue_label);
 
     AnalyzeNode(stmt->init_expr, context);
     AnalyzeNode(stmt->cond_expr, context);
     AnalyzeNode(stmt->body_stmt, context);
     AnalyzeNode(stmt->updt_expr, context);
 
+    SetContinueLabelInContext(context, org_continue_label);
     SetBreakLabelInContext(context, org_break_label);
     return NULL;
   } else if (node->type == kASTJumpStmt) {
@@ -179,6 +183,12 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
       if (!break_label)
         Error("break-stmt should be used within iteration-stmt");
       jump_stmt->param = ToASTNode(break_label);
+      return NULL;
+    } else if (IsEqualToken(jump_stmt->kw->token, "continue")) {
+      ASTLabel *continue_label = GetContinueLabelInContext(context);
+      if (!continue_label)
+        Error("continue-stmt should be used within iteration-stmt");
+      jump_stmt->param = ToASTNode(continue_label);
       return NULL;
     }
     Error("Not implemented JumpStmt (%s)", jump_stmt->kw->token->str);
@@ -240,11 +250,14 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     stmt->end_label = AllocASTLabel();
 
     ASTLabel *org_break_label = GetBreakLabelInContext(context);
+    ASTLabel *org_continue_label = GetContinueLabelInContext(context);
     SetBreakLabelInContext(context, stmt->end_label);
+    SetContinueLabelInContext(context, stmt->begin_label);
 
     AnalyzeNode(stmt->cond_expr, context);
     AnalyzeNode(stmt->body_stmt, context);
 
+    SetContinueLabelInContext(context, org_continue_label);
     SetBreakLabelInContext(context, org_break_label);
     return NULL;
   } else if (node->type == kASTExprCast) {

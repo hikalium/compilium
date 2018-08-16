@@ -4,6 +4,7 @@ struct CONTEXT {
   const Context *parent;
   ASTDict *dict;
   ASTLabel *break_label;
+  ASTLabel *continue_label;
 };
 
 Context *struct_names;
@@ -109,6 +110,14 @@ void SetBreakLabelInContext(Context *context, ASTLabel *label) {
 
 ASTLabel *GetBreakLabelInContext(Context *context) {
   return context->break_label;
+}
+
+void SetContinueLabelInContext(Context *context, ASTLabel *label) {
+  context->continue_label = label;
+}
+
+ASTLabel *GetContinueLabelInContext(Context *context) {
+  return context->continue_label;
 }
 
 void PrintContext(const Context *context) { DebugPrintASTNode(context->dict); }

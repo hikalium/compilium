@@ -409,7 +409,8 @@ void GenerateILForJumpStmt(ASTList *il, Register *dst, ASTNode *node) {
     }
     EmitILOp(il, kILOpReturn, NULL, return_value, NULL, node);
     return;
-  } else if (IsEqualToken(jump_stmt->kw->token, "break")) {
+  } else if (IsEqualToken(jump_stmt->kw->token, "break") ||
+             IsEqualToken(jump_stmt->kw->token, "continue")) {
     EmitILOp(il, kILOpJmp, NULL, NULL, NULL, jump_stmt->param);
     return;
   }
@@ -478,6 +479,7 @@ void GenerateILForForStmt(ASTList *il, Register *dst, ASTNode *node) {
            ToASTNode(stmt->end_label));
 
   GenerateILFor(il, AllocRegister(), stmt->body_stmt);
+  EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(stmt->continue_label));
   GenerateILFor(il, AllocRegister(), stmt->updt_expr);
   EmitILOp(il, kILOpJmp, NULL, NULL, NULL, ToASTNode(stmt->begin_label));
   EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(stmt->end_label));

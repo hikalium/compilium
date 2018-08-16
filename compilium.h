@@ -268,6 +268,7 @@ typedef struct {
   ASTNode *body_stmt;
   ASTLabel *begin_label;
   ASTLabel *end_label;
+  ASTLabel *continue_label;
 } ASTForStmt;
 
 typedef struct {
@@ -471,6 +472,8 @@ void AppendTypeToContext(Context *context, const char *name, ASTType *type);
 void AppendToContext(Context *context, const char *name, ASTNode *node);
 void SetBreakLabelInContext(Context *context, ASTLabel *label);
 ASTLabel *GetBreakLabelInContext(Context *context);
+void SetContinueLabelInContext(Context *context, ASTLabel *label);
+ASTLabel *GetContinueLabelInContext(Context *context);
 void PrintContext(const Context *context);
 
 // @error.c
@@ -514,6 +517,7 @@ int SeekStream(TokenStream *stream, int pos);
 const Token *PeekToken(const TokenStream *stream);
 int IsNextToken(TokenStream *stream, const char *str);
 int IsNextPunctuatorToken(TokenStream *stream, const char *str);
+int IsNextKeywordToken(TokenStream *stream, const char *str);
 int IsNextTokenInList(TokenStream *stream, const char *list[]);
 int IsNextPunctuatorTokenInList(TokenStream *stream, const char *list[]);
 const Token *ConsumeToken(TokenStream *stream, const char *str);
