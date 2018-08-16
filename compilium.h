@@ -1,4 +1,4 @@
-#include "std.h"
+#include <std.h>
 
 #define MAX_TOKEN_LEN 64
 #define MAX_INPUT_SIZE (4 * 1024 * 1024)

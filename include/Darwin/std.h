@@ -3,9 +3,13 @@
 
 typedef struct __sFILE FILE;
 
-extern FILE *stdin;
-extern FILE *stdout;
-extern FILE *stderr;
+extern FILE *__stdinp;
+extern FILE *__stdoutp;
+extern FILE *__stderrp;
+
+#define stdin __stdinp
+#define stdout __stdoutp
+#define stderr __stderrp
 
 #define va_start __builtin_va_start
 #define va_end __builtin_va_end
