@@ -206,7 +206,9 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     return AllocAndInitBasicType(kTypeInt);
   } else if (node->type == kASTExprUnaryPreOp) {
     ASTExprUnaryPreOp *op = ToASTExprUnaryPreOp(node);
-    op->expr_type = AnalyzeNode(op->expr, context);
+    if (op->expr && op->expr->type != kASTType) {
+      op->expr_type = AnalyzeNode(op->expr, context);
+    }
     if (IsEqualToken(op->op, "*")) {
       op->expr_type = GetDereferencedTypeOf(op->expr_type);
     } else if (IsEqualToken(op->op, "&")) {

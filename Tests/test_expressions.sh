@@ -116,3 +116,8 @@ test_expression '2 * (3 * (5 + 7))' 72
 
 test_expression '2, 3' 3
 test_expression '2 * 3, 5 + 7' 12
+
+test_expression 'sizeof(int)' 4
+test_expression 'sizeof(char)' 1
+test_expression 'sizeof(char *)' 8
+test_expression 'sizeof(int *)' 8

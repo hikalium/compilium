@@ -13,6 +13,7 @@ ASTKeyword *ParseTypeQual(TokenStream *stream);
 ASTNode *ParseTypeSpec(TokenStream *stream);
 ASTList *ParseSpecQualList(TokenStream *stream);
 ASTPointer *ParsePointer(TokenStream *stream);
+ASTType *ParseTypeName(TokenStream *stream);
 
 // Utils
 
@@ -173,7 +174,14 @@ ASTNode *ParseUnaryExpr(TokenStream *stream) {
     ASTExprUnaryPreOp *op = AllocASTExprUnaryPreOp();
     op->op = PopToken(stream);
     op->expr = ParseUnaryExpr(stream);
-    if (!op->expr) Error("op->expr expected");
+    if (!op->expr && IsEqualToken(op->op, "sizeof")) {
+      ExpectToken(stream, "(");
+      op->expr = ToASTNode(ParseTypeName(stream));
+      ExpectToken(stream, ")");
+      DebugPrintASTNode(op->expr);
+      DebugPrintTokenStream("aa", stream);
+    }
+    if (!op->expr) Error("op->exp rexpected");
     return ToASTNode(op);
   }
   return ParsePostExpr(stream);
@@ -188,21 +196,27 @@ ASTDecltor *ParseAbstractDecltor(TokenStream *stream) {
   return decltor;
 }
 
+ASTType *ParseTypeName(TokenStream *stream) {
+  DebugPrintTokenStream(__func__, stream);
+  ASTList *spec_qual_list = ParseSpecQualList(stream);
+  if (!spec_qual_list) return NULL;
+  ASTDecltor *abst_decltor = ParseAbstractDecltor(stream);
+  return AllocAndInitASTType(spec_qual_list, abst_decltor);
+}
+
 ASTNode *ParseCastExpr(TokenStream *stream) {
   // cast-expression
-  if (ConsumeToken(stream, "(")) {
-    ASTList *spec_qual_list = ParseSpecQualList(stream);
-    if (spec_qual_list) {
-      ASTDecltor *abst_decltor = ParseAbstractDecltor(stream);
-      ExpectToken(stream, ")");
-      ASTExprCast *cast = AllocASTExprCast();
-      cast->to_expr_type = AllocAndInitASTType(spec_qual_list, abst_decltor);
-      cast->expr = ParseCastExpr(stream);
-      return ToASTNode(cast);
-    }
+  if (!ConsumeToken(stream, "(")) return ParseUnaryExpr(stream);
+  ASTType *type_name_type = ParseTypeName(stream);
+  if (!type_name_type) {
     UnpopToken(stream);
+    return ParseUnaryExpr(stream);
   }
-  return ParseUnaryExpr(stream);
+  ExpectToken(stream, ")");
+  ASTExprCast *cast = AllocASTExprCast();
+  cast->to_expr_type = type_name_type;
+  cast->expr = ParseCastExpr(stream);
+  return ToASTNode(cast);
 }
 
 ASTNode *ParseMultiplicativeExpr(TokenStream *stream) {

@@ -190,7 +190,9 @@ Register *GenerateILForExprUnaryPreOp(ASTList *il, Register *dst,
     }
     return dst;
   } else if (IsEqualToken(op->op, "sizeof")) {
-    int size = GetSizeOfType(GetExprTypeOfASTNode(op->expr));
+    int size = GetSizeOfType(op->expr->type == kASTType
+                                 ? ToASTType(op->expr)
+                                 : GetExprTypeOfASTNode(op->expr));
     EmitILOp(il, kILOpLoadImm, dst, NULL, NULL,
              ToASTNode(AllocAndInitASTInteger(size)));
     return dst;
