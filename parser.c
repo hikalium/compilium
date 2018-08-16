@@ -97,7 +97,18 @@ ASTNode *ParsePrimaryExpr(TokenStream *stream) {
     return ToASTNode(AllocAndInitASTInteger(n));
   } else if (token->type == kCharacterLiteral) {
     PopToken(stream);
-    return ToASTNode(AllocAndInitASTInteger(token->str[0]));
+    int char_value = token->str[0];
+    if (char_value == '\\') {
+      if (token->str[1] == '\\') {
+        char_value = '\\';
+      } else if (token->str[1] == 'n') {
+        char_value = '\n';
+      } else {
+        Error("Unexpected char literal \\%c", token->str[1]);
+      }
+      printf("Char literal!\n");
+    }
+    return ToASTNode(AllocAndInitASTInteger(char_value));
   } else if (token->type == kStringLiteral) {
     PopToken(stream);
     return ToASTNode(AllocAndInitASTString(token->str));
@@ -163,11 +174,11 @@ ASTNode *ParseUnaryExpr(TokenStream *stream) {
   const static char *ops_follows_cast_expr[] = {"&", "*",  "+",  "-", "~",
                                                 "!", "++", "--", NULL};
   const static char *ops_follows_unary_expr[] = {"++", "--", "sizeof"};
-  if (IsNextTokenInList(stream, ops_follows_cast_expr)) {
+  if (IsNextPunctuatorTokenInList(stream, ops_follows_cast_expr)) {
     ASTExprUnaryPreOp *op = AllocASTExprUnaryPreOp();
     op->op = PopToken(stream);
     op->expr = ParseCastExpr(stream);
-    if (!op->expr) Error("op->expr expected");
+    if (!op->expr) Error("op->expr expected a");
     return ToASTNode(op);
   }
   if (IsNextTokenInList(stream, ops_follows_unary_expr)) {
@@ -181,7 +192,7 @@ ASTNode *ParseUnaryExpr(TokenStream *stream) {
       DebugPrintASTNode(op->expr);
       DebugPrintTokenStream("aa", stream);
     }
-    if (!op->expr) Error("op->exp rexpected");
+    if (!op->expr) Error("op->expr rexpected b");
     return ToASTNode(op);
   }
   return ParsePostExpr(stream);
@@ -347,8 +358,11 @@ ASTNode *ParseIterationStmt(TokenStream *stream) {
   } else if (ConsumeToken(stream, "for")) {
     ASTForStmt *for_stmt = AllocASTForStmt();
     ExpectToken(stream, "(");
-    for_stmt->init_expr = ParseExpression(stream);
-    ExpectToken(stream, ";");
+    for_stmt->init_expr = ToASTNode(ParseDecl(stream));
+    if (!for_stmt->init_expr) {
+      for_stmt->init_expr = ParseExpression(stream);
+      ExpectToken(stream, ";");
+    }
     for_stmt->cond_expr = ParseExpression(stream);
     ExpectToken(stream, ";");
     for_stmt->updt_expr = ParseExpression(stream);
@@ -512,7 +526,7 @@ ASTDirectDecltor *ParseDirectDecltor(TokenStream *stream) {
 }
 
 ASTPointer *ParsePointer(TokenStream *stream) {
-  if (!ConsumeToken(stream, "*")) return NULL;
+  if (!ConsumePunctuatorToken(stream, "*")) return NULL;
   // TODO: impl type-qual-list(opt)
   ASTPointer *pointer = AllocASTPointer();
   pointer->pointer = ParsePointer(stream);

@@ -470,7 +470,7 @@ void GenerateILForForStmt(ASTList *il, Register *dst, ASTNode *node) {
   ASTForStmt *stmt = ToASTForStmt(node);
   Register *cond_result = AllocRegister();
 
-  GenerateILRValueFor(il, AllocRegister(), stmt->init_expr);
+  GenerateILFor(il, AllocRegister(), stmt->init_expr);
 
   EmitILOp(il, kILOpLabel, NULL, NULL, NULL, ToASTNode(stmt->begin_label));
   GenerateILRValueFor(il, cond_result, stmt->cond_expr);

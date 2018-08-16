@@ -134,6 +134,12 @@ int IsNextToken(TokenStream *stream, const char *str) {
   return IsEqualToken(GetTokenAt(stream->list, stream->pos), str);
 }
 
+int IsNextPunctuatorToken(TokenStream *stream, const char *str) {
+  const Token *token = GetTokenAt(stream->list, stream->pos);
+  if (!token || token->type != kPunctuator) return 0;
+  return IsEqualToken(token, str);
+}
+
 int IsNextTokenInList(TokenStream *stream, const char *list[]) {
   int i;
   for (i = 0; list[i]; i++) {
@@ -142,8 +148,21 @@ int IsNextTokenInList(TokenStream *stream, const char *list[]) {
   return 0;
 }
 
+int IsNextPunctuatorTokenInList(TokenStream *stream, const char *list[]) {
+  int i;
+  for (i = 0; list[i]; i++) {
+    if (IsNextPunctuatorToken(stream, list[i])) return 1;
+  }
+  return 0;
+}
+
 const Token *ConsumeToken(TokenStream *stream, const char *str) {
   if (!IsNextToken(stream, str)) return NULL;
+  return PopToken(stream);
+}
+
+const Token *ConsumePunctuatorToken(TokenStream *stream, const char *str) {
+  if (!IsNextPunctuatorToken(stream, str)) return NULL;
   return PopToken(stream);
 }
 

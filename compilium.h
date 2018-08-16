@@ -513,8 +513,11 @@ int GetStreamPos(TokenStream *stream);
 int SeekStream(TokenStream *stream, int pos);
 const Token *PeekToken(const TokenStream *stream);
 int IsNextToken(TokenStream *stream, const char *str);
+int IsNextPunctuatorToken(TokenStream *stream, const char *str);
 int IsNextTokenInList(TokenStream *stream, const char *list[]);
+int IsNextPunctuatorTokenInList(TokenStream *stream, const char *list[]);
 const Token *ConsumeToken(TokenStream *stream, const char *str);
+const Token *ConsumePunctuatorToken(TokenStream *stream, const char *str);
 const Token *ExpectToken(TokenStream *stream, const char *str);
 void DebugPrintTokenStream(const char *s, const TokenStream *stream);
 
