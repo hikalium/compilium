@@ -27,6 +27,7 @@ typedef enum {
   kInteger,
   kPunctuator,
   kKeyword,
+  kHeaderName,
 } TokenType;
 
 typedef enum {

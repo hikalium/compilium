@@ -67,7 +67,9 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
       ASTKeyword *kw = ToASTKeyword(type_node);
       if (IsEqualToken(kw->token, "const") ||
           IsEqualToken(kw->token, "typedef") ||
-          IsEqualToken(kw->token, "unsigned")) {
+          IsEqualToken(kw->token, "unsigned") ||
+          IsEqualToken(kw->token, "_Noreturn") ||
+          IsEqualToken(kw->token, "extern")) {
         continue;
       }
       assert(!type);

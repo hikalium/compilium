@@ -1,6 +1,23 @@
 #include "compilium.h"
 
-const char *Preprocess(TokenList *tokens, const char *p, int *line);
+const char *Preprocess(TokenList *tokens, const char *p, const char *filename,
+                       int *line);
+
+typedef struct {
+  const Token *left;
+  const Token *right;
+} TokenPair;
+
+TokenPair replace_table[64];
+int replace_table_used;
+
+const Token *find_replacement(const Token *from) {
+  for (int i = 0; i < replace_table_used; i++) {
+    if (IsEqualToken(replace_table[i].left, from->str))
+      return replace_table[i].right;
+  }
+  return from;
+}
 
 char *ReadFile(const char *file_name) {
   // file_buf is allocated here.
@@ -53,7 +70,7 @@ const char *CommonTokenizer(TokenList *tokens, const char *p,
     Token *token =
         AllocTokenWithSubstring(begin, p, kIdentifier, filename, *line);
     if (IsKeywordStr(token->str)) token->type = kKeyword;
-    AppendTokenToList(tokens, token);
+    AppendTokenToList(tokens, find_replacement(token));
     return p;
   }
   if (IS_IDENT_DIGIT(*p)) {
@@ -87,7 +104,7 @@ const char *CommonTokenizer(TokenList *tokens, const char *p,
   }
   if (*p == '#') {
     p++;
-    return Preprocess(tokens, p, line);
+    return Preprocess(tokens, p, filename, line);
   }
   if (*p == '/' && *(p + 1) == '*') {
     while (*p) {
@@ -167,7 +184,8 @@ const char *CommonTokenizer(TokenList *tokens, const char *p,
   Error("Unexpected char '%c'\n", *p);
 }
 
-const char *Preprocess(TokenList *tokens, const char *p, int *line) {
+const char *Preprocess(TokenList *tokens, const char *p, const char *filename,
+                       int *line) {
   int org_num_of_token = GetSizeOfTokenList(tokens);
   int dummy_line;
   do {
@@ -186,6 +204,18 @@ const char *Preprocess(TokenList *tokens, const char *p, int *line) {
       }
       p++;
       (*line)++;
+    } else if (*p == '<') {
+      const char *begin = p++;
+      while (*p && *p != '>') {
+        if (*p == '\\') p++;
+        p++;
+      }
+      if (*(p++) != '>') {
+        Error("Expected > but got char 0x%02X", *p);
+      }
+      AppendTokenToList(tokens,
+                        AllocTokenWithSubstring(begin + 1, p - 1, kHeaderName,
+                                                filename, *line));
     } else {
       p = CommonTokenizer(tokens, p, "(preprocess)", &dummy_line);
     }
@@ -193,9 +223,17 @@ const char *Preprocess(TokenList *tokens, const char *p, int *line) {
   const Token *directive = GetTokenAt(tokens, org_num_of_token);
   if (IsEqualToken(directive, "include")) {
     const Token *file_name = GetTokenAt(tokens, org_num_of_token + 1);
-    SetSizeOfTokenList(tokens, org_num_of_token);
     char *input = ReadFile(file_name->str);
+    SetSizeOfTokenList(tokens, org_num_of_token);
     Tokenize(tokens, input, file_name->str);
+    return p;
+  } else if (IsEqualToken(directive, "define")) {
+    replace_table[replace_table_used].left =
+        GetTokenAt(tokens, org_num_of_token + 1);
+    replace_table[replace_table_used].right =
+        GetTokenAt(tokens, org_num_of_token + 2);
+    SetSizeOfTokenList(tokens, org_num_of_token);
+    replace_table_used++;
     return p;
   }
   Error("Unknown preprocessor directive '%s'",

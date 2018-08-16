@@ -95,11 +95,12 @@ ASTVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
 }
 
 void AppendTypeToContext(Context *context, const char *name, ASTType *type) {
-  AppendASTNodeToDict(context->dict, name, ToASTNode(type));
+  AppendToContext(context, name, ToASTNode(type));
 }
 
 void AppendToContext(Context *context, const char *name, ASTNode *node) {
   AppendASTNodeToDict(context->dict, name, node);
+  PrintContext(context);
 }
 
 void SetBreakLabelInContext(Context *context, ASTLabel *label) {
