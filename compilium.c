@@ -29,6 +29,9 @@ void ParseArgs(CompilerArgs *args, int argc, char **argv) {
     } else if (strcmp(argv[i], "-o") == 0) {
       i++;
       args->dst_file = argv[i];
+    } else if (strcmp(argv[i], "-I") == 0) {
+      i++;
+      include_path = argv[i];
     } else {
       args->src_file = argv[i];
     }
@@ -42,7 +45,6 @@ void ParseArgs(CompilerArgs *args, int argc, char **argv) {
 int main(int argc, char **argv) {
   CompilerArgs args;
 
-  InitStd();
   InitASTNodeTypeName();
   InitILOpTypeName();
   InitGlobalContext();

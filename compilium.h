@@ -438,6 +438,9 @@ ASTNode *FindASTNodeInDict(ASTDict *dict, const char *key);
 ASTNode *GetASTNodeInDictAt(const ASTDict *dict, int index);
 int GetSizeOfASTDict(const ASTDict *dict);
 
+// @compilium.c
+extern const char *include_path;
+
 // @context.c
 extern Context *identifiers;
 extern Context *struct_names;

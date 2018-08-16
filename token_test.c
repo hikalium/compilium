@@ -53,7 +53,6 @@ void TestTokenStream() {
 }
 
 int main(int argc, char *argv[]) {
-  InitStd();
   TestTokenStream();
   return 0;
 }

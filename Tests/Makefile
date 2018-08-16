@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 TESTS ?= $(basename $(wildcard *.c))
-CFLAGS=-Wall -Wpedantic -I../include
+CFLAGS=-Wall -Wpedantic -I../include/$(shell uname)
 
 default: expr_test stmt_test src_test c_test
 
@@ -33,7 +33,7 @@ c_test : ../compilium $(addsuffix .test, $(TESTS)) FORCE
 
 %.compilium.S : %.c Makefile ../compilium FORCE
 	@ rm $@ $*.compilium.log &> /dev/null; \
-		../compilium -o $@ --prefix_type `uname` $*.c &> $*.compilium.log \
+		../compilium -o $@ --prefix_type `uname` -I ../include/`uname` $*.c &> $*.compilium.log \
 		|| { echo "FAIL $@"; cat $*.compilium.log; false; }
 
 %.compilium.ast : %.c Makefile ../compilium FORCE

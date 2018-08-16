@@ -32,7 +32,6 @@ void TestASTDict() {
 }
 
 int main(int argc, char *argv[]) {
-  InitStd();
   TestASTDict();
   return 0;
 }

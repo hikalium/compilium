@@ -1,5 +1,5 @@
-CFLAGS=-Wall -Wpedantic -std=c11 -Wno-extra-semi -Iinclude
-SRCS=analyzer.c ast.c context.c error.c generate.c il.c parser.c std.c token.c tokenizer.c type.c
+CFLAGS=-Wall -Wpedantic -std=c11 -Wno-extra-semi -Iinclude -Iinclude/$(shell uname)
+SRCS=analyzer.c ast.c context.c error.c generate.c il.c parser.c static.c token.c tokenizer.c type.c
 MAIN_SRCS=compilium.c
 HEADERS=compilium.h
 RUN_TARGET ?= Tests/hello_world

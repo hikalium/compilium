@@ -70,7 +70,6 @@ void TestParsingDeclIntoASTType() {
 }
 
 int main(int argc, char *argv[]) {
-  InitStd();
   InitASTNodeTypeName();
 
   TestSizeOfASTType();

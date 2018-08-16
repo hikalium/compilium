@@ -223,9 +223,19 @@ const char *Preprocess(TokenList *tokens, const char *p, const char *filename,
   const Token *directive = GetTokenAt(tokens, org_num_of_token);
   if (IsEqualToken(directive, "include")) {
     const Token *file_name = GetTokenAt(tokens, org_num_of_token + 1);
-    char *input = ReadFile(file_name->str);
+    const char *file_name_str = file_name->str;
+    if(file_name->type == kHeaderName){
+      if(!include_path){
+        Error("Include path not specified");
+      }
+      file_name_str = calloc(1, 128);
+      strncat(file_name_str, include_path, 128);
+      strncat(file_name_str, "/", 128);
+      strncat(file_name_str, file_name->str, 128);
+    }
+    char *input = ReadFile(file_name_str);
     SetSizeOfTokenList(tokens, org_num_of_token);
-    Tokenize(tokens, input, file_name->str);
+    Tokenize(tokens, input, file_name_str);
     return p;
   } else if (IsEqualToken(directive, "define")) {
     replace_table[replace_table_used].left =

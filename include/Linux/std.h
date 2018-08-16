@@ -3,9 +3,9 @@
 
 typedef struct __sFILE FILE;
 
-extern FILE *__stdinp;
-extern FILE *__stdoutp;
-extern FILE *__stderrp;
+extern FILE *stdin;
+extern FILE *stdout;
+extern FILE *stderr;
 
 #define va_start __builtin_va_start
 #define va_end __builtin_va_end
@@ -39,5 +39,3 @@ int fflush(FILE *stream);
 int fprintf(FILE *stream, const char *format, ...);
 int fputs(const char *s, FILE *stream);
 int fputc(int, FILE *);
-
-void InitStd();
