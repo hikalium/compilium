@@ -22,14 +22,14 @@ c_test : ../compilium $(addsuffix .test, $(TESTS)) FORCE
 
 %.clang.bin : %.c Makefile
 	@ rm $@ $*.compilium.log &> /dev/null; \
-		{ clang $(CFLAGS) -o $@ $*.c &> $*.clang.log; } \
+		{ $(CC) $(CFLAGS) -o $@ $*.c &> $*.clang.log; } \
 		|| { echo "FAIL $@"; cat $*.clang.log; false; }
 
 ../compilium : FORCE
 	@ make -C ..
 
 %.clang.S : %.c Makefile FORCE
-	clang $(CFLAGS) -O0 -S -o $*.clang.S $*.c
+	$(CC) $(CFLAGS) -O0 -S -o $*.clang.S $*.c
 
 %.compilium.S : %.c Makefile ../compilium FORCE
 	@ rm $@ $*.compilium.log &> /dev/null; \

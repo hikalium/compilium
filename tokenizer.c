@@ -224,8 +224,8 @@ const char *Preprocess(TokenList *tokens, const char *p, const char *filename,
   if (IsEqualToken(directive, "include")) {
     const Token *file_name = GetTokenAt(tokens, org_num_of_token + 1);
     const char *file_name_str = file_name->str;
-    if(file_name->type == kHeaderName){
-      if(!include_path){
+    if (file_name->type == kHeaderName) {
+      if (!include_path) {
         Error("Include path not specified");
       }
       char *buf = calloc(1, 128);
