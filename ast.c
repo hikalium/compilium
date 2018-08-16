@@ -46,6 +46,7 @@ void InitASTNodeTypeName() {
   ASTNodeTypeName[kASTParamDecl] = "ParamDecl";
   ASTNodeTypeName[kASTStructDecl] = "StructDecl";
   ASTNodeTypeName[kASTStructSpec] = "StructSpec";
+  ASTNodeTypeName[kASTEnumSpec] = "EnumSpec";
   ASTNodeTypeName[kASTPointer] = "Pointer";
   ASTNodeTypeName[kASTDict] = "Dict";
   ASTNodeTypeName[kASTVar] = "Var";
@@ -84,6 +85,7 @@ GenToAST(Decl);
 GenToAST(ParamDecl);
 GenToAST(StructDecl);
 GenToAST(StructSpec);
+GenToAST(EnumSpec);
 GenToAST(Pointer);
 GenToAST(Dict);
 GenToAST(Var);
@@ -121,6 +123,7 @@ GenAllocAST(Decl);
 GenAllocAST(ParamDecl);
 GenAllocAST(StructDecl);
 GenAllocAST(StructSpec);
+GenAllocAST(EnumSpec);
 GenAllocAST(Pointer);
 
 ASTDict* AllocASTDict(int capacity) {
@@ -388,6 +391,11 @@ void PrintASTNode(void* node, int depth) {
     PrintfWithPadding(depth + 1, "ofs=%d", var->ofs);
   } else if (n->type == kASTType) {
     PrintASTType(ToASTType(n));
+    putchar(')');
+    return;
+  } else if (n->type == kASTEnumSpec) {
+    ASTEnumSpec* enum_spec = ToASTEnumSpec(n);
+    PrintfWithPadding(depth + 1, "name=%s", enum_spec->ident);
     putchar(')');
     return;
   } else {

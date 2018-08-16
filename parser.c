@@ -535,6 +535,22 @@ ASTNode *ParseTypeSpec(TokenStream *stream) {
     ExpectToken(stream, ";");
     ExpectToken(stream, "}");
     return ToASTNode(struct_spec);
+  } else if (ConsumeToken(stream, "enum")) {
+    const Token *enum_name = NULL;
+    if (!IsNextToken(stream, "{")) enum_name = PopToken(stream);
+    ExpectToken(stream, "{");
+    int enum_num = 0;
+    while (!IsNextToken(stream, "}")) {
+      const Token *enum_constant = PopToken(stream);
+      assert(enum_constant);
+      AppendToContext(identifiers, enum_constant->str,
+                      ToASTNode(AllocAndInitASTInteger(enum_num++)));
+      if (!ConsumeToken(stream, ",")) break;
+    }
+    ExpectToken(stream, "}");
+    ASTEnumSpec *enum_spec = AllocASTEnumSpec();
+    enum_spec->ident = enum_name;
+    return ToASTNode(enum_spec);
   }
   const Token *token = PeekToken(stream);
   if (!token) return NULL;

@@ -17,7 +17,7 @@ void InitGlobalContext() {
 Context *AllocContext(const Context *parent) {
   Context *context = malloc(sizeof(Context));
   context->parent = parent;
-  context->dict = AllocASTDict(8);
+  context->dict = AllocASTDict(1024);
   return context;
 }
 
@@ -96,6 +96,10 @@ ASTVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
 
 void AppendTypeToContext(Context *context, const char *name, ASTType *type) {
   AppendASTNodeToDict(context->dict, name, ToASTNode(type));
+}
+
+void AppendToContext(Context *context, const char *name, ASTNode *node) {
+  AppendASTNodeToDict(context->dict, name, node);
 }
 
 void SetBreakLabelInContext(Context *context, ASTLabel *label) {

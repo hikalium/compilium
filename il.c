@@ -548,8 +548,14 @@ void GenerateILFor(ASTList *il, Register *dst, ASTNode *node) {
     GenerateILForCompStmt(il, dst, node);
   } else if (node->type == kASTIdent) {
     ASTIdent *ident = ToASTIdent(node);
-    assert(ident->local_var);
-    GenerateILFor(il, dst, ToASTNode(ident->local_var));
+    if (ident->local_var) {
+      GenerateILFor(il, dst, ToASTNode(ident->local_var));
+      return;
+    }
+    ASTInteger *enum_value =
+        ToASTInteger(FindIdentInContext(identifiers, ident));
+    if (!enum_value) ErrorWithASTNode(node, "Unknown identifier");
+    GenerateILFor(il, dst, ToASTNode(enum_value));
   } else if (node->type == kASTVar) {
     EmitILOp(il, kILOpLoadLocalVarAddr, dst, NULL, NULL, node);
   } else {

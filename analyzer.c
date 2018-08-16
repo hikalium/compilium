@@ -134,8 +134,14 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     ASTIdent *ident = ToASTIdent(node);
     ASTNode *var = FindIdentInContext(context, ident);
     if (!var || (var->type != kASTVar)) {
-      // TODO: Add func ident check
-      return NULL;
+      ASTInteger *enum_value =
+          ToASTInteger(FindIdentInContext(identifiers, ident));
+      if (!enum_value) {
+        // TODO: Add func ident check
+        return NULL;
+      }
+      ident->var_type = AllocAndInitBasicType(kTypeInt);
+      return ident->var_type;
     }
     ident->local_var = ToASTVar(var);
     ident->var_type = AllocAndInitASTTypeLValueOf(ident->local_var->var_type);

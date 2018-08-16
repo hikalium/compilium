@@ -55,6 +55,7 @@ typedef enum {
   kASTPointer,
   kASTStructDecl,
   kASTStructSpec,
+  kASTEnumSpec,
   //
   kASTDict,
   kASTVar,
@@ -323,6 +324,11 @@ typedef struct {
   ASTList *struct_decl_list;
 } ASTStructSpec;
 
+typedef struct {
+  ASTNodeType type;
+  const Token *ident;
+} ASTEnumSpec;
+
 struct AST_VAR {
   ASTNodeType type;
   int ofs;
@@ -367,6 +373,7 @@ DefToAST(Decl);
 DefToAST(ParamDecl);
 DefToAST(StructDecl);
 DefToAST(StructSpec);
+DefToAST(EnumSpec);
 DefToAST(Pointer);
 DefToAST(Dict);
 DefToAST(Var);
@@ -396,6 +403,7 @@ DefAllocAST(Decl);
 DefAllocAST(ParamDecl);
 DefAllocAST(StructDecl);
 DefAllocAST(StructSpec);
+DefAllocAST(EnumSpec);
 DefAllocAST(Pointer);
 ASTDict *AllocASTDict(int capacity);
 DefAllocAST(Var);
@@ -443,6 +451,7 @@ ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
 ASTVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
                                     ASTDecltor *decltor);
 void AppendTypeToContext(Context *context, const char *name, ASTType *type);
+void AppendToContext(Context *context, const char *name, ASTNode *node);
 void SetBreakLabelInContext(Context *context, ASTLabel *label);
 ASTLabel *GetBreakLabelInContext(Context *context);
 void PrintContext(const Context *context);

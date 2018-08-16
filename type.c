@@ -118,8 +118,11 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
         if (resolved_type) type = resolved_type;
       }
       continue;
+    } else if (type_node->type == kASTEnumSpec) {
+      type = AllocAndInitBasicType(kTypeInt);
+      continue;
     }
-    ErrorWithASTNode(type_node, "not implemented type of decl_specs[0]");
+    ErrorWithASTNode(type_node, "not implemented type of decl_specs");
   }
   if (!decltor) return type;
   for (ASTPointer *ptr = decltor->pointer; ptr; ptr = ptr->pointer) {
