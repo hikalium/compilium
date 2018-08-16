@@ -37,13 +37,18 @@ int IsTypeToken(const Token *token) {
   return IsEqualToken(token, "int") || IsEqualToken(token, "char");
 }
 
-void DebugPrintToken(const Token *token) {
+void DebugPrintTokenInSingleLine(const Token *token) {
   if (!token) {
-    printf("(Token: NULL)\n");
+    printf("(Token: NULL)");
     return;
   }
-  printf("(Token: '%s' type %d at %s:%d)\n", token->str, token->type,
+  printf("(Token: '%s' type %d at %s:%d)", token->str, token->type,
          token->filename, token->line);
+}
+
+void DebugPrintToken(const Token *token) {
+  DebugPrintTokenInSingleLine(token);
+  putchar('\n');
 }
 
 void PrintToken(const Token *token) { printf("%s", token->str); }

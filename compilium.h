@@ -498,6 +498,7 @@ Token *AllocTokenWithSubstring(const char *begin, const char *end,
                                TokenType type, const char *filename, int line);
 int IsEqualToken(const Token *token, const char *s);
 int IsTypeToken(const Token *token);
+void DebugPrintTokenInSingleLine(const Token *token);
 void DebugPrintToken(const Token *token);
 void PrintToken(const Token *token);
 
