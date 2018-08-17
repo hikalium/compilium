@@ -92,7 +92,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
       if (!IsBasicType(left_type, kTypeLValueOf)) {
         ErrorWithASTNode(node, "left operand should be an lvalue");
       }
-      bin_op->expr_type = GetRValueTypeOf(right_type);
+      bin_op->expr_type = GetRValueTypeOf(left_type);
       return bin_op->expr_type;
     } else if (IsEqualToken(bin_op->op, ".")) {
       ASTType *left_type = AnalyzeNode(bin_op->left, context);
