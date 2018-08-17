@@ -112,7 +112,7 @@ GenAllocAST(ForStmt);
 GenAllocAST(ILOp);
 
 ASTList* AllocASTList(void) {
-  int capacity = 512;
+  int capacity = 4096;
   ASTList* list = calloc(1, sizeof(ASTList) + sizeof(ASTNode*) * capacity);
   list->type = kASTList;
   list->capacity = capacity;
@@ -175,9 +175,9 @@ ASTNode* AllocAndInitASTExprBinOp(const Token* op, ASTNode* left,
   return ToASTNode(node);
 }
 
-ASTNode* AllocAndInitASTExprFuncCall(ASTNode* func, ASTNode* args) {
+ASTNode* AllocAndInitASTExprFuncCall(ASTIdent* ident, ASTNode* args) {
   ASTExprFuncCall* node = AllocASTExprFuncCall();
-  node->func = func;
+  node->func_ident = ident;
   node->args = args;
   return ToASTNode(node);
 }
@@ -314,7 +314,8 @@ void PrintASTNode(void* node, int depth) {
     PrintASTNodeWithName(depth + 1, "right=", expr_bin_op->right);
   } else if (n->type == kASTExprFuncCall) {
     ASTExprFuncCall* expr_func_call = ToASTExprFuncCall(n);
-    PrintASTNodeWithName(depth + 1, "func=", expr_func_call->func);
+    PrintASTNodeWithName(depth + 1, "func_type=", expr_func_call->func_type);
+    PrintASTNodeWithName(depth + 1, "func_ident=", expr_func_call->func_ident);
     PrintASTNodeWithName(depth + 1, "args=", expr_func_call->args);
   } else if (n->type == kASTExprCast) {
     ASTExprCast* expr_cast = ToASTExprCast(n);

@@ -215,7 +215,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         ClearRegisterAllocation();
         ResetSpillIndex();
         // TODO: The number of spill entries should be determined automatically
-        SetNumOfSpillEntries(256);
+        SetNumOfSpillEntries(1024);
         func_param_requested = 0;
         ASTFuncDef *func_def = ToASTFuncDef(op->ast_node);
         const char *func_name = GetFuncNameTokenFromFuncDef(func_def)->str;

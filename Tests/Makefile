@@ -1,43 +1,49 @@
 SHELL=/bin/bash
 TESTS ?= $(basename $(wildcard *.c))
 CFLAGS=-std=c11 -Wall -Wpedantic -I../include/$(shell uname)
+COMPILIUM?=../compilium
 
-default: expr_test stmt_test src_test c_test
+default:
+	@ echo 'Testing $(COMPILIUM)...'
+	@ make expr_test
+	@ make stmt_test
+	@ make src_test
+	@ make c_test
 
 FORCE:
 .PHONY: FORCE
 
 .SECONDARY:
 
-expr_test : ../compilium FORCE
-	@./test_expressions.sh
+expr_test : $(COMPILIUM) FORCE
+	@./test_expressions.sh $(COMPILIUM)
 
-stmt_test : ../compilium FORCE
-	@./test_statements.sh
+stmt_test : $(COMPILIUM) FORCE
+	@./test_statements.sh $(COMPILIUM)
 
-src_test : ../compilium FORCE
-	@./test_source.sh
+src_test : $(COMPILIUM) FORCE
+	@./test_source.sh $(COMPILIUM)
 
-c_test : ../compilium $(addsuffix .test, $(TESTS)) FORCE
+c_test : $(COMPILIUM) $(addsuffix .test, $(TESTS)) FORCE
 
 %.clang.bin : %.c Makefile
 	@ rm $@ $*.compilium.log &> /dev/null; \
 		{ $(CC) $(CFLAGS) -o $@ $*.c &> $*.clang.log; } \
 		|| { echo "FAIL $@"; cat $*.clang.log; false; }
 
-../compilium : FORCE
-	@ make -C ..
+$(COMPILIUM) : FORCE
+	@ make -C .. $(notdir $(COMPILIUM)).target
 
 %.clang.S : %.c Makefile FORCE
 	$(CC) $(CFLAGS) -O0 -S -o $*.clang.S $*.c
 
-%.compilium.S : %.c Makefile ../compilium FORCE
+%.compilium.S : %.c Makefile $(COMPILIUM) FORCE
 	@ rm $@ $*.compilium.log &> /dev/null; \
-		../compilium -o $@ --prefix_type `uname` -I ../include/`uname` $*.c &> $*.compilium.log \
+		$(COMPILIUM) -o $@ --prefix_type `uname` -I ../include/`uname` $*.c &> $*.compilium.log \
 		|| { echo "FAIL $@"; cat $*.compilium.log; false; }
 
-%.compilium.ast : %.c Makefile ../compilium FORCE
-	../compilium --parse_only --prefix_type `uname` $*.c &> $*.compilium.ast; cat $*.compilium.ast
+%.compilium.ast : %.c Makefile $(COMPILIUM) FORCE
+	$(COMPILIUM) --parse_only --prefix_type `uname` $*.c &> $*.compilium.ast; cat $*.compilium.ast
 
 %.bin : %.S Makefile FORCE
 	@ gcc -o $@ $*.S

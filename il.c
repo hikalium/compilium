@@ -122,11 +122,13 @@ void GenerateILForFuncDef(ASTList *il, Register *dst, ASTNode *node) {
     ASTVar *local_vars[8];
     for (int i = 0; i < GetSizeOfASTList(param_decl_list); i++) {
       local_vars[i] = ToASTVar(GetASTNodeAt(param_decl_list, i));
+      if (!local_vars[i]) continue;
       var_regs[i] = AllocRegister();
       EmitILOp(il, kILOpLoadArg, var_regs[i], NULL, NULL,
                ToASTNode(local_vars[i]));
     }
     for (int i = 0; i < GetSizeOfASTList(param_decl_list); i++) {
+      if (!local_vars[i]) continue;
       GenerateILForAssignmentOp(
           il, ToASTNode(local_vars[i]), var_regs[i],
           GetSizeOfType(GetExprTypeOfASTNode(ToASTNode(local_vars[i]))));
@@ -190,6 +192,7 @@ Register *GenerateILForExprUnaryPreOp(ASTList *il, Register *dst,
     }
     return dst;
   } else if (IsEqualToken(op->op, "sizeof")) {
+    DebugPrintASTNode(op);
     int size = GetSizeOfType(op->expr->type == kASTType
                                  ? ToASTType(op->expr)
                                  : GetExprTypeOfASTNode(op->expr));
@@ -355,6 +358,7 @@ Register *GenerateILForExprBinOp(ASTList *il, Register *dst, ASTNode *node) {
     return dst;
   } else if (IsEqualToken(bin_op->op, "->")) {
     ASTType *left_type = GetExprTypeOfASTNode(bin_op->left);
+    DebugPrintASTNode(bin_op);
     Context *struct_members =
         GetStructContextFromType(GetDereferencedTypeOf(left_type));
     ASTVar *member =
@@ -371,9 +375,6 @@ Register *GenerateILForExprBinOp(ASTList *il, Register *dst, ASTNode *node) {
 
 Register *GenerateILForExprFuncCall(ASTList *il, Register *dst, ASTNode *node) {
   ASTExprFuncCall *expr_func_call = ToASTExprFuncCall(node);
-  if (expr_func_call->func->type != kASTIdent) {
-    Error("Calling non-labeled function is not implemented.");
-  }
   if (expr_func_call->args) {
     ASTList *arg_list = ToASTList(expr_func_call->args);
     if (!arg_list) Error("arg_list is not an ASTList");
@@ -388,7 +389,8 @@ Register *GenerateILForExprFuncCall(ASTList *il, Register *dst, ASTNode *node) {
       EmitILOp(il, kILOpCallParam, NULL, param_values[i], NULL, NULL);
     }
   }
-  EmitILOp(il, kILOpCall, dst, NULL, NULL, ToASTNode(expr_func_call->func));
+  EmitILOp(il, kILOpCall, dst, NULL, NULL,
+           ToASTNode(expr_func_call->func_ident));
   return dst;
 }
 

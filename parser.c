@@ -144,7 +144,8 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
     if (ConsumeToken(stream, "(")) {
       ASTList *arg_expr_list = ParseCommaSeparatedList(stream, ParseAssignExpr);
       ExpectToken(stream, ")");
-      last = AllocAndInitASTExprFuncCall(last, ToASTNode(arg_expr_list));
+      last = AllocAndInitASTExprFuncCall(ToASTIdent(last),
+                                         ToASTNode(arg_expr_list));
     } else if (ConsumeToken(stream, "[")) {
       ASTNode *expr = ParseExpression(stream);
       ExpectToken(stream, "]");

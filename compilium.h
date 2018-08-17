@@ -206,7 +206,8 @@ typedef struct {
 
 typedef struct {
   ASTNodeType type;
-  ASTNode *func;
+  ASTIdent *func_ident;
+  ASTType *func_type;
   ASTNode *args;
 } ASTExprFuncCall;
 
@@ -427,7 +428,7 @@ ASTIdent *AllocAndInitASTIdent(const Token *token);
 ASTKeyword *AllocAndInitASTKeyword(const Token *token);
 ASTNode *AllocAndInitASTExprBinOp(const Token *op, ASTNode *left,
                                   ASTNode *right);
-ASTNode *AllocAndInitASTExprFuncCall(ASTNode *func, ASTNode *args);
+ASTNode *AllocAndInitASTExprFuncCall(ASTIdent *ident, ASTNode *args);
 ASTVar *AllocAndInitASTVar(ASTList *decl_specs, ASTDecltor *decltor);
 
 ASTIdent *GetIdentFromDecltor(ASTDecltor *decltor);

@@ -208,6 +208,11 @@ int GetSizeOfType(ASTType *node) {
     return node->num_of_elements * GetSizeOfType(node->array_of);
   } else if (node->basic_type == kTypeStruct) {
     if (!node->struct_members) {
+      ASTType *complete_type =
+          ToASTType(FindInContext(struct_names, node->struct_ident->str));
+      if (complete_type) node->struct_members = complete_type->struct_members;
+    }
+    if (!node->struct_members) {
       DebugPrintASTType(node);
       Error("Cannot take size of incomplete type");
     }
@@ -252,6 +257,11 @@ const char *GetStructTagFromType(ASTType *type) {
 Context *GetStructContextFromType(ASTType *type) {
   type = GetRValueTypeOf(type);
   assert(type->basic_type == kTypeStruct);
+  if (!type->struct_members) {
+    ASTType *resolved_type =
+        ToASTType(FindInContext(struct_names, type->struct_ident->str));
+    if (resolved_type) type->struct_members = resolved_type->struct_members;
+  }
   return type->struct_members;
 }
 
@@ -281,7 +291,7 @@ ASTType *GetExprTypeOfASTNode(ASTNode *node) {
   } else if (node->type == kASTString) {
     return AllocAndInitASTTypePointerOf(AllocAndInitBasicType(kTypeChar));
   } else if (node->type == kASTExprFuncCall) {
-    return AllocAndInitBasicType(kTypeInt);
+    return ToASTExprFuncCall(node)->func_type->func_return_type;
   } else if (node->type == kASTCondStmt) {
     return ToASTCondStmt(node)->expr_type;
   } else if (node->type == kASTVar) {
@@ -308,7 +318,8 @@ void PrintASTType(ASTType *node) {
     printf("array[%d] of ", node->num_of_elements);
     PrintASTType(node->array_of);
   } else if (node->basic_type == kTypeStruct) {
-    printf("struct %s", node->struct_ident->str);
+    printf("struct %s",
+           node->struct_ident ? node->struct_ident->str : "(Anonymous)");
     if (!node->struct_members) printf("(incomplete)");
   } else if (node->basic_type == kTypeFunction) {
     printf("function returns ");

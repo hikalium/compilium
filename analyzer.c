@@ -99,7 +99,9 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
       Context *struct_members = GetStructContextFromType(left_type);
       ASTVar *member = ToASTVar(
           FindIdentInContext(struct_members, ToASTIdent(bin_op->right)));
-      if (!member) ErrorWithASTNode(bin_op, "A member not found");
+      if (!member)
+        ErrorWithASTNode(bin_op, "No member named %s found",
+                         ToASTIdent(bin_op->right)->token->str);
       bin_op->expr_type = AllocAndInitASTTypeLValueOf(member->var_type);
       return bin_op->expr_type;
     } else if (IsEqualToken(bin_op->op, "->")) {
@@ -110,7 +112,9 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
       Context *struct_members = GetStructContextFromType(left_deref_type);
       ASTVar *member = ToASTVar(
           FindIdentInContext(struct_members, ToASTIdent(bin_op->right)));
-      if (!member) ErrorWithASTNode(bin_op, "A member not found");
+      if (!member)
+        ErrorWithASTNode(bin_op, "No member named %s found",
+                         ToASTIdent(bin_op->right)->token->str);
       bin_op->expr_type = AllocAndInitASTTypeLValueOf(member->var_type);
       return bin_op->expr_type;
     } else if (IsEqualToken(bin_op->op, "&&") ||
@@ -212,14 +216,11 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     return NULL;
   } else if (node->type == kASTExprFuncCall) {
     ASTExprFuncCall *expr_func_call = ToASTExprFuncCall(node);
-    ASTType *func_type = ToASTType(
-        FindIdentInContext(identifiers, ToASTIdent(expr_func_call->func)));
-    if (!func_type) {
+    expr_func_call->func_type =
+        ToASTType(FindIdentInContext(identifiers, expr_func_call->func_ident));
+    if (!expr_func_call->func_type) {
       ErrorWithASTNode(node, "Undefined function");
     }
-    // TODO: support func pointer
-    if (expr_func_call->func->type != kASTIdent)
-      Error("Calling non-labeled function is not implemented.");
     if (expr_func_call->args) {
       ASTList *arg_list = ToASTList(expr_func_call->args);
       if (!arg_list) Error("arg_list is not an ASTList");
@@ -229,7 +230,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
         AnalyzeNode(arg_node, context);
       }
     }
-    return GetReturningTypeFromFunctionType(func_type);
+    return GetReturningTypeFromFunctionType(expr_func_call->func_type);
   } else if (node->type == kASTExprUnaryPreOp) {
     ASTExprUnaryPreOp *op = ToASTExprUnaryPreOp(node);
     if (op->expr && op->expr->type != kASTType) {

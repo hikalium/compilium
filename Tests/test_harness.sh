@@ -1,8 +1,10 @@
+compilium=${1:-"../compilium"}
+echo "Testing binary: $compilium"
 function test_source() {
   source=$1
   expected=$2
   test_name=$3
-	echo "$source" | ../compilium -o out.S --prefix_type `uname` - &> out.compilium.log \
+	echo "$source" | $compilium -o out.S --prefix_type `uname` - &> out.compilium.log \
     || { cat out.compilium.log; echo "FAIL $test_name: Compilation failed." ; exit 1; }
 	gcc -o out.bin out.S
 	./out.bin

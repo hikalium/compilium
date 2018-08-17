@@ -10,4 +10,4 @@ jobs:
                 command: apt update && apt install -y build-essential
             - run:
                 name: Run test
-                command: make test
+                command: make test_all
