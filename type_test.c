@@ -65,6 +65,7 @@ void TestParsingDeclIntoASTType() {
 
   type = ParseDeclAndGetType(tokens, "int puts(const char *s);");
   assert(IsBasicType(type, kTypeFunction));
+  assert(IsEqualToken(GetIdentTokenOfType(type), "puts"));
 
   puts("PASS Parsing Decl into ASTType");
 }

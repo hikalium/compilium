@@ -12,6 +12,8 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
   } else if (node->type == kASTFuncDef) {
     ASTFuncDef *def = ToASTFuncDef(node);
     def->func_type = AllocAndInitASTType(def->decl_specs, def->decltor);
+    AppendTypeToContext(identifiers, GetIdentTokenOfType(def->func_type)->str,
+                        def->func_type);
     context = AllocContext(context);
     def->context = context;
     ASTDirectDecltor *args_decltor = def->decltor->direct_decltor;
@@ -111,6 +113,9 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
       if (!member) ErrorWithASTNode(bin_op, "A member not found");
       bin_op->expr_type = AllocAndInitASTTypeLValueOf(member->var_type);
       return bin_op->expr_type;
+    } else if (IsEqualToken(bin_op->op, "&&") ||
+               IsEqualToken(bin_op->op, "||")) {
+      return AllocAndInitBasicType(kTypeInt);
     }
     left_type = GetRValueTypeOf(left_type);
     right_type = GetRValueTypeOf(right_type);
@@ -247,9 +252,10 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     ASTCondStmt *cond_stmt = ToASTCondStmt(node);
     AnalyzeNode(cond_stmt->cond_expr, context);
     ASTType *true_expr_type = AnalyzeNode(cond_stmt->true_expr, context);
-    ASTType *false_expr_type = AnalyzeNode(cond_stmt->false_expr, context);
-    if (!IsEqualASTType(true_expr_type, false_expr_type))
-      Error("expressions of condition-statement should have same types.");
+    // ASTType *false_expr_type = AnalyzeNode(cond_stmt->false_expr, context);
+    // if (!IsEqualASTType(true_expr_type, false_expr_type))
+    //  ErrorWithASTNode(node, "expressions of condition-statement should have
+    //  same types.");
     cond_stmt->expr_type = GetRValueTypeOf(true_expr_type);
     return cond_stmt->expr_type;
   } else if (node->type == kASTWhileStmt) {
@@ -278,10 +284,11 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
 }
 
 void Analyze(ASTNode *root) {
-  PrintContext(identifiers);
   Context *context = AllocContext(NULL);
   AnalyzeNode(root, context);
 
   puts("\nAST after Analyze:");
   DebugPrintASTNode(root);
+  puts("\nidentifiers after Analyze:");
+  PrintContext(identifiers);
 }

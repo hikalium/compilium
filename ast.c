@@ -246,6 +246,7 @@ static void PrintASTNodeWithName(int depth, const char* name, void* node) {
 
 static void PrintTokenWithName(int depth, const char* name,
                                const Token* token) {
+  if (!token) return;
   PrintfWithPadding(depth, name);
   putchar('"');
   DebugPrintTokenInSingleLine(token);

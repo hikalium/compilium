@@ -550,6 +550,7 @@ int GetSizeOfType(ASTType *node);
 int GetAlignOfType(ASTType *node);
 const char *GetStructTagFromType(ASTType *type);
 Context *GetStructContextFromType(ASTType *type);
+const Token *GetIdentTokenOfType(ASTType *type);
 ASTType *GetExprTypeOfASTNode(ASTNode *node);
 void PrintASTType(ASTType *node);
 void DebugPrintASTType(ASTType *type);

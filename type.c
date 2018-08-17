@@ -10,6 +10,7 @@ struct AST_TYPE {
   const Token *struct_ident;
   Context *struct_members;
   ASTType *func_return_type;
+  const Token *ident;
 };
 
 ASTType *ToASTType(ASTNode *node) {
@@ -145,6 +146,8 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
     } else if (IsEqualToken(d->bracket_token, "(")) {
       type = AllocAndInitASTTypeFunction(type);
       // TODO: Add types of args
+    } else if (!d->bracket_token && d->data && d->data->type == kASTIdent) {
+      type->ident = ToASTIdent(d->data)->token;
     }
   }
 
@@ -252,6 +255,11 @@ Context *GetStructContextFromType(ASTType *type) {
   return type->struct_members;
 }
 
+const Token *GetIdentTokenOfType(ASTType *type) {
+  type = GetRValueTypeOf(type);
+  return type->ident;
+}
+
 ASTType *GetExprTypeOfASTNode(ASTNode *node) {
   assert(node);
   if (node->type == kASTIdent) {
@@ -284,8 +292,9 @@ void PrintASTType(ASTType *node) {
   if (!node) {
     printf("(null)");
   } else if (node->basic_type == kTypeLValueOf) {
-    printf("lvalue_of ");
+    printf("lvalue_of(");
     PrintASTType(node->lvalue_of);
+    putchar(')');
   } else if (node->basic_type == kTypePointerOf) {
     PrintASTType(node->pointer_of);
     putchar('*');
