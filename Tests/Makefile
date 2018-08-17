@@ -1,6 +1,6 @@
 SHELL=/bin/bash
 TESTS ?= $(basename $(wildcard *.c))
-CFLAGS=-Wall -Wpedantic -I../include/$(shell uname)
+CFLAGS=-std=c11 -Wall -Wpedantic -I../include/$(shell uname)
 
 default: expr_test stmt_test src_test c_test
 
