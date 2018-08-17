@@ -167,6 +167,14 @@ int IsNextPunctuatorTokenInList(TokenStream *stream, const char *list[]) {
   return 0;
 }
 
+int IsNextKeywordTokenInList(TokenStream *stream, const char *list[]) {
+  int i;
+  for (i = 0; list[i]; i++) {
+    if (IsNextKeywordToken(stream, list[i])) return 1;
+  }
+  return 0;
+}
+
 const Token *ConsumeToken(TokenStream *stream, const char *str) {
   if (!IsNextToken(stream, str)) return NULL;
   return PopToken(stream);

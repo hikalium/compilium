@@ -27,6 +27,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
           if (i != GetSizeOfASTList(param_decl_list) - 1)
             ErrorWithASTNode(param_node,
                              "... can be appeared only at end of arguments");
+          def->has_variable_length_args = 1;
           break;
         }
         ASTParamDecl *param_decl = ToASTParamDecl(param_node);
@@ -43,6 +44,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
         ASTVar *local_var = AppendLocalVarToContext(
             context, param_decl->decl_specs, param_decltor);
         SetASTNodeAt(param_decl_list, i, ToASTNode(local_var));
+        local_var->arg_index = i + 1;
       }
     }
     AnalyzeNode(ToASTNode(def->comp_stmt), context);
@@ -216,6 +218,16 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     return NULL;
   } else if (node->type == kASTExprFuncCall) {
     ASTExprFuncCall *expr_func_call = ToASTExprFuncCall(node);
+    if (IsEqualToken(expr_func_call->func_ident->token, "__builtin_va_start")) {
+      ASTList *arg_list = ToASTList(expr_func_call->args);
+      if (!arg_list || GetSizeOfASTList(arg_list) != 2)
+        Error("__builtin_va_start requires 2 args");
+      AnalyzeNode(GetASTNodeAt(arg_list, 0), context);
+      AnalyzeNode(GetASTNodeAt(arg_list, 1), context);
+      expr_func_call->func_type =
+          AllocAndInitASTTypeFunction(AllocAndInitBasicType(kTypeVoid));
+      return expr_func_call->func_type;
+    };
     expr_func_call->func_type =
         ToASTType(FindIdentInContext(identifiers, expr_func_call->func_ident));
     if (!expr_func_call->func_type) {

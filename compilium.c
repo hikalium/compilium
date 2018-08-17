@@ -53,6 +53,10 @@ int main(int argc, char **argv) {
 
   TokenList *tokens = AllocTokenList(MAX_TOKENS);
 
+  Tokenize(tokens,
+           "typedef struct{int gp_ofs;int "
+           "fp_ofs;void*ov_arg_area;void*reg_area;}__builtin_va_list[1];",
+           "builtin");
   TokenizeFile(tokens, args.src_file);
   DebugPrintTokenList(tokens);
   ASTNode *ast = Parse(tokens);

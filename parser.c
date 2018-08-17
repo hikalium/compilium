@@ -590,9 +590,8 @@ ASTNode *ParseStorageClassSpec(TokenStream *stream) {
 ASTNode *ParseTypeSpec(TokenStream *stream) {
   // type-specifier
   const static char *single_token_type_specs[] = {
-      "void", "char", "int", "long", "unsigned", "extern", "__builtin_va_list",
-      NULL};
-  if (IsNextTokenInList(stream, single_token_type_specs)) {
+      "void", "char", "int", "long", "unsigned", "extern", NULL};
+  if (IsNextKeywordTokenInList(stream, single_token_type_specs)) {
     return ToASTNode(AllocAndInitASTKeyword(PopToken(stream)));
   } else if (ConsumeToken(stream, "struct")) {
     ASTStructSpec *struct_spec = AllocASTStructSpec();
@@ -710,6 +709,9 @@ ASTDecl *ParseDecl(TokenStream *stream) {
   decl->init_decltors = init_decltors;
 
   if (IsTypedefDeclSpecs(decl_specs)) {
+    if (!decl->init_decltors) {
+      ErrorWithASTNode(decl, "Trap!");
+    }
     assert(GetSizeOfASTList(decl->init_decltors) == 1);
     ASTDecltor *typedef_decltor =
         ToASTDecltor(GetASTNodeAt(decl->init_decltors, 0));

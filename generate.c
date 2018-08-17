@@ -18,6 +18,11 @@
 #define REAL_REG_R10 8
 #define REAL_REG_R11 9
 
+#define NUM_OF_ARG_REGS 6
+
+const char *ArgRegNames64[NUM_OF_ARG_REGS] = {"rdi", "rsi", "rdx",
+                                              "rcx", "r8",  "r9"};
+
 const char *ScratchRegNames64[NUM_OF_SCRATCH_REGS + 1] = {
     "NULL", "rax", "rdi", "rsi", "rdx", "rcx", "r8", "r9", "r10", "r11"};
 const char *ScratchRegNames32[NUM_OF_SCRATCH_REGS + 1] = {
@@ -180,6 +185,15 @@ void GenerateFuncEpilogue(FILE *fp) {
   fprintf(fp, "ret\n");
 }
 
+int CalcStackFrameSize(ASTFuncDef *func_def) {
+  return GetByteSizeOfSpillArea() + GetSizeOfContext(func_def->context) +
+         func_def->has_variable_length_args * 6 * 8;
+}
+
+int CalcLocalVarOfs(int local_var_ofs) {
+  return local_var_ofs + GetByteSizeOfSpillArea();
+}
+
 void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
   // Stack layout:
   // qword [rbp]: return address
@@ -206,6 +220,7 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
     }
   }
   // generate code
+  int stack_frame_size;
   for (int i = 0; i < GetSizeOfASTList(il); i++) {
     ASTNode *node = GetASTNodeAt(il, i);
     ASTILOp *op = ToASTILOp(node);
@@ -219,18 +234,20 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         func_param_requested = 0;
         ASTFuncDef *func_def = ToASTFuncDef(op->ast_node);
         const char *func_name = GetFuncNameTokenFromFuncDef(func_def)->str;
-        if (!func_name) {
-          Error("func_name is null");
-        }
+        stack_frame_size = CalcStackFrameSize(func_def);
+        assert(func_name);
         fprintf(fp, "%s%s:\n", kernel_type == kKernelDarwin ? "_" : "",
                 func_name);
         fprintf(fp, "push    rbp\n");
         fprintf(fp, "mov     rbp, rsp\n");
-        fprintf(fp, "mov     rax, 0xf\n");
-        fprintf(fp, "not     rax\n");
-        fprintf(fp, "sub     rsp, %d\n",
-                GetByteSizeOfSpillArea() + GetSizeOfContext(func_def->context));
-        fprintf(fp, "and     rsp, rax\n");
+        fprintf(fp, "sub     rsp, %d\n", ((stack_frame_size + 15) >> 4) << 4);
+        if (func_def->has_variable_length_args) {
+          for (int i = 0; i < NUM_OF_ARG_REGS; i++) {
+            fprintf(fp, "mov     [rbp - %d], %s\n",
+                    stack_frame_size - 8 * (1 + NUM_OF_ARG_REGS - i),
+                    ArgRegNames64[i]);
+          }
+        }
       } break;
       case kILOpFuncEnd:
         GenerateFuncEpilogue(fp);
@@ -467,9 +484,8 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         const char *dst = AssignRegister64(fp, op->dst);
         ASTVar *var = ToASTVar(op->ast_node);
         assert(var);
-        int byte_ofs = var->ofs + GetByteSizeOfSpillArea();
-        fprintf(fp, "lea %s, [rbp - %d] # local_var[%s]\n", dst, byte_ofs,
-                var->name);
+        fprintf(fp, "lea %s, [rbp - %d] # local_var[%s]\n", dst,
+                CalcLocalVarOfs(var->ofs), var->name);
       } break;
       case kILOpLabel: {
         ASTLabel *label = ToASTLabel(op->ast_node);
@@ -515,6 +531,21 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         const char *left = AssignRegister64(fp, op->left);
         const char *dst = AssignRegister64(fp, op->dst);
         fprintf(fp, "mov %s, %s\n", dst, left);
+      } break;
+      case kILOpVAStart: {
+        ASTExprFuncCall *func_call = ToASTExprFuncCall(op->ast_node);
+        ASTList *func_call_args = ToASTList(func_call->args);
+        int va_list_base = CalcLocalVarOfs(
+            ToASTIdent(GetASTNodeAt(func_call_args, 0))->local_var->ofs);
+        int va_index =
+            ToASTIdent(GetASTNodeAt(func_call_args, 1))->local_var->arg_index;
+        fprintf(fp, "mov dword ptr [rbp - %d], %d # va_list->gp_offset\n",
+                va_list_base - 0, 8 * (NUM_OF_ARG_REGS - va_index - 2));
+        fprintf(fp, "push rax\n");
+        fprintf(fp, "lea rax, [rbp - %d]\n", stack_frame_size);
+        fprintf(fp, "mov [rbp - %d], rax # va_list->\n",
+                va_list_base - (4 * 2 + 8));
+        fprintf(fp, "pop rax\n");
       } break;
       default:
         Error("Not implemented code generation for ILOp%s",

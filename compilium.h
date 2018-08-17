@@ -125,6 +125,7 @@ typedef enum {
   kILOpJmpIfNotZero,
   kILOpSetLogicalValue,
   kILOpAssign,
+  kILOpVAStart,
   //
   kNumOfILOpFunc
 } ILOpType;
@@ -321,6 +322,7 @@ typedef struct {
   ASTCompStmt *comp_stmt;
   Context *context;
   ASTType *func_type;
+  int has_variable_length_args;
 } ASTFuncDef;
 
 typedef struct {
@@ -345,6 +347,7 @@ struct AST_VAR {
   int ofs;
   const char *name;
   ASTType *var_type;
+  int arg_index;
 };
 
 struct AST_LABEL {
@@ -522,6 +525,7 @@ int IsNextPunctuatorToken(TokenStream *stream, const char *str);
 int IsNextKeywordToken(TokenStream *stream, const char *str);
 int IsNextTokenInList(TokenStream *stream, const char *list[]);
 int IsNextPunctuatorTokenInList(TokenStream *stream, const char *list[]);
+int IsNextKeywordTokenInList(TokenStream *stream, const char *list[]);
 const Token *ConsumeToken(TokenStream *stream, const char *str);
 const Token *ConsumePunctuatorToken(TokenStream *stream, const char *str);
 const Token *ExpectToken(TokenStream *stream, const char *str);
@@ -539,6 +543,7 @@ ASTType *AllocAndInitBasicType(BasicType basic_type);
 ASTType *AllocAndInitASTTypePointerOf(ASTType *pointer_of);
 ASTType *AllocAndInitASTTypeLValueOf(ASTType *lvalue_of);
 ASTType *AllocAndInitASTTypeArrayOf(ASTType *array_of, int num_of_elements);
+ASTType *AllocAndInitASTTypeFunction(ASTType *func_return_type);
 ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor);
 int IsEqualASTType(ASTType *a, ASTType *b);
 int IsBasicType(ASTType *node, BasicType type);

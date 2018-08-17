@@ -57,6 +57,7 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpJmpIfNotZero] = "JmpIfNotZero";
   ILOpTypeName[kILOpSetLogicalValue] = "SetLogicalValue";
   ILOpTypeName[kILOpAssign] = "Assign";
+  ILOpTypeName[kILOpVAStart] = "VAStart";
 }
 
 const char *GetILOpTypeName(ILOpType type) {
@@ -375,6 +376,10 @@ Register *GenerateILForExprBinOp(ASTList *il, Register *dst, ASTNode *node) {
 
 Register *GenerateILForExprFuncCall(ASTList *il, Register *dst, ASTNode *node) {
   ASTExprFuncCall *expr_func_call = ToASTExprFuncCall(node);
+  if (IsEqualToken(expr_func_call->func_ident->token, "__builtin_va_start")) {
+    EmitILOp(il, kILOpVAStart, NULL, NULL, NULL, node);
+    return dst;
+  };
   if (expr_func_call->args) {
     ASTList *arg_list = ToASTList(expr_func_call->args);
     if (!arg_list) Error("arg_list is not an ASTList");

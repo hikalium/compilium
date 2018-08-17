@@ -1,11 +1,10 @@
-#include <std.h>
 #include "compilium.h"
 
 struct AST_LIST {
   ASTNodeType type;
   int capacity;
   int size;
-  ASTNode* nodes[];
+  ASTNode** nodes;
 };
 
 typedef struct {
@@ -17,7 +16,7 @@ struct AST_DICT {
   ASTNodeType type;
   int capacity;
   int size;
-  ASTDictEntry entries[];
+  ASTDictEntry* entries;
 };
 
 static const char* ASTNodeTypeName[kNumOfASTNodeType];
@@ -63,86 +62,52 @@ const char* GetASTNodeTypeName(ASTNode* node) {
 
 ASTNode* ToASTNode(void* node) { return (ASTNode*)node; }
 
-GenToAST(FuncDef);
-GenToAST(CompStmt);
-GenToAST(ExprUnaryPreOp);
-GenToAST(ExprUnaryPostOp);
-GenToAST(ExprBinOp);
-GenToAST(ExprFuncCall);
-GenToAST(ExprCast);
-GenToAST(Integer);
-GenToAST(String);
-GenToAST(ExprStmt);
-GenToAST(JumpStmt);
-GenToAST(CondStmt);
-GenToAST(IfStmt);
-GenToAST(WhileStmt);
-GenToAST(ForStmt);
-GenToAST(ILOp);
-GenToAST(List);
-GenToAST(Keyword);
-GenToAST(Decltor);
-GenToAST(DirectDecltor);
-GenToAST(Ident);
-GenToAST(Decl);
-GenToAST(ParamDecl);
-GenToAST(StructDecl);
-GenToAST(StructSpec);
-GenToAST(EnumSpec);
-GenToAST(Pointer);
-GenToAST(Dict);
-GenToAST(Var);
-GenToAST(Label);
+GenToAST(FuncDef) GenToAST(CompStmt) GenToAST(ExprUnaryPreOp) GenToAST(
+    ExprUnaryPostOp) GenToAST(ExprBinOp) GenToAST(ExprFuncCall)
+    GenToAST(ExprCast) GenToAST(Integer) GenToAST(String) GenToAST(
+        ExprStmt) GenToAST(JumpStmt) GenToAST(CondStmt) GenToAST(IfStmt)
+        GenToAST(WhileStmt) GenToAST(ForStmt) GenToAST(ILOp) GenToAST(
+            List) GenToAST(Keyword) GenToAST(Decltor) GenToAST(DirectDecltor)
+            GenToAST(Ident) GenToAST(Decl) GenToAST(ParamDecl) GenToAST(
+                StructDecl) GenToAST(StructSpec) GenToAST(EnumSpec)
+                GenToAST(Pointer) GenToAST(Dict) GenToAST(Var) GenToAST(Label)
+                    GenAllocAST(FuncDef) GenAllocAST(CompStmt) GenAllocAST(
+                        ExprUnaryPreOp) GenAllocAST(ExprUnaryPostOp)
+                        GenAllocAST(ExprBinOp) GenAllocAST(ExprFuncCall)
+                            GenAllocAST(ExprCast) GenAllocAST(Integer)
+                                GenAllocAST(String) GenAllocAST(ExprStmt)
+                                    GenAllocAST(JumpStmt) GenAllocAST(CondStmt)
+                                        GenAllocAST(IfStmt) GenAllocAST(
+                                            WhileStmt) GenAllocAST(ForStmt)
+                                            GenAllocAST(ILOp)
 
-GenAllocAST(FuncDef);
-GenAllocAST(CompStmt);
-GenAllocAST(ExprUnaryPreOp);
-GenAllocAST(ExprUnaryPostOp);
-GenAllocAST(ExprBinOp);
-GenAllocAST(ExprFuncCall);
-GenAllocAST(ExprCast);
-GenAllocAST(Integer);
-GenAllocAST(String);
-GenAllocAST(ExprStmt);
-GenAllocAST(JumpStmt);
-GenAllocAST(CondStmt);
-GenAllocAST(IfStmt);
-GenAllocAST(WhileStmt);
-GenAllocAST(ForStmt);
-GenAllocAST(ILOp);
-
-ASTList* AllocASTList(void) {
+                                                ASTList* AllocASTList(void) {
   int capacity = 4096;
-  ASTList* list = calloc(1, sizeof(ASTList) + sizeof(ASTNode*) * capacity);
+  ASTList* list = calloc(1, sizeof(ASTList));
   list->type = kASTList;
   list->capacity = capacity;
   list->size = 0;
+  list->nodes = calloc(1, sizeof(ASTNode*) * capacity);
   return list;
 }
 
-GenAllocAST(Keyword);
-GenAllocAST(Decltor);
-GenAllocAST(DirectDecltor);
-GenAllocAST(Ident);
-GenAllocAST(Decl);
-GenAllocAST(ParamDecl);
-GenAllocAST(StructDecl);
-GenAllocAST(StructSpec);
-GenAllocAST(EnumSpec);
-GenAllocAST(Pointer);
+GenAllocAST(Keyword) GenAllocAST(Decltor) GenAllocAST(DirectDecltor)
+    GenAllocAST(Ident) GenAllocAST(Decl) GenAllocAST(ParamDecl)
+        GenAllocAST(StructDecl) GenAllocAST(StructSpec) GenAllocAST(EnumSpec)
+            GenAllocAST(Pointer)
 
-ASTDict* AllocASTDict(int capacity) {
-  ASTDict* dict = calloc(1, sizeof(ASTDict) + sizeof(ASTDictEntry) * capacity);
+                ASTDict* AllocASTDict(int capacity) {
+  ASTDict* dict = calloc(1, sizeof(ASTDict));
   dict->type = kASTDict;
   dict->capacity = capacity;
   dict->size = 0;
+  dict->entries = calloc(1, sizeof(ASTDictEntry) * capacity);
   return dict;
 }
 
-GenAllocAST(Var);
-GenAllocAST(Label);
+GenAllocAST(Var) GenAllocAST(Label)
 
-ASTInteger* AllocAndInitASTInteger(int value) {
+    ASTInteger* AllocAndInitASTInteger(int value) {
   ASTInteger* node = AllocASTInteger();
   node->value = value;
   return node;
