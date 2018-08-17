@@ -78,7 +78,8 @@ ASTType *AllocAndInitASTType(ASTList *decl_specs, ASTDecltor *decltor) {
           IsEqualToken(kw->token, "typedef") ||
           IsEqualToken(kw->token, "unsigned") ||
           IsEqualToken(kw->token, "_Noreturn") ||
-          IsEqualToken(kw->token, "extern")) {
+          IsEqualToken(kw->token, "extern") ||
+          IsEqualToken(kw->token, "static")) {
         continue;
       }
       assert(!type);

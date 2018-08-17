@@ -5,13 +5,13 @@ HEADERS=compilium.h
 RUN_TARGET ?= Tests/hello_world
 UNIT_TESTS ?= ast token type
 
-SELF_HOST_OBJS = analyzer.o ast.o context.o error.o generate.o il.o parser.o static.o token.o tokenizer.o type.self.o compilium.o
+SELF_HOST_OBJS = analyzer.self.o ast.o context.o error.o generate.o il.o parser.o static.o token.o tokenizer.o type.self.o compilium.o
 
 UNIT_TEST_TARGETS = $(addsuffix .unittest, $(UNIT_TESTS))
 
 .PHONY: FORCE default
 
-.PRECIOUS: %_test
+.PRECIOUS: %_test %.self.c
 
 compilium.target : compilium
 	@true

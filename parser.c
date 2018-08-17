@@ -174,7 +174,7 @@ ASTNode *ParsePostExpr(TokenStream *stream) {
 ASTNode *ParseUnaryExpr(TokenStream *stream) {
   const static char *ops_follows_cast_expr[] = {"&", "*",  "+",  "-", "~",
                                                 "!", "++", "--", NULL};
-  const static char *ops_follows_unary_expr[] = {"++", "--", "sizeof"};
+  const static char *ops_follows_unary_expr[] = {"++", "--"};
   if (IsNextPunctuatorTokenInList(stream, ops_follows_cast_expr)) {
     ASTExprUnaryPreOp *op = AllocASTExprUnaryPreOp();
     op->op = PopToken(stream);
@@ -182,7 +182,8 @@ ASTNode *ParseUnaryExpr(TokenStream *stream) {
     if (!op->expr) Error("op->expr expected a");
     return ToASTNode(op);
   }
-  if (IsNextTokenInList(stream, ops_follows_unary_expr)) {
+  if (IsNextPunctuatorTokenInList(stream, ops_follows_unary_expr) ||
+      IsNextKeywordToken(stream, "sizeof")) {
     ASTExprUnaryPreOp *op = AllocASTExprUnaryPreOp();
     op->op = PopToken(stream);
     op->expr = ParseUnaryExpr(stream);
@@ -581,7 +582,7 @@ ASTNode *ParseStructDecl(TokenStream *stream) {
 
 ASTNode *ParseStorageClassSpec(TokenStream *stream) {
   // storage-class-specifier
-  const static char *storage_class_specs[] = {"typedef", NULL};
+  const static char *storage_class_specs[] = {"typedef", "static", NULL};
   if (!IsNextTokenInList(stream, storage_class_specs)) return NULL;
   return ToASTNode(AllocAndInitASTKeyword(PopToken(stream)));
 }
