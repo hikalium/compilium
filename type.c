@@ -255,6 +255,12 @@ Context *GetStructContextFromType(ASTType *type) {
   return type->struct_members;
 }
 
+ASTType *GetReturningTypeFromFunctionType(ASTType *type) {
+  type = GetRValueTypeOf(type);
+  assert(type->basic_type == kTypeFunction);
+  return type->func_return_type;
+}
+
 const Token *GetIdentTokenOfType(ASTType *type) {
   type = GetRValueTypeOf(type);
   return type->ident;

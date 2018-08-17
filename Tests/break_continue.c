@@ -1,3 +1,6 @@
+int putchar(int);
+int printf(const char *, ...);
+
 int main() {
   int i;
 

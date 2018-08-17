@@ -1,3 +1,5 @@
+int printf(const char *, ...);
+
 int main()
 {
   char *p;

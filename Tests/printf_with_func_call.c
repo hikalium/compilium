@@ -1,3 +1,5 @@
+int printf(const char *, ...);
+
 int func(int arg1, int arg2){
   return arg1 * arg1 + arg2 * arg2;
 }

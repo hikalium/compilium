@@ -1,3 +1,5 @@
+int printf(const char *, ...);
+
 int main()
 {
   int array[4];

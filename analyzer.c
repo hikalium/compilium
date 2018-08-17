@@ -71,8 +71,8 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
       ASTDecltor *decltor = ToASTDecltor(GetASTNodeAt(decl->init_decltors, i));
       ASTType *type = AllocAndInitASTType(decl->decl_specs, decltor);
       if (IsBasicType(type, kTypeFunction)) {
-        // TODO: Impl func def
-        return NULL;
+        AppendTypeToContext(identifiers, GetIdentTokenOfType(type)->str, type);
+        continue;
       }
       AppendLocalVarToContext(context, decl->decl_specs, decltor);
       if (decltor->initializer)
@@ -150,19 +150,18 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
   } else if (node->type == kASTIdent) {
     ASTIdent *ident = ToASTIdent(node);
     ASTNode *var = FindIdentInContext(context, ident);
-    if (!var || (var->type != kASTVar)) {
-      ASTInteger *enum_value =
-          ToASTInteger(FindIdentInContext(identifiers, ident));
-      if (!enum_value) {
-        // TODO: Add func ident check
-        return NULL;
-      }
+    if (var && (var->type == kASTVar)) {
+      ident->local_var = ToASTVar(var);
+      ident->var_type = AllocAndInitASTTypeLValueOf(ident->local_var->var_type);
+      return ident->var_type;
+    }
+    ASTNode *ident_info = FindIdentInContext(identifiers, ident);
+    if (!ident_info) return NULL;
+    if (ident_info->type == kASTInteger) {
       ident->var_type = AllocAndInitBasicType(kTypeInt);
       return ident->var_type;
     }
-    ident->local_var = ToASTVar(var);
-    ident->var_type = AllocAndInitASTTypeLValueOf(ident->local_var->var_type);
-    return ident->var_type;
+    ErrorWithASTNode(node, "Unknown identifier");
   } else if (node->type == kASTForStmt) {
     ASTForStmt *stmt = ToASTForStmt(node);
 
@@ -213,6 +212,11 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     return NULL;
   } else if (node->type == kASTExprFuncCall) {
     ASTExprFuncCall *expr_func_call = ToASTExprFuncCall(node);
+    ASTType *func_type = ToASTType(
+        FindIdentInContext(identifiers, ToASTIdent(expr_func_call->func)));
+    if (!func_type) {
+      ErrorWithASTNode(node, "Undefined function");
+    }
     // TODO: support func pointer
     if (expr_func_call->func->type != kASTIdent)
       Error("Calling non-labeled function is not implemented.");
@@ -225,8 +229,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
         AnalyzeNode(arg_node, context);
       }
     }
-    // TODO: Support other types of return value
-    return AllocAndInitBasicType(kTypeInt);
+    return GetReturningTypeFromFunctionType(func_type);
   } else if (node->type == kASTExprUnaryPreOp) {
     ASTExprUnaryPreOp *op = ToASTExprUnaryPreOp(node);
     if (op->expr && op->expr->type != kASTType) {

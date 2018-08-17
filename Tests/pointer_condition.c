@@ -1,5 +1,7 @@
 #define NULL 0
 
+int putchar(int);
+
 int func()
 {
   putchar('A');

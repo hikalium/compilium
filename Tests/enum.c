@@ -1,3 +1,5 @@
+int printf(const char *, ...);
+
 typedef enum {                                              
   kIdentifier,                                              
   kStringLiteral,                             

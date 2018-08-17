@@ -1,3 +1,5 @@
+int puts(const char *);
+
 void hello()
 {
   puts("Hello!");
