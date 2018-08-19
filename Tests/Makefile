@@ -61,5 +61,12 @@ $(COMPILIUM) : FORCE
 		fi
 
 clean:
-	-rm *.bin *.stdout *.S *.s *.log
+	@ find . -type f \( \
+		-name '*.S' -o \
+		-name '*.bin' -o \
+		-name '*.bin' -o \
+		-name '*.log' -o \
+		-name '*.ast' -o \
+		-name '*.stdout' \
+		\) -exec rm {} +
 
