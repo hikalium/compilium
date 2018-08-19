@@ -570,9 +570,13 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
     if (op->op != kILOpData) continue;
     ASTVar *var = ToASTVar(op->ast_node);
     int size = GetSizeOfType(GetExprTypeOfASTNode(op->ast_node));
+    fprintf(fp, ".global %s%s\n", kernel_type == kKernelDarwin ? "_" : "",
+            var->name);
     fprintf(fp, "%s%s:\n", kernel_type == kKernelDarwin ? "_" : "", var->name);
     if (size == 4) {
       fprintf(fp, ".long 0\n");
+    } else if (size == 8) {
+      fprintf(fp, ".quad 0\n");
     } else {
       ErrorWithASTNode(var, "global data of size = %d is not implemented",
                        size);
