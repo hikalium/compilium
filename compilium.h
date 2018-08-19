@@ -127,6 +127,7 @@ typedef enum {
   kILOpAssign,
   kILOpVAStart,
   kILOpData,
+  kILOpKill,
   //
   kNumOfILOpFunc
 } ILOpType;
@@ -502,6 +503,27 @@ ASTList *GenerateIL(ASTNode *root);
 
 // @parser.c
 ASTNode *Parse(TokenList *tokens);
+
+// @reg.c
+#define NUM_OF_SCRATCH_REGS 5
+#define NUM_OF_ARG_REGS 6
+
+int GetLabelNumber();
+void ClearRegisterAllocation();
+void ResetSpillIndex(void);
+void SetNumOfSpillEntries(int num);
+void SpillRealRegister(FILE *fp, int rreg);
+void AssignVirtualRegToRealReg(FILE *fp, Register *reg, int real_reg);
+const char *GetArgumentRegisterName64(int arg_index);
+const char *AssignRegister64(FILE *fp, Register *reg);
+const char *AssignRegister32(FILE *fp, Register *reg);
+const char *AssignRegister8(FILE *fp, Register *reg);
+void PushAllWorkingRegisters(FILE *);
+void PopAllWorkingRegisters(FILE *);
+void GenerateFuncEpilogue(FILE *fp);
+int CalcStackFrameSize(ASTFuncDef *func_def);
+int CalcLocalVarOfs(int local_var_ofs);
+void KillRegister(Register *reg);
 
 // @token.c
 Token *AllocToken(const char *s, TokenType type);

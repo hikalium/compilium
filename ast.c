@@ -82,7 +82,7 @@ GenToAST(FuncDef) GenToAST(CompStmt) GenToAST(ExprUnaryPreOp) GenToAST(
                                             GenAllocAST(ILOp)
 
                                                 ASTList* AllocASTList(void) {
-  int capacity = 4096;
+  int capacity = 8192;
   ASTList* list = calloc(1, sizeof(ASTList));
   list->type = kASTList;
   list->capacity = capacity;
@@ -384,6 +384,7 @@ void PrintASTNode(void* node, int depth) {
     PrintASTNodeWithName(depth + 1, "type=", var->var_type);
     PrintfWithPadding(depth + 1, "name=%s", var->name);
     PrintfWithPadding(depth + 1, "ofs=%d", var->ofs);
+    PrintfWithPadding(depth + 1, "is_global=%d", var->is_global);
   } else if (n->type == kASTType) {
     PrintASTType(ToASTType(n));
     putchar(')');

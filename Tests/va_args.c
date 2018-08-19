@@ -20,6 +20,7 @@ void vptest2(int a, const char *fmt, ...) {
 
 int main(){
   int a = 29;
+  vptest1("This is a test %s %s %s", "two", "three", "four");
   vptest1("This is a test %s %d 0x%X", "str", a, a);
   vptest2(17, "This is a test %s %d 0x%X", "str", a, a);
   return 0;
