@@ -1,11 +1,11 @@
 CFLAGS=-Wall -Wpedantic -std=c11 -Wno-extra-semi -Iinclude/$(shell uname)
-SRCS=analyzer.c ast.c context.c error.c generate.c il.c parser.c reg.c static.c token.c tokenizer.c type.c
+SRCS=analyzer.c ast.c context.c error.c generate.c il.c misc.c parser.c reg.c static.c token.c tokenizer.c type.c
 MAIN_SRCS=compilium.c
 HEADERS=compilium.h
 RUN_TARGET ?= Tests/hello_world
 UNIT_TESTS ?= ast token type
 
-SELF_HOST_OBJS = analyzer.o ast.o context.o error.o generate.o il.o parser.o reg.o static.self.o token.o tokenizer.o type.self.o compilium.self.o
+SELF_HOST_OBJS = analyzer.o ast.o context.o error.o generate.o il.o misc.self.o parser.o reg.o static.self.o token.o tokenizer.o type.self.o compilium.self.o
 
 UNIT_TEST_TARGETS = $(addsuffix .unittest, $(UNIT_TESTS))
 

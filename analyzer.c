@@ -15,6 +15,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     AppendTypeToContext(identifiers, GetIdentTokenOfType(def->func_type)->str,
                         def->func_type);
     context = AllocContext(context);
+    SetFuncDefToContext(context, def);
     def->context = context;
     ASTDirectDecltor *args_decltor = def->decltor->direct_decltor;
     ASTList *param_decl_list = ToASTList(args_decltor->data);
@@ -56,6 +57,9 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     for (int i = 0; i < GetSizeOfASTList(stmt_list); i++) {
       AnalyzeNode(GetASTNodeAt(stmt_list, i), context);
     }
+    ASTFuncDef *func_def = GetFuncDefFromContext(context);
+    func_def->var_stack_size =
+        imax(func_def->var_stack_size, GetSizeOfContext(func_def->context));
     return NULL;
   } else if (node->type == kASTDecl) {
     ASTDecl *decl = ToASTDecl(node);
@@ -278,7 +282,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     ASTCondStmt *cond_stmt = ToASTCondStmt(node);
     AnalyzeNode(cond_stmt->cond_expr, context);
     ASTType *true_expr_type = AnalyzeNode(cond_stmt->true_expr, context);
-    // ASTType *false_expr_type = AnalyzeNode(cond_stmt->false_expr, context);
+    AnalyzeNode(cond_stmt->false_expr, context);
     // if (!IsEqualASTType(true_expr_type, false_expr_type))
     //  ErrorWithASTNode(node, "expressions of condition-statement should have
     //  same types.");

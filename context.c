@@ -5,6 +5,7 @@ struct CONTEXT {
   ASTDict *dict;
   ASTLabel *break_label;
   ASTLabel *continue_label;
+  ASTFuncDef *func_def;
 };
 
 Context *struct_names;
@@ -61,8 +62,6 @@ int GetSizeOfContext(const Context *context) {
   size = (size + max_align_size - 1) / max_align_size * max_align_size;
   return size;
 }
-
-static int imax(int a, int b) { return a > b ? a : b; }
 
 int GetAlignOfContext(const Context *context) {
   int max_align_size = 1;
@@ -133,6 +132,14 @@ void SetContinueLabelInContext(Context *context, ASTLabel *label) {
 
 ASTLabel *GetContinueLabelInContext(Context *context) {
   return context->continue_label;
+}
+
+void SetFuncDefToContext(Context *context, ASTFuncDef *func_def) {
+  context->func_def = func_def;
+}
+
+ASTFuncDef *GetFuncDefFromContext(Context *context) {
+  return context->func_def;
 }
 
 int IsRootContext(Context *context) { return !context->parent; }

@@ -190,7 +190,7 @@ void GenerateFuncEpilogue(FILE *fp) {
 }
 
 int CalcStackFrameSize(ASTFuncDef *func_def) {
-  return GetByteSizeOfSpillArea() + GetSizeOfContext(func_def->context) +
+  return GetByteSizeOfSpillArea() + func_def->var_stack_size +
          func_def->has_variable_length_args * 6 * 8;
 }
 

@@ -325,6 +325,7 @@ typedef struct {
   Context *context;
   ASTType *func_type;
   int has_variable_length_args;
+  int var_stack_size;
 } ASTFuncDef;
 
 typedef struct {
@@ -485,6 +486,8 @@ void SetBreakLabelInContext(Context *context, ASTLabel *label);
 ASTLabel *GetBreakLabelInContext(Context *context);
 void SetContinueLabelInContext(Context *context, ASTLabel *label);
 ASTLabel *GetContinueLabelInContext(Context *context);
+void SetFuncDefToContext(Context *context, ASTFuncDef *func_def);
+ASTFuncDef *GetFuncDefFromContext(Context *context);
 int IsRootContext(Context *context);
 void PrintContext(const Context *context);
 
@@ -500,6 +503,9 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type);
 
 // @il.c
 ASTList *GenerateIL(ASTNode *root);
+
+// @misc.c
+int imax(int a, int b);
 
 // @parser.c
 ASTNode *Parse(TokenList *tokens);
