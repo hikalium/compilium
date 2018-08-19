@@ -1,11 +1,11 @@
 CFLAGS=-Wall -Wpedantic -std=c11 -Wno-extra-semi -Iinclude/$(shell uname)
-SRCS=analyzer.c ast.c context.c error.c generate.c il.c parser.c static.c token.c tokenizer.c type.c
+SRCS=analyzer.c ast.c context.c error.c generate.c il.c parser.c static.c token.c tokenizer.c type.c type_ok.c
 MAIN_SRCS=compilium.c
 HEADERS=compilium.h
 RUN_TARGET ?= Tests/hello_world
 UNIT_TESTS ?= ast token type
 
-SELF_HOST_OBJS = analyzer.self.o ast.o context.o error.o generate.o il.o parser.o static.o token.o tokenizer.o type.self.o compilium.o
+SELF_HOST_OBJS = analyzer.o ast.o context.o error.o generate.o il.o parser.o static.o token.o tokenizer.o type.o type_ok.self.o compilium.o
 
 UNIT_TEST_TARGETS = $(addsuffix .unittest, $(UNIT_TESTS))
 
@@ -36,11 +36,14 @@ compilium_self: $(SELF_HOST_OBJS) $(HEADERS) Makefile
 %.unittest : %_test Makefile FORCE
 	@ ./$*_test
 
-%.self.c : %.c $(HEADERS) Makefile FORCE
+%.preprocess.c : %.c $(HEADERS) Makefile
 	@ $(CC) $(CFLAGS) -P -E $*.c > $@
 
-%.self.S : %.self.c $(HEADERS) Makefile compilium FORCE
-	@ ./compilium -o $@ --prefix_type `uname` $*.self.c
+%.self.S : %.preprocess.c $(HEADERS) Makefile compilium
+	./compilium -o $@ --prefix_type `uname` $*.preprocess.c > $*.self.log
+
+%.self.o : %.self.S Makefile
+	@ as -o $@ $*.self.S
 
 run: compilium
 	make -C $(dir $(RUN_TARGET)) $(notdir $(RUN_TARGET)).compilium.bin; \
@@ -63,7 +66,7 @@ test_self: compilium_self
 unittest: $(UNIT_TEST_TARGETS)
 
 clean:
-	-rm compilium
+	@ rm compilium *.S *.preprocess.c *.o *.log ; true
 
 format:
 	clang-format -i *.c *.h

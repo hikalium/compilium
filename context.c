@@ -81,6 +81,9 @@ ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
   int align = GetAlignOfType(local_var->var_type);
   int ofs = base + GetSizeOfType(local_var->var_type);
   local_var->ofs = (ofs + align - 1) / align * align;
+  if (FindInContext(context, local_var->name)) {
+    ErrorWithASTNode(decltor, "Duplicated identifier %s", local_var->name);
+  }
   AppendASTNodeToDict(context->dict, local_var->name, ToASTNode(local_var));
   return local_var;
 }
