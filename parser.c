@@ -106,12 +106,24 @@ ASTNode *ParsePrimaryExpr(TokenStream *stream) {
       } else {
         Error("Unexpected char literal \\%c", token->str[1]);
       }
-      printf("Char literal!\n");
     }
     return ToASTNode(AllocAndInitASTInteger(char_value));
   } else if (token->type == kStringLiteral) {
     PopToken(stream);
-    return ToASTNode(AllocAndInitASTString(token->str));
+    const char *str = token->str;
+    for (;;) {
+      const Token *t = PopToken(stream);
+      if (t->type != kStringLiteral) {
+        UnpopToken(stream);
+        break;
+      }
+      size_t size = strlen(str) + strlen(t->str) + 1;
+      char *buf = calloc(1, size);
+      strcat(buf, str);
+      strcat(buf, t->str);
+      str = buf;
+    }
+    return ToASTNode(AllocAndInitASTString(str));
   } else if (token->type == kIdentifier) {
     ASTInteger *enum_value =
         ToASTInteger(FindInContext(identifiers, token->str));

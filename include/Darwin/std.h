@@ -29,6 +29,7 @@ size_t fread(void *, size_t, size_t, FILE *);
 void *malloc(size_t size);
 int strcmp(const char *s1, const char *s2);
 char *strncat(char *s1, const char *s2, size_t n);
+char *strcat(char *s1, const char *s2);
 FILE *fopen(const char *path, const char *mode);
 size_t strlen(const char *);
 char *strncpy(char *dst, const char *src, size_t len);
