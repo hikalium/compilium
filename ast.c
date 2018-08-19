@@ -148,9 +148,8 @@ ASTNode* AllocAndInitASTExprFuncCall(ASTIdent* ident, ASTNode* args) {
 }
 
 ASTVar* AllocAndInitASTVar(ASTList* decl_specs, ASTDecltor* decltor) {
-  const Token* ident_token = GetIdentTokenFromDecltor(decltor);
   ASTVar* local_var = AllocASTVar();
-  local_var->name = ident_token->str;
+  local_var->name = GetIdentTokenFromDecltor(decltor)->str;
   local_var->var_type = AllocAndInitASTType(decl_specs, decltor);
   return local_var;
 }
@@ -182,6 +181,12 @@ const Token* GetIdentTokenFromDecltor(ASTDecltor* decltor) {
 const Token* GetFuncNameTokenFromFuncDef(ASTFuncDef* func_def) {
   if (!func_def) return NULL;
   return GetIdentTokenFromDecltor(func_def->decltor);
+}
+
+int IsExternDeclSpecs(ASTList* decl_specs) {
+  ASTNode* node = GetASTNodeAt(decl_specs, 0);
+  return node->type == kASTKeyword &&
+         IsEqualToken(ToASTKeyword(node)->token, "extern");
 }
 
 int IsTypedefDeclSpecs(ASTList* decl_specs) {

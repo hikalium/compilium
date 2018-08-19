@@ -58,6 +58,7 @@ void InitILOpTypeName() {
   ILOpTypeName[kILOpSetLogicalValue] = "SetLogicalValue";
   ILOpTypeName[kILOpAssign] = "Assign";
   ILOpTypeName[kILOpVAStart] = "VAStart";
+  ILOpTypeName[kILOpData] = "Data";
 }
 
 const char *GetILOpTypeName(ILOpType type) {
@@ -524,11 +525,10 @@ void GenerateILFor(ASTList *il, Register *dst, ASTNode *node) {
     // translation-unit
     ASTList *list = ToASTList(node);
     for (int i = 0; i < GetSizeOfASTList(list); i++) {
-      ASTNode *child_node = GetASTNodeAt(list, i);
-      if (child_node->type == kASTFuncDef) {
-        GenerateILForFuncDef(il, NULL, child_node);
-      }
+      GenerateILFor(il, NULL, GetASTNodeAt(list, i));
     }
+  } else if (node->type == kASTFuncDef) {
+    GenerateILForFuncDef(il, dst, node);
   } else if (node->type == kASTJumpStmt) {
     GenerateILForJumpStmt(il, dst, node);
   } else if (node->type == kASTExprUnaryPreOp) {
@@ -552,6 +552,12 @@ void GenerateILFor(ASTList *il, Register *dst, ASTNode *node) {
     if (!decl->init_decltors) return;
     for (int i = 0; i < GetSizeOfASTList(decl->init_decltors); i++) {
       ASTDecltor *decltor = ToASTDecltor(GetASTNodeAt(decl->init_decltors, i));
+      ASTIdent *ident = GetIdentFromDecltor(decltor);
+      ASTVar *var = ident->local_var;
+      if (var && var->is_global && !var->is_external) {
+        EmitILOp(il, kILOpData, NULL, NULL, NULL, ToASTNode(var));
+        return;
+      }
       if (decltor->initializer)
         GenerateILFor(il, dst, ToASTNode(decltor->initializer));
     }
@@ -585,6 +591,7 @@ void GenerateILFor(ASTList *il, Register *dst, ASTNode *node) {
     Error("IL Generation for AST%s is not implemented.",
           GetASTNodeTypeName(node));
   }
+  // generate
 }
 
 ASTList *GenerateIL(ASTNode *root) {

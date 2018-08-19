@@ -126,6 +126,7 @@ typedef enum {
   kILOpSetLogicalValue,
   kILOpAssign,
   kILOpVAStart,
+  kILOpData,
   //
   kNumOfILOpFunc
 } ILOpType;
@@ -348,6 +349,8 @@ struct AST_VAR {
   const char *name;
   ASTType *var_type;
   int arg_index;
+  int is_global;
+  int is_external;
 };
 
 struct AST_LABEL {
@@ -438,6 +441,7 @@ ASTIdent *GetIdentFromDecltor(ASTDecltor *decltor);
 const Token *GetIdentTokenFromDecltor(ASTDecltor *decltor);
 const Token *GetFuncNameTokenFromFuncDef(ASTFuncDef *func_def);
 int IsTypedefDeclSpecs(ASTList *decl_specs);
+int IsExternDeclSpecs(ASTList *decl_specs);
 
 void PrintASTNode(void *node, int depth);
 void DebugPrintASTNode(void *node);
@@ -470,6 +474,8 @@ int GetSizeOfContext(const Context *context);
 int GetAlignOfContext(const Context *context);
 ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
                                 ASTDecltor *decltor);
+ASTVar *AppendGlobalVarToContext(Context *context, ASTList *decl_specs,
+                                 ASTDecltor *decltor);
 ASTVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
                                     ASTDecltor *decltor);
 void AppendTypeToContext(Context *context, const char *name, ASTType *type);
@@ -478,6 +484,7 @@ void SetBreakLabelInContext(Context *context, ASTLabel *label);
 ASTLabel *GetBreakLabelInContext(Context *context);
 void SetContinueLabelInContext(Context *context, ASTLabel *label);
 ASTLabel *GetContinueLabelInContext(Context *context);
+int IsRootContext(Context *context);
 void PrintContext(const Context *context);
 
 // @error.c

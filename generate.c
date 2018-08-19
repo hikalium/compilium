@@ -484,8 +484,14 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
         const char *dst = AssignRegister64(fp, op->dst);
         ASTVar *var = ToASTVar(op->ast_node);
         assert(var);
-        fprintf(fp, "lea %s, [rbp - %d] # local_var[%s]\n", dst,
-                CalcLocalVarOfs(var->ofs), var->name);
+        if (var->is_global) {
+          fprintf(fp, "lea %s, [rip + %s%s] # local_var[%s]\n", dst,
+                  kernel_type == kKernelDarwin ? "_" : "", var->name,
+                  var->name);
+        } else {
+          fprintf(fp, "lea %s, [rbp - %d] # local_var[%s]\n", dst,
+                  CalcLocalVarOfs(var->ofs), var->name);
+        }
       } break;
       case kILOpLabel: {
         ASTLabel *label = ToASTLabel(op->ast_node);
@@ -547,9 +553,29 @@ void GenerateCode(FILE *fp, ASTList *il, KernelType kernel_type) {
                 va_list_base - (4 * 2 + 8));
         fprintf(fp, "pop rax\n");
       } break;
+      case kILOpData:
+        // do notihing
+        break;
       default:
         Error("Not implemented code generation for ILOp%s",
               GetILOpTypeName(op->op));
+    }
+  }
+  // generate data section
+  fprintf(fp, ".bss\n");
+  for (int i = 0; i < GetSizeOfASTList(il); i++) {
+    ASTNode *node = GetASTNodeAt(il, i);
+    ASTILOp *op = ToASTILOp(node);
+    assert(op);
+    if (op->op != kILOpData) continue;
+    ASTVar *var = ToASTVar(op->ast_node);
+    int size = GetSizeOfType(GetExprTypeOfASTNode(op->ast_node));
+    fprintf(fp, "%s%s:\n", kernel_type == kKernelDarwin ? "_" : "", var->name);
+    if (size == 4) {
+      fprintf(fp, ".long 0\n");
+    } else {
+      ErrorWithASTNode(var, "global data of size = %d is not implemented",
+                       size);
     }
   }
 }

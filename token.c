@@ -12,7 +12,7 @@ Token *AllocToken(const char *s, TokenType type) {
   if (!s) {
     Error("Trying to allocate a token with a null string");
   }
-  Token *token = malloc(sizeof(Token));
+  Token *token = calloc(1, sizeof(Token));
   CopyTokenStr(token, s, strlen(s));
   token->type = type;
   return token;
@@ -20,7 +20,7 @@ Token *AllocToken(const char *s, TokenType type) {
 
 Token *AllocTokenWithSubstring(const char *begin, const char *end,
                                TokenType type, const char *filename, int line) {
-  Token *token = malloc(sizeof(Token));
+  Token *token = calloc(1, sizeof(Token));
   CopyTokenStr(token, begin, end - begin);
   token->type = type;
   token->filename = filename;

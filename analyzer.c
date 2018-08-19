@@ -72,13 +72,23 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     for (int i = 0; i < GetSizeOfASTList(decl->init_decltors); i++) {
       ASTDecltor *decltor = ToASTDecltor(GetASTNodeAt(decl->init_decltors, i));
       ASTType *type = AllocAndInitASTType(decl->decl_specs, decltor);
-      if (IsBasicType(type, kTypeFunction)) {
-        AppendTypeToContext(identifiers, GetIdentTokenOfType(type)->str, type);
-        continue;
+      if (IsRootContext(context)) {
+        if (IsBasicType(type, kTypeFunction)) {
+          AppendTypeToContext(identifiers, GetIdentTokenOfType(type)->str,
+                              type);
+          continue;
+        }
+        ASTIdent *ident = GetIdentFromDecltor(decltor);
+        ident->local_var =
+            AppendGlobalVarToContext(context, decl->decl_specs, decltor);
+        ident->local_var->is_external = IsExternDeclSpecs(decl->decl_specs);
+      } else {
+        if (IsBasicType(type, kTypeFunction))
+          Error("Function declaration is not allowed here");
+        AppendLocalVarToContext(context, decl->decl_specs, decltor);
+        if (decltor->initializer)
+          AnalyzeNode(ToASTNode(decltor->initializer), context);
       }
-      AppendLocalVarToContext(context, decl->decl_specs, decltor);
-      if (decltor->initializer)
-        AnalyzeNode(ToASTNode(decltor->initializer), context);
     }
     return NULL;
   } else if (node->type == kASTExprStmt) {

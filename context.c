@@ -88,6 +88,18 @@ ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
   return local_var;
 }
 
+ASTVar *AppendGlobalVarToContext(Context *context, ASTList *decl_specs,
+                                 ASTDecltor *decltor) {
+  assert(IsRootContext(context));
+  ASTVar *global_var = AllocAndInitASTVar(decl_specs, decltor);
+  global_var->is_global = 1;
+  if (FindInContext(context, global_var->name)) {
+    ErrorWithASTNode(decltor, "Duplicated identifier %s", global_var->name);
+  }
+  AppendASTNodeToDict(context->dict, global_var->name, ToASTNode(global_var));
+  return global_var;
+}
+
 ASTVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
                                     ASTDecltor *decltor) {
   ASTVar *var = AllocAndInitASTVar(decl_specs, decltor);
@@ -122,5 +134,7 @@ void SetContinueLabelInContext(Context *context, ASTLabel *label) {
 ASTLabel *GetContinueLabelInContext(Context *context) {
   return context->continue_label;
 }
+
+int IsRootContext(Context *context) { return !context->parent; }
 
 void PrintContext(const Context *context) { DebugPrintASTNode(context->dict); }
