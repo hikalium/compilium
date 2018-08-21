@@ -483,11 +483,11 @@ ASTVar *AppendStructMemberToContext(Context *context, ASTList *decl_specs,
 void AppendTypeToContext(Context *context, const char *name, ASTType *type);
 void AppendToContext(Context *context, const char *name, ASTNode *node);
 void SetBreakLabelInContext(Context *context, ASTLabel *label);
-ASTLabel *GetBreakLabelInContext(Context *context);
+ASTLabel *GetBreakLabelInContext(const Context *context);
 void SetContinueLabelInContext(Context *context, ASTLabel *label);
-ASTLabel *GetContinueLabelInContext(Context *context);
+ASTLabel *GetContinueLabelInContext(const Context *context);
 void SetFuncDefToContext(Context *context, ASTFuncDef *func_def);
-ASTFuncDef *GetFuncDefFromContext(Context *context);
+ASTFuncDef *GetFuncDefFromContext(const Context *context);
 int IsRootContext(Context *context);
 void PrintContext(const Context *context);
 

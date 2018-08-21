@@ -122,15 +122,17 @@ void SetBreakLabelInContext(Context *context, ASTLabel *label) {
   context->break_label = label;
 }
 
-ASTLabel *GetBreakLabelInContext(Context *context) {
-  return context->break_label;
+ASTLabel *GetBreakLabelInContext(const Context *context) {
+  if (!context) return NULL;
+  if (context->break_label) return context->break_label;
+  return GetBreakLabelInContext(context->parent);
 }
 
 void SetContinueLabelInContext(Context *context, ASTLabel *label) {
   context->continue_label = label;
 }
 
-ASTLabel *GetContinueLabelInContext(Context *context) {
+ASTLabel *GetContinueLabelInContext(const Context *context) {
   return context->continue_label;
 }
 
@@ -138,7 +140,7 @@ void SetFuncDefToContext(Context *context, ASTFuncDef *func_def) {
   context->func_def = func_def;
 }
 
-ASTFuncDef *GetFuncDefFromContext(Context *context) {
+ASTFuncDef *GetFuncDefFromContext(const Context *context) {
   return context->func_def;
 }
 
