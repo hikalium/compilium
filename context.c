@@ -133,7 +133,9 @@ void SetContinueLabelInContext(Context *context, ASTLabel *label) {
 }
 
 ASTLabel *GetContinueLabelInContext(const Context *context) {
-  return context->continue_label;
+  if (!context) return NULL;
+  if (context->continue_label) return context->continue_label;
+  return GetContinueLabelInContext(context->parent);
 }
 
 void SetFuncDefToContext(Context *context, ASTFuncDef *func_def) {
@@ -141,7 +143,9 @@ void SetFuncDefToContext(Context *context, ASTFuncDef *func_def) {
 }
 
 ASTFuncDef *GetFuncDefFromContext(const Context *context) {
-  return context->func_def;
+  if (!context) return NULL;
+  if (context->func_def) return context->func_def;
+  return GetFuncDefFromContext(context->parent);
 }
 
 int IsRootContext(Context *context) { return !context->parent; }
