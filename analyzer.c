@@ -59,7 +59,7 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
     }
     ASTFuncDef *func_def = GetFuncDefFromContext(context);
     func_def->var_stack_size =
-        imax(func_def->var_stack_size, GetSizeOfContext(func_def->context));
+        imax(func_def->var_stack_size, GetSizeOfContext(context));
     return NULL;
   } else if (node->type == kASTDecl) {
     ASTDecl *decl = ToASTDecl(node);

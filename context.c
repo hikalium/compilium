@@ -35,11 +35,12 @@ ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident) {
 }
 
 static int GetNextBaseForLocalVarContext(const Context *context) {
-  if (GetSizeOfASTDict(context->dict) == 0) return 0;
-  ASTVar *var = ToASTVar(
-      GetASTNodeInDictAt(context->dict, GetSizeOfASTDict(context->dict) - 1));
-  assert(var);
-  return var->ofs;
+  if (!context) return 0;
+  for (int i = GetSizeOfASTDict(context->dict) - 1; i >= 0; i--) {
+    ASTVar *var = ToASTVar(GetASTNodeInDictAt(context->dict, i));
+    if (var) return var->ofs;
+  }
+  return GetNextBaseForLocalVarContext(context->parent);
 }
 
 static int GetNextOfsForStructContext(const Context *context) {
