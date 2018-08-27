@@ -54,12 +54,13 @@ static ASTType *AnalyzeNode(ASTNode *node, Context *context) {
   } else if (node->type == kASTCompStmt) {
     ASTCompStmt *comp = ToASTCompStmt(node);
     ASTList *stmt_list = comp->stmt_list;
+    context = AllocContext(context);
     for (int i = 0; i < GetSizeOfASTList(stmt_list); i++) {
       AnalyzeNode(GetASTNodeAt(stmt_list, i), context);
     }
     ASTFuncDef *func_def = GetFuncDefFromContext(context);
     func_def->var_stack_size =
-        imax(func_def->var_stack_size, GetSizeOfContext(context));
+        imax(func_def->var_stack_size, GetSizeOfLocalVarContext(context));
     return NULL;
   } else if (node->type == kASTDecl) {
     ASTDecl *decl = ToASTDecl(node);

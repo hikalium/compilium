@@ -474,6 +474,7 @@ ASTNode *FindInContext(const Context *context, const char *key);
 ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident);
 int GetSizeOfContext(const Context *context);
 int GetAlignOfContext(const Context *context);
+int GetSizeOfLocalVarContext(const Context *context);
 ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
                                 ASTDecltor *decltor);
 ASTVar *AppendGlobalVarToContext(Context *context, ASTList *decl_specs,

@@ -23,6 +23,11 @@ Context *AllocContext(const Context *parent) {
   return context;
 }
 
+static ASTNode *FindInSingleContext(const Context *context, const char *key) {
+  if (!context) return NULL;
+  return FindASTNodeInDict(context->dict, key);
+}
+
 ASTNode *FindInContext(const Context *context, const char *key) {
   if (!context) return NULL;
   ASTNode *result = FindASTNodeInDict(context->dict, key);
@@ -34,13 +39,21 @@ ASTNode *FindIdentInContext(const Context *context, ASTIdent *ident) {
   return FindInContext(context, ident->token->str);
 }
 
-static int GetNextBaseForLocalVarContext(const Context *context) {
-  if (!context) return 0;
-  for (int i = GetSizeOfASTDict(context->dict) - 1; i >= 0; i--) {
-    ASTVar *var = ToASTVar(GetASTNodeInDictAt(context->dict, i));
-    if (var) return var->ofs;
+static ASTVar *GetLastVarInContext(const Context *context) {
+  while (context) {
+    for (int i = GetSizeOfASTDict(context->dict) - 1; i >= 0; i--) {
+      ASTVar *var = ToASTVar(GetASTNodeInDictAt(context->dict, i));
+      if (var) return var;
+    }
+    context = context->parent;
   }
-  return GetNextBaseForLocalVarContext(context->parent);
+  return NULL;
+}
+
+static int GetNextBaseForLocalVarContext(const Context *context) {
+  ASTVar *var = GetLastVarInContext(context);
+  if (!var) return 0;
+  return var->ofs;
 }
 
 static int GetNextOfsForStructContext(const Context *context) {
@@ -65,13 +78,21 @@ int GetSizeOfContext(const Context *context) {
 }
 
 int GetAlignOfContext(const Context *context) {
-  int max_align_size = 1;
+  if (!context) return 1;
+  int max_align_size = GetAlignOfContext(context->parent);
   for (int i = 0; i < GetSizeOfASTDict(context->dict); i++) {
     ASTVar *var = ToASTVar(GetASTNodeInDictAt(context->dict, i));
     assert(var);
     max_align_size = imax(max_align_size, GetAlignOfType(var->var_type));
   }
   return max_align_size;
+}
+
+int GetSizeOfLocalVarContext(const Context *context) {
+  ASTVar *last = GetLastVarInContext(context);
+  if (!last) return 0;
+  int align = GetAlignOfContext(context);
+  return (last->ofs + align - 1) / align * align;
 }
 
 ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
@@ -81,7 +102,7 @@ ASTVar *AppendLocalVarToContext(Context *context, ASTList *decl_specs,
   int align = GetAlignOfType(local_var->var_type);
   int ofs = base + GetSizeOfType(local_var->var_type);
   local_var->ofs = (ofs + align - 1) / align * align;
-  if (FindInContext(context, local_var->name)) {
+  if (FindInSingleContext(context, local_var->name)) {
     ErrorWithASTNode(decltor, "Duplicated identifier %s", local_var->name);
   }
   AppendASTNodeToDict(context->dict, local_var->name, ToASTNode(local_var));
