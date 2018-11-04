@@ -3,7 +3,8 @@
 function test_result {
   input=$1
   expected=$2
-  ./compilium $input | gcc -xassembler -
+  ./compilium $input > out.S
+  gcc out.S
   actual=0
   ./a.out || actual=$?
   if [ $expected = $actual ]; then
@@ -16,3 +17,5 @@ function test_result {
 test_result '0' 0
 test_result '1' 1
 test_result '17' 17
+test_result '100+7' 107
+test_result '3+5+7+9' 24
