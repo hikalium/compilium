@@ -110,6 +110,10 @@ void AddToken(const char *src_str, const char *begin, int length,
 void Tokenize(const char *src) {
   const char *s = src;
   while (*s) {
+    if (*s <= ' ') {
+      s++;
+      continue;
+    }
     if ('1' <= *s && *s <= '9') {
       int length = 0;
       while ('0' <= s[length] && s[length] <= '9') {
