@@ -252,7 +252,7 @@ int main(int argc, char *argv[]) {
 
   struct ASTNode *ast = Parse();
 
-  printf(".intel_syntax\n");
+  printf(".intel_syntax noprefix\n");
   printf(".text\n");
   printf(".global _main\n");
   printf("%smain:\n", args.os_type == kOSDarwin ? "_" : "");
