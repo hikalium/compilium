@@ -371,7 +371,7 @@ void Generate(struct ASTNode *node) {
     node->reg = node->left->reg;
     FreeReg(node->right->reg);
 
-    // rax <- rdx:rax / r/m
+    // rdx <- rdx:rax / r/m
     printf("xor rdx, rdx\n");
     printf("mov rax, %s\n", reg_names_64[node->reg]);
     printf("idiv %s\n", reg_names_64[node->right->reg]);
