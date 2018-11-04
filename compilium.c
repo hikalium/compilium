@@ -1,6 +1,17 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+enum OSType {
+  kOSDarwin,
+  kOSLinux,
+};
+
+struct CompilerArgs {
+  enum OSType os_type;
+  const char *input;
+};
 
 #define assert(expr) \
   ((void)((expr) || (__assert(#expr, __FILE__, __LINE__), 0)))
@@ -38,6 +49,28 @@ void __assert(const char *expr_str, const char *file, int line) {
 }
 
 const char *token_type_names[kNumOfTokenTypeNames];
+
+void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
+  args->os_type = kOSDarwin;
+  args->input = NULL;
+
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "--os_type") == 0) {
+      i++;
+      if (strcmp(argv[i], "Darwin") == 0) {
+        args->os_type = kOSDarwin;
+      } else if (strcmp(argv[i], "Linux") == 0) {
+        args->os_type = kOSLinux;
+      } else {
+        Error("Unknown os type %s", argv[i]);
+      }
+    } else {
+      args->input = argv[i];
+    }
+  }
+  if (!args->input)
+    Error("Usage: %s [--os_type=Linux|Darwin] src_string", argv[0]);
+}
 
 void InitTokenTypeNames() {
   token_type_names[kTokenDecimalNumber] = "DecimalNumber";
@@ -209,9 +242,12 @@ void Generate(struct ASTNode *node) {
 }
 
 int main(int argc, char *argv[]) {
+  struct CompilerArgs args;
+  ParseCompilerArgs(&args, argc, argv);
+
   InitTokenTypeNames();
 
-  Tokenize(argv[1]);
+  Tokenize(args.input);
   PrintTokens();
 
   struct ASTNode *ast = Parse();
@@ -219,7 +255,7 @@ int main(int argc, char *argv[]) {
   printf(".intel_syntax\n");
   printf(".text\n");
   printf(".global _main\n");
-  printf("_main:\n");
+  printf("%smain:\n", args.os_type == kOSDarwin ? "_" : "");
   Generate(ast);
   printf("mov rax, %s\n", reg_names_64[ast->reg]);
   printf("ret\n");

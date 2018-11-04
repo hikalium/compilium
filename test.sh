@@ -3,7 +3,7 @@
 function test_result {
   input=$1
   expected=$2
-  ./compilium $input > out.S
+  ./compilium --target_os `uname` $input > out.S
   gcc out.S
   actual=0
   ./a.out || actual=$?
