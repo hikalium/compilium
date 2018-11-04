@@ -91,6 +91,39 @@ test_result '1 | 1' 1
 
 test_result '10 | 6' 14
 
+# Boolean logical
+test_result '0 && 0' 0
+test_result '0 && 1' 0
+test_result '1 && 0' 0
+test_result '1 && 1' 1
+
+test_result '10 && 6' 1
+
+test_result '0 || 0' 0
+test_result '0 || 1' 1
+test_result '1 || 0' 1
+test_result '1 || 1' 1
+
+test_result '10 || 6' 1
+
+test_result '0 && 0 || 0' 0
+test_result '0 && 0 || 1' 1
+test_result '0 && 1 || 0' 0
+test_result '0 && 1 || 1' 1
+test_result '1 && 0 || 0' 0
+test_result '1 && 0 || 1' 1
+test_result '1 && 1 || 0' 1
+test_result '1 && 1 || 1' 1
+
+test_result '0 || 0 && 0' 0
+test_result '0 || 0 && 1' 0
+test_result '0 || 1 && 0' 0
+test_result '0 || 1 && 1' 1
+test_result '1 || 0 && 0' 1
+test_result '1 || 0 && 1' 1
+test_result '1 || 1 && 0' 1
+test_result '1 || 1 && 1' 1
+
 # Mixed priority
 test_result '3 * 4 + 5' 17
 test_result '3 + 4 * 5' 23

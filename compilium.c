@@ -36,6 +36,8 @@ enum TokenTypes {
   kTokenBitAnd,
   kTokenBitXor,
   kTokenBitOr,
+  kTokenBoolAnd,
+  kTokenBoolOr,
   kNumOfTokenTypeNames
 };
 
@@ -107,6 +109,8 @@ void InitTokenTypeNames() {
   token_type_names[kTokenBitAnd] = "BitAnd";
   token_type_names[kTokenBitXor] = "BitXor";
   token_type_names[kTokenBitOr] = "BitOr";
+  token_type_names[kTokenBoolAnd] = "BoolAnd";
+  token_type_names[kTokenBoolOr] = "BoolOr";
 }
 
 const char *GetTokenTypeName(const struct Token *t) {
@@ -171,6 +175,11 @@ void Tokenize(const char *src) {
       continue;
     }
     if ('&' == *s) {
+      if (s[1] == '&') {
+        AddToken(src, s, 2, kTokenBoolAnd);
+        s += 2;
+        continue;
+      }
       AddToken(src, s++, 1, kTokenBitAnd);
       continue;
     }
@@ -179,6 +188,11 @@ void Tokenize(const char *src) {
       continue;
     }
     if ('|' == *s) {
+      if (s[1] == '|') {
+        AddToken(src, s, 2, kTokenBoolOr);
+        s += 2;
+        continue;
+      }
       AddToken(src, s++, 1, kTokenBitOr);
       continue;
     }
@@ -424,8 +438,28 @@ struct ASTNode *ParseOrExpr() {
   return op;
 }
 
+struct ASTNode *ParseBoolAndExpr() {
+  struct ASTNode *op = ParseOrExpr();
+  if (!op) return NULL;
+  struct Token *t;
+  while ((t = ConsumeToken(kTokenBoolAnd))) {
+    op = AllocAndInitASTNodeBinOp(t, op, ParseOrExpr());
+  }
+  return op;
+}
+
+struct ASTNode *ParseBoolOrExpr() {
+  struct ASTNode *op = ParseBoolAndExpr();
+  if (!op) return NULL;
+  struct Token *t;
+  while ((t = ConsumeToken(kTokenBoolOr))) {
+    op = AllocAndInitASTNodeBinOp(t, op, ParseBoolAndExpr());
+  }
+  return op;
+}
+
 struct ASTNode *Parse() {
-  struct ASTNode *ast = ParseOrExpr();
+  struct ASTNode *ast = ParseBoolOrExpr();
   struct Token *t;
   if (!(t = NextToken())) return ast;
   ErrorWithToken(t, "Unexpected token");
@@ -451,6 +485,9 @@ void FreeReg(int reg) {
   reg_used_table[reg] = 0;
 }
 
+int label_number;
+int GetLabelNumber() { return ++label_number; }
+
 void Generate(struct ASTNode *node) {
   assert(node && node->op);
   if (node->op->type == kTokenDecimalNumber ||
@@ -459,6 +496,42 @@ void Generate(struct ASTNode *node) {
 
     printf("mov %s, %ld\n", reg_names_64[node->reg],
            strtol(node->op->begin, NULL, 0));
+    return;
+  }
+  if (node->op->type == kTokenBoolAnd) {
+    Generate(node->left);
+    node->reg = node->left->reg;
+    int skip_label = GetLabelNumber();
+    printf("cmp %s,0\n", reg_names_64[node->left->reg]);
+    printf("setne %s\n", reg_names_8[node->left->reg]);
+    printf("movzx %s, %s\n", reg_names_64[node->reg],
+           reg_names_8[node->left->reg]);
+    printf("jz L%d\n", skip_label);
+    Generate(node->right);
+    printf("cmp %s, 0\n", reg_names_64[node->right->reg]);
+    printf("setne %s\n", reg_names_8[node->right->reg]);
+    printf("movzx %s, %s\n", reg_names_64[node->reg],
+           reg_names_8[node->right->reg]);
+    FreeReg(node->right->reg);
+    printf("L%d:\n", skip_label);
+    return;
+  }
+  if (node->op->type == kTokenBoolOr) {
+    Generate(node->left);
+    node->reg = node->left->reg;
+    int skip_label = GetLabelNumber();
+    printf("cmp %s,0\n", reg_names_64[node->left->reg]);
+    printf("setne %s\n", reg_names_8[node->left->reg]);
+    printf("movzx %s, %s\n", reg_names_64[node->reg],
+           reg_names_8[node->left->reg]);
+    printf("jnz L%d\n", skip_label);
+    Generate(node->right);
+    printf("cmp %s,0\n", reg_names_64[node->right->reg]);
+    printf("setne %s\n", reg_names_8[node->right->reg]);
+    printf("movzx %s, %s\n", reg_names_64[node->reg],
+           reg_names_8[node->right->reg]);
+    FreeReg(node->right->reg);
+    printf("L%d:\n", skip_label);
     return;
   }
   // binary operators
