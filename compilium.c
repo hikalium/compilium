@@ -305,6 +305,7 @@ struct ASTNode *AllocASTNode() {
 
 struct ASTNode *AllocAndInitASTNodeBinOp(struct Token *t, struct ASTNode *left,
                                          struct ASTNode *right) {
+  if (!right) ErrorWithToken(t, "Expected expression after binary operator");
   struct ASTNode *op = AllocASTNode();
   op->op = t;
   op->left = left;
@@ -344,9 +345,7 @@ struct ASTNode *ParseMulExpr() {
   struct Token *t;
   while ((t = ConsumeToken(kTokenStar)) || (t = ConsumeToken(kTokenSlash)) ||
          (t = ConsumeToken(kTokenPercent))) {
-    struct ASTNode *right = ParsePrimaryExpr();
-    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
-    op = AllocAndInitASTNodeBinOp(t, op, right);
+    op = AllocAndInitASTNodeBinOp(t, op, ParsePrimaryExpr());
   }
   return op;
 }
@@ -356,9 +355,7 @@ struct ASTNode *ParseAddExpr() {
   if (!op) return NULL;
   struct Token *t;
   while ((t = ConsumeToken(kTokenPlus)) || (t = ConsumeToken(kTokenMinus))) {
-    struct ASTNode *right = ParseMulExpr();
-    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
-    op = AllocAndInitASTNodeBinOp(t, op, right);
+    op = AllocAndInitASTNodeBinOp(t, op, ParseMulExpr());
   }
   return op;
 }
@@ -369,9 +366,7 @@ struct ASTNode *ParseShiftExpr() {
   struct Token *t;
   while ((t = ConsumeToken(kTokenShiftLeft)) ||
          (t = ConsumeToken(kTokenShiftRight))) {
-    struct ASTNode *right = ParseAddExpr();
-    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
-    op = AllocAndInitASTNodeBinOp(t, op, right);
+    op = AllocAndInitASTNodeBinOp(t, op, ParseAddExpr());
   }
   return op;
 }
@@ -384,9 +379,7 @@ struct ASTNode *ParseRelExpr() {
          (t = ConsumeToken(kTokenGreaterThan)) ||
          (t = ConsumeToken(kTokenLessThanEq)) ||
          (t = ConsumeToken(kTokenGreaterThanEq))) {
-    struct ASTNode *right = ParseShiftExpr();
-    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
-    op = AllocAndInitASTNodeBinOp(t, op, right);
+    op = AllocAndInitASTNodeBinOp(t, op, ParseShiftExpr());
   }
   return op;
 }
@@ -396,9 +389,7 @@ struct ASTNode *ParseEqExpr() {
   if (!op) return NULL;
   struct Token *t;
   while ((t = ConsumeToken(kTokenEq)) || (t = ConsumeToken(kTokenNotEq))) {
-    struct ASTNode *right = ParseRelExpr();
-    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
-    op = AllocAndInitASTNodeBinOp(t, op, right);
+    op = AllocAndInitASTNodeBinOp(t, op, ParseRelExpr());
   }
   return op;
 }
@@ -408,9 +399,7 @@ struct ASTNode *ParseAndExpr() {
   if (!op) return NULL;
   struct Token *t;
   while ((t = ConsumeToken(kTokenBitAnd))) {
-    struct ASTNode *right = ParseEqExpr();
-    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
-    op = AllocAndInitASTNodeBinOp(t, op, right);
+    op = AllocAndInitASTNodeBinOp(t, op, ParseEqExpr());
   }
   return op;
 }
@@ -420,9 +409,7 @@ struct ASTNode *ParseXorExpr() {
   if (!op) return NULL;
   struct Token *t;
   while ((t = ConsumeToken(kTokenBitXor))) {
-    struct ASTNode *right = ParseAndExpr();
-    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
-    op = AllocAndInitASTNodeBinOp(t, op, right);
+    op = AllocAndInitASTNodeBinOp(t, op, ParseAndExpr());
   }
   return op;
 }
@@ -432,9 +419,7 @@ struct ASTNode *ParseOrExpr() {
   if (!op) return NULL;
   struct Token *t;
   while ((t = ConsumeToken(kTokenBitOr))) {
-    struct ASTNode *right = ParseXorExpr();
-    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
-    op = AllocAndInitASTNodeBinOp(t, op, right);
+    op = AllocAndInitASTNodeBinOp(t, op, ParseXorExpr());
   }
   return op;
 }
