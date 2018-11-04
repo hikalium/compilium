@@ -26,7 +26,11 @@ enum TokenTypes {
   kTokenSlash,
   kTokenPercent,
   kTokenShiftLeft,
+  kTokenLessThanEq,
+  kTokenLessThan,
   kTokenShiftRight,
+  kTokenGreaterThanEq,
+  kTokenGreaterThan,
   kNumOfTokenTypeNames
 };
 
@@ -88,7 +92,11 @@ void InitTokenTypeNames() {
   token_type_names[kTokenSlash] = "Slash";
   token_type_names[kTokenPercent] = "Percent";
   token_type_names[kTokenShiftLeft] = "ShiftLeft";
+  token_type_names[kTokenLessThanEq] = "LessThanEq";
+  token_type_names[kTokenLessThan] = "LessThan";
   token_type_names[kTokenShiftRight] = "ShiftRight";
+  token_type_names[kTokenGreaterThanEq] = "GreaterThanEq";
+  token_type_names[kTokenGreaterThan] = "GreaterThan";
 }
 
 const char *GetTokenTypeName(const struct Token *t) {
@@ -158,6 +166,13 @@ void Tokenize(const char *src) {
         s += 2;
         continue;
       }
+      if (s[1] == '=') {
+        AddToken(src, s, 2, kTokenLessThanEq);
+        s += 2;
+        continue;
+      }
+      AddToken(src, s++, 1, kTokenLessThan);
+      continue;
     }
     if ('>' == *s) {
       if (s[1] == '>') {
@@ -165,6 +180,13 @@ void Tokenize(const char *src) {
         s += 2;
         continue;
       }
+      if (s[1] == '=') {
+        AddToken(src, s, 2, kTokenGreaterThanEq);
+        s += 2;
+        continue;
+      }
+      AddToken(src, s++, 1, kTokenGreaterThan);
+      continue;
     }
     Error("Unexpected char %c", *s);
   }
@@ -321,8 +343,27 @@ struct ASTNode *ParseShiftExpr() {
   return op;
 }
 
+struct ASTNode *ParseRelExpr() {
+  struct ASTNode *op = ParseShiftExpr();
+  if (!op) return NULL;
+  struct Token *t;
+  while ((t = ConsumeToken(kTokenLessThan)) ||
+         (t = ConsumeToken(kTokenGreaterThan)) ||
+         (t = ConsumeToken(kTokenLessThanEq)) ||
+         (t = ConsumeToken(kTokenGreaterThanEq))) {
+    struct ASTNode *right = ParseShiftExpr();
+    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
+    struct ASTNode *new_op = AllocASTNode();
+    new_op->op = t;
+    new_op->left = op;
+    new_op->right = right;
+    op = new_op;
+  }
+  return op;
+}
+
 struct ASTNode *Parse() {
-  struct ASTNode *ast = ParseShiftExpr();
+  struct ASTNode *ast = ParseRelExpr();
   struct Token *t;
   if (!(t = NextToken())) return ast;
   ErrorWithToken(t, "Unexpected token");
@@ -330,6 +371,7 @@ struct ASTNode *Parse() {
 
 #define NUM_OF_SCRATCH_REGS 4
 const char *reg_names_64[NUM_OF_SCRATCH_REGS] = {"rdi", "rsi", "r8", "r9"};
+const char *reg_names_8[NUM_OF_SCRATCH_REGS] = {"dil", "sil", "r8b", "r9b"};
 
 int reg_used_table[NUM_OF_SCRATCH_REGS];
 
@@ -436,6 +478,54 @@ void Generate(struct ASTNode *node) {
     // r/m >>= CL
     printf("mov rcx, %s\n", reg_names_64[node->right->reg]);
     printf("sar %s, cl\n", reg_names_64[node->reg]);
+    return;
+  }
+  if (node->op->type == kTokenLessThan) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    printf("cmp %s, %s\n", reg_names_64[node->reg],
+           reg_names_64[node->right->reg]);
+    printf("setl %s\n", reg_names_8[node->reg]);
+    printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
+    return;
+  }
+  if (node->op->type == kTokenGreaterThan) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    printf("cmp %s, %s\n", reg_names_64[node->reg],
+           reg_names_64[node->right->reg]);
+    printf("setg %s\n", reg_names_8[node->reg]);
+    printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
+    return;
+  }
+  if (node->op->type == kTokenLessThanEq) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    printf("cmp %s, %s\n", reg_names_64[node->reg],
+           reg_names_64[node->right->reg]);
+    printf("setle %s\n", reg_names_8[node->reg]);
+    printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
+    return;
+  }
+  if (node->op->type == kTokenGreaterThanEq) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    printf("cmp %s, %s\n", reg_names_64[node->reg],
+           reg_names_64[node->right->reg]);
+    printf("setge %s\n", reg_names_8[node->reg]);
+    printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
     return;
   }
   ErrorWithToken(node->op, "Generate: Not implemented");

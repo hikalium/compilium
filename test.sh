@@ -43,6 +43,23 @@ test_result '3 >> 2' 0
 test_result '17 >> 2' 4
 test_result '17 >> 2 >> 1' 2
 
+# Relational
+test_result '3 < 5' 1
+test_result '5 < 3' 0
+test_result '7 < 7' 0
+
+test_result '3 <= 5' 1
+test_result '5 <= 3' 0
+test_result '7 <= 7' 1
+
+test_result '3 > 5' 0
+test_result '5 > 3' 1
+test_result '7 > 7' 0
+
+test_result '3 >= 5' 0
+test_result '5 >= 3' 1
+test_result '7 >= 7' 1
+
 # Mixed priority
 test_result '3 * 4 + 5' 17
 test_result '3 + 4 * 5' 23

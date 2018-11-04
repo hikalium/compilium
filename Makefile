@@ -14,4 +14,5 @@ commit:
 	make format
 	make test
 	git add .
+	git diff HEAD
 	git commit
