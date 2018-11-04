@@ -31,6 +31,8 @@ enum TokenTypes {
   kTokenShiftRight,
   kTokenGreaterThanEq,
   kTokenGreaterThan,
+  kTokenEq,
+  kTokenNotEq,
   kNumOfTokenTypeNames
 };
 
@@ -97,6 +99,8 @@ void InitTokenTypeNames() {
   token_type_names[kTokenShiftRight] = "ShiftRight";
   token_type_names[kTokenGreaterThanEq] = "GreaterThanEq";
   token_type_names[kTokenGreaterThan] = "GreaterThan";
+  token_type_names[kTokenEq] = "Eq";
+  token_type_names[kTokenNotEq] = "NotEq";
 }
 
 const char *GetTokenTypeName(const struct Token *t) {
@@ -187,6 +191,20 @@ void Tokenize(const char *src) {
       }
       AddToken(src, s++, 1, kTokenGreaterThan);
       continue;
+    }
+    if ('=' == *s) {
+      if (s[1] == '=') {
+        AddToken(src, s, 2, kTokenEq);
+        s += 2;
+        continue;
+      }
+    }
+    if ('!' == *s) {
+      if (s[1] == '=') {
+        AddToken(src, s, 2, kTokenNotEq);
+        s += 2;
+        continue;
+      }
     }
     Error("Unexpected char %c", *s);
   }
@@ -362,8 +380,24 @@ struct ASTNode *ParseRelExpr() {
   return op;
 }
 
+struct ASTNode *ParseEqExpr() {
+  struct ASTNode *op = ParseRelExpr();
+  if (!op) return NULL;
+  struct Token *t;
+  while ((t = ConsumeToken(kTokenEq)) || (t = ConsumeToken(kTokenNotEq))) {
+    struct ASTNode *right = ParseRelExpr();
+    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
+    struct ASTNode *new_op = AllocASTNode();
+    new_op->op = t;
+    new_op->left = op;
+    new_op->right = right;
+    op = new_op;
+  }
+  return op;
+}
+
 struct ASTNode *Parse() {
-  struct ASTNode *ast = ParseRelExpr();
+  struct ASTNode *ast = ParseEqExpr();
   struct Token *t;
   if (!(t = NextToken())) return ast;
   ErrorWithToken(t, "Unexpected token");
@@ -525,6 +559,30 @@ void Generate(struct ASTNode *node) {
     printf("cmp %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     printf("setge %s\n", reg_names_8[node->reg]);
+    printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
+    return;
+  }
+  if (node->op->type == kTokenEq) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    printf("cmp %s, %s\n", reg_names_64[node->reg],
+           reg_names_64[node->right->reg]);
+    printf("sete %s\n", reg_names_8[node->reg]);
+    printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
+    return;
+  }
+  if (node->op->type == kTokenNotEq) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    printf("cmp %s, %s\n", reg_names_64[node->reg],
+           reg_names_64[node->right->reg]);
+    printf("setne %s\n", reg_names_8[node->reg]);
     printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
     return;
   }
