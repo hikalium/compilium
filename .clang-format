@@ -1,0 +1,5 @@
+BasedOnStyle: Google
+AlignEscapedNewlines: DontAlign
+AlignConsecutiveDeclarations: false
+AlignTrailingComments: false
+PointerAlignment: Right
