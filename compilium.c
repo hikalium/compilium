@@ -274,7 +274,7 @@ struct ASTNode *ParseMulExpr() {
   while ((t = ConsumeToken(kTokenStar)) || (t = ConsumeToken(kTokenSlash)) ||
          (t = ConsumeToken(kTokenPercent))) {
     struct ASTNode *right = ParsePrimaryExpr();
-    if (!right) Error("Expected expression after +");
+    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
     struct ASTNode *new_op = AllocASTNode();
     new_op->op = t;
     new_op->left = op;
@@ -290,7 +290,7 @@ struct ASTNode *ParseAddExpr() {
   struct Token *t;
   while ((t = ConsumeToken(kTokenPlus)) || (t = ConsumeToken(kTokenMinus))) {
     struct ASTNode *right = ParseMulExpr();
-    if (!right) Error("Expected expression after +");
+    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
     struct ASTNode *new_op = AllocASTNode();
     new_op->op = t;
     new_op->left = op;
@@ -307,7 +307,7 @@ struct ASTNode *ParseShiftExpr() {
   while ((t = ConsumeToken(kTokenShiftLeft)) ||
          (t = ConsumeToken(kTokenShiftRight))) {
     struct ASTNode *right = ParseAddExpr();
-    if (!right) Error("Expected expression after +");
+    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
     struct ASTNode *new_op = AllocASTNode();
     new_op->op = t;
     new_op->left = op;
