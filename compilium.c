@@ -33,6 +33,9 @@ enum TokenTypes {
   kTokenGreaterThan,
   kTokenEq,
   kTokenNotEq,
+  kTokenBitAnd,
+  kTokenBitXor,
+  kTokenBitOr,
   kNumOfTokenTypeNames
 };
 
@@ -101,6 +104,9 @@ void InitTokenTypeNames() {
   token_type_names[kTokenGreaterThan] = "GreaterThan";
   token_type_names[kTokenEq] = "Eq";
   token_type_names[kTokenNotEq] = "NotEq";
+  token_type_names[kTokenBitAnd] = "BitAnd";
+  token_type_names[kTokenBitXor] = "BitXor";
+  token_type_names[kTokenBitOr] = "BitOr";
 }
 
 const char *GetTokenTypeName(const struct Token *t) {
@@ -162,6 +168,18 @@ void Tokenize(const char *src) {
     }
     if ('%' == *s) {
       AddToken(src, s++, 1, kTokenPercent);
+      continue;
+    }
+    if ('&' == *s) {
+      AddToken(src, s++, 1, kTokenBitAnd);
+      continue;
+    }
+    if ('^' == *s) {
+      AddToken(src, s++, 1, kTokenBitXor);
+      continue;
+    }
+    if ('|' == *s) {
+      AddToken(src, s++, 1, kTokenBitOr);
       continue;
     }
     if ('<' == *s) {
@@ -396,8 +414,56 @@ struct ASTNode *ParseEqExpr() {
   return op;
 }
 
+struct ASTNode *ParseAndExpr() {
+  struct ASTNode *op = ParseEqExpr();
+  if (!op) return NULL;
+  struct Token *t;
+  while ((t = ConsumeToken(kTokenBitAnd))) {
+    struct ASTNode *right = ParseEqExpr();
+    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
+    struct ASTNode *new_op = AllocASTNode();
+    new_op->op = t;
+    new_op->left = op;
+    new_op->right = right;
+    op = new_op;
+  }
+  return op;
+}
+
+struct ASTNode *ParseXorExpr() {
+  struct ASTNode *op = ParseAndExpr();
+  if (!op) return NULL;
+  struct Token *t;
+  while ((t = ConsumeToken(kTokenBitXor))) {
+    struct ASTNode *right = ParseAndExpr();
+    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
+    struct ASTNode *new_op = AllocASTNode();
+    new_op->op = t;
+    new_op->left = op;
+    new_op->right = right;
+    op = new_op;
+  }
+  return op;
+}
+
+struct ASTNode *ParseOrExpr() {
+  struct ASTNode *op = ParseXorExpr();
+  if (!op) return NULL;
+  struct Token *t;
+  while ((t = ConsumeToken(kTokenBitOr))) {
+    struct ASTNode *right = ParseXorExpr();
+    if (!right) ErrorWithToken(t, "Expected expression after binary operator");
+    struct ASTNode *new_op = AllocASTNode();
+    new_op->op = t;
+    new_op->left = op;
+    new_op->right = right;
+    op = new_op;
+  }
+  return op;
+}
+
 struct ASTNode *Parse() {
-  struct ASTNode *ast = ParseEqExpr();
+  struct ASTNode *ast = ParseOrExpr();
   struct Token *t;
   if (!(t = NextToken())) return ast;
   ErrorWithToken(t, "Unexpected token");
@@ -584,6 +650,36 @@ void Generate(struct ASTNode *node) {
            reg_names_64[node->right->reg]);
     printf("setne %s\n", reg_names_8[node->reg]);
     printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
+    return;
+  }
+  if (node->op->type == kTokenBitAnd) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    printf("and %s, %s\n", reg_names_64[node->reg],
+           reg_names_64[node->right->reg]);
+    return;
+  }
+  if (node->op->type == kTokenBitXor) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    printf("xor %s, %s\n", reg_names_64[node->reg],
+           reg_names_64[node->right->reg]);
+    return;
+  }
+  if (node->op->type == kTokenBitOr) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    printf("or %s, %s\n", reg_names_64[node->reg],
+           reg_names_64[node->right->reg]);
     return;
   }
   ErrorWithToken(node->op, "Generate: Not implemented");

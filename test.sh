@@ -69,6 +69,28 @@ test_result '3 != 5' 1
 test_result '5 != 3' 1
 test_result '7 != 7' 0
 
+# Bitwise logical
+test_result '0 & 0' 0
+test_result '0 & 1' 0
+test_result '1 & 0' 0
+test_result '1 & 1' 1
+
+test_result '10 & 6' 2
+
+test_result '0 ^ 0' 0
+test_result '0 ^ 1' 1
+test_result '1 ^ 0' 1
+test_result '1 ^ 1' 0
+
+test_result '10 ^ 6' 12
+
+test_result '0 | 0' 0
+test_result '0 | 1' 1
+test_result '1 | 0' 1
+test_result '1 | 1' 1
+
+test_result '10 | 6' 14
+
 # Mixed priority
 test_result '3 * 4 + 5' 17
 test_result '3 + 4 * 5' 23
