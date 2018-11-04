@@ -29,8 +29,11 @@ test_result '1+3-5-7+9' 1
 # Multiplicative
 test_result '3*4' 12
 test_result '3*4*5' 60
+test_result '365/7' 52
+test_result '365/7/8' 6
 
 # Mixed priority
 test_result '3*4+5' 17
 test_result '3+4*5' 23
 test_result '3+4*5-9' 14
+test_result '3+14/2' 10

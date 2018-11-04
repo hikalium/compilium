@@ -23,6 +23,7 @@ enum TokenTypes {
   kTokenPlus,
   kTokenStar,
   kTokenMinus,
+  kTokenSlash,
   kNumOfTokenTypeNames
 };
 
@@ -81,6 +82,7 @@ void InitTokenTypeNames() {
   token_type_names[kTokenPlus] = "Plus";
   token_type_names[kTokenStar] = "Star";
   token_type_names[kTokenMinus] = "Minus";
+  token_type_names[kTokenSlash] = "Slash";
 }
 
 const char *GetTokenTypeName(const struct Token *t) {
@@ -130,6 +132,10 @@ void Tokenize(const char *src) {
     }
     if ('*' == *s) {
       AddToken(src, s++, 1, kTokenStar);
+      continue;
+    }
+    if ('/' == *s) {
+      AddToken(src, s++, 1, kTokenSlash);
       continue;
     }
     Error("Unexpected char %c", *s);
@@ -241,7 +247,7 @@ struct ASTNode *ParseMulExpr() {
   struct ASTNode *op = ParsePrimaryExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenStar))) {
+  while ((t = ConsumeToken(kTokenStar)) || (t = ConsumeToken(kTokenSlash))) {
     struct ASTNode *right = ParsePrimaryExpr();
     if (!right) Error("Expected expression after +");
     struct ASTNode *new_op = AllocASTNode();
@@ -336,6 +342,19 @@ void Generate(struct ASTNode *node) {
     printf("xor rdx, rdx\n");
     printf("mov rax, %s\n", reg_names_64[node->reg]);
     printf("imul %s\n", reg_names_64[node->right->reg]);
+    printf("mov %s, rax\n", reg_names_64[node->reg]);
+    return;
+  }
+  if (node->op->type == kTokenSlash) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    // rax <- rdx:rax / r/m
+    printf("xor rdx, rdx\n");
+    printf("mov rax, %s\n", reg_names_64[node->reg]);
+    printf("idiv %s\n", reg_names_64[node->right->reg]);
     printf("mov %s, rax\n", reg_names_64[node->reg]);
     return;
   }
