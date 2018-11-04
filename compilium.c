@@ -40,6 +40,8 @@ enum TokenTypes {
   kTokenBoolOr,
   kTokenBitNot,
   kTokenBoolNot,
+  kTokenConditional,
+  kTokenColon,
   kNumOfTokenTypeNames
 };
 
@@ -115,12 +117,14 @@ void InitTokenTypeNames() {
   token_type_names[kTokenBoolOr] = "BoolOr";
   token_type_names[kTokenBitNot] = "BitNot";
   token_type_names[kTokenBoolNot] = "BoolNot";
+  token_type_names[kTokenConditional] = "Conditional";
+  token_type_names[kTokenColon] = "Colon";
 }
 
-const char *GetTokenTypeName(const struct Token *t) {
-  assert(t && 0 <= t->type && t->type < kNumOfTokenTypeNames);
-  assert(token_type_names[t->type]);
-  return token_type_names[t->type];
+const char *GetTokenTypeName(enum TokenTypes type) {
+  assert(0 <= type && type < kNumOfTokenTypeNames);
+  assert(token_type_names[type]);
+  return token_type_names[type];
 }
 
 void AddToken(const char *src_str, const char *begin, int length,
@@ -248,13 +252,21 @@ void Tokenize(const char *src) {
       AddToken(src, s++, 1, kTokenBitNot);
       continue;
     }
+    if ('?' == *s) {
+      AddToken(src, s++, 1, kTokenConditional);
+      continue;
+    }
+    if (':' == *s) {
+      AddToken(src, s++, 1, kTokenColon);
+      continue;
+    }
     Error("Unexpected char %c", *s);
   }
 }
 
 void PrintToken(struct Token *t) {
   fprintf(stderr, "(Token %.*s type=%s)", t->length, t->begin,
-          GetTokenTypeName(t));
+          GetTokenTypeName(t->type));
 }
 
 void PrintTokens() {
@@ -263,22 +275,6 @@ void PrintTokens() {
     PrintToken(t);
     fputc('\n', stderr);
   }
-}
-
-int token_stream_index;
-struct Token *ConsumeToken(enum TokenTypes type) {
-  if (token_stream_index < tokens_used &&
-      tokens[token_stream_index].type == type) {
-    return &tokens[token_stream_index++];
-  }
-  return NULL;
-}
-
-struct Token *NextToken() {
-  if (token_stream_index < tokens_used) {
-    return &tokens[token_stream_index++];
-  }
-  return NULL;
 }
 
 _Noreturn void ErrorWithToken(struct Token *t, const char *fmt, ...) {
@@ -316,11 +312,37 @@ _Noreturn void ErrorWithToken(struct Token *t, const char *fmt, ...) {
   exit(EXIT_FAILURE);
 }
 
+int token_stream_index;
+struct Token *ConsumeToken(enum TokenTypes type) {
+  if (token_stream_index < tokens_used &&
+      tokens[token_stream_index].type == type) {
+    return &tokens[token_stream_index++];
+  }
+  return NULL;
+}
+
+struct Token *ExpectToken(enum TokenTypes type) {
+  if (token_stream_index < tokens_used &&
+      tokens[token_stream_index].type == type) {
+    return &tokens[token_stream_index++];
+  }
+  ErrorWithToken(&tokens[token_stream_index], "Expected %s here",
+                 GetTokenTypeName(type));
+}
+
+struct Token *NextToken() {
+  if (token_stream_index < tokens_used) {
+    return &tokens[token_stream_index++];
+  }
+  return NULL;
+}
+
 struct ASTNode {
   struct Token *op;
   int reg;
   struct ASTNode *left;
   struct ASTNode *right;
+  struct ASTNode *cond;
 };
 
 struct ASTNode *AllocASTNode() {
@@ -492,8 +514,28 @@ struct ASTNode *ParseBoolOrExpr() {
   return op;
 }
 
+struct ASTNode *ParseConditionalExpr() {
+  struct ASTNode *expr = ParseBoolOrExpr();
+  if (!expr) return NULL;
+  struct Token *t;
+  if ((t = ConsumeToken(kTokenConditional))) {
+    struct ASTNode *op = AllocASTNode();
+    op->op = t;
+    op->cond = expr;
+    op->left = ParseConditionalExpr();
+    if (!op->left)
+      ErrorWithToken(t, "Expected true-expr for this conditional expr");
+    ExpectToken(kTokenColon);
+    op->right = ParseConditionalExpr();
+    if (!op->right)
+      ErrorWithToken(t, "Expected false-expr for this conditional expr");
+    return op;
+  }
+  return expr;
+}
+
 struct ASTNode *Parse() {
-  struct ASTNode *ast = ParseBoolOrExpr();
+  struct ASTNode *ast = ParseConditionalExpr();
   struct Token *t;
   if (!(t = NextToken())) return ast;
   ErrorWithToken(t, "Unexpected token");
@@ -585,6 +627,27 @@ void Generate(struct ASTNode *node) {
     EmitConvertToBool(node->reg, node->right->reg);
     FreeReg(node->right->reg);
     printf("L%d:\n", skip_label);
+    return;
+  }
+  // conditional expr
+  if (node->op->type == kTokenConditional) {
+    Generate(node->cond);
+    node->reg = node->cond->reg;
+    int false_label = GetLabelNumber();
+    int end_label = GetLabelNumber();
+    EmitConvertToBool(node->cond->reg, node->cond->reg);
+    printf("jz L%d\n", false_label);
+    Generate(node->left);
+    printf("mov %s, %s\n", reg_names_64[node->reg],
+           reg_names_64[node->left->reg]);
+    FreeReg(node->left->reg);
+    printf("jmp L%d\n", end_label);
+    printf("L%d:\n", false_label);
+    Generate(node->right);
+    printf("mov %s, %s\n", reg_names_64[node->reg],
+           reg_names_64[node->right->reg]);
+    FreeReg(node->right->reg);
+    printf("L%d:\n", end_label);
     return;
   }
   // binary operators
