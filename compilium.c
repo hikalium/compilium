@@ -25,6 +25,8 @@ enum TokenTypes {
   kTokenMinus,
   kTokenSlash,
   kTokenPercent,
+  kTokenShiftLeft,
+  kTokenShiftRight,
   kNumOfTokenTypeNames
 };
 
@@ -85,6 +87,8 @@ void InitTokenTypeNames() {
   token_type_names[kTokenMinus] = "Minus";
   token_type_names[kTokenSlash] = "Slash";
   token_type_names[kTokenPercent] = "Percent";
+  token_type_names[kTokenShiftLeft] = "ShiftLeft";
+  token_type_names[kTokenShiftRight] = "ShiftRight";
 }
 
 const char *GetTokenTypeName(const struct Token *t) {
@@ -143,6 +147,20 @@ void Tokenize(const char *src) {
     if ('%' == *s) {
       AddToken(src, s++, 1, kTokenPercent);
       continue;
+    }
+    if ('<' == *s) {
+      if (s[1] == '<') {
+        AddToken(src, s, 2, kTokenShiftLeft);
+        s += 2;
+        continue;
+      }
+    }
+    if ('>' == *s) {
+      if (s[1] == '>') {
+        AddToken(src, s, 2, kTokenShiftRight);
+        s += 2;
+        continue;
+      }
     }
     Error("Unexpected char %c", *s);
   }
@@ -282,16 +300,32 @@ struct ASTNode *ParseAddExpr() {
   return op;
 }
 
+struct ASTNode *ParseShiftExpr() {
+  struct ASTNode *op = ParseAddExpr();
+  if (!op) return NULL;
+  struct Token *t;
+  while ((t = ConsumeToken(kTokenShiftLeft)) ||
+         (t = ConsumeToken(kTokenShiftRight))) {
+    struct ASTNode *right = ParseAddExpr();
+    if (!right) Error("Expected expression after +");
+    struct ASTNode *new_op = AllocASTNode();
+    new_op->op = t;
+    new_op->left = op;
+    new_op->right = right;
+    op = new_op;
+  }
+  return op;
+}
+
 struct ASTNode *Parse() {
-  struct ASTNode *ast = ParseAddExpr();
+  struct ASTNode *ast = ParseShiftExpr();
   struct Token *t;
   if (!(t = NextToken())) return ast;
   ErrorWithToken(t, "Unexpected token");
 }
 
-#define NUM_OF_SCRATCH_REGS 5
-const char *reg_names_64[NUM_OF_SCRATCH_REGS] = {"rdi", "rsi", "rcx", "r8",
-                                                 "r9"};
+#define NUM_OF_SCRATCH_REGS 4
+const char *reg_names_64[NUM_OF_SCRATCH_REGS] = {"rdi", "rsi", "r8", "r9"};
 
 int reg_used_table[NUM_OF_SCRATCH_REGS];
 
@@ -376,6 +410,28 @@ void Generate(struct ASTNode *node) {
     printf("mov rax, %s\n", reg_names_64[node->reg]);
     printf("idiv %s\n", reg_names_64[node->right->reg]);
     printf("mov %s, rdx\n", reg_names_64[node->reg]);
+    return;
+  }
+  if (node->op->type == kTokenShiftLeft) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    // r/m <<= CL
+    printf("mov rcx, %s\n", reg_names_64[node->right->reg]);
+    printf("sal %s, cl\n", reg_names_64[node->reg]);
+    return;
+  }
+  if (node->op->type == kTokenShiftRight) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    // r/m >>= CL
+    printf("mov rcx, %s\n", reg_names_64[node->right->reg]);
+    printf("sar %s, cl\n", reg_names_64[node->reg]);
     return;
   }
   ErrorWithToken(node->op, "Generate: Not implemented");

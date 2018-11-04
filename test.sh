@@ -1,9 +1,9 @@
 #!/bin/bash -e
 
 function test_result {
-  input=$1
-  expected=$2
-  ./compilium --target_os `uname` $input > out.S
+  input="$1"
+  expected="$2"
+  ./compilium --target_os `uname` "$input" > out.S
   gcc out.S
   actual=0
   ./a.out || actual=$?
@@ -34,9 +34,16 @@ test_result '3+5+7+9' 24
 test_result '100-7' 93
 test_result '1+3-5-7+9' 1
 
+# Shift
+test_result '3<<2' 12
+test_result '3>>2' 0
+test_result '17>>2' 4
+test_result '17>>2>>1' 2
+
 # Mixed priority
 test_result '3*4+5' 17
 test_result '3+4*5' 23
 test_result '3+4*5-9' 14
 test_result '3+14/2' 10
 test_result '12+17%7' 15
+test_result '1+2<<3' 24
