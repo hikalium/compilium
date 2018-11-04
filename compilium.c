@@ -461,32 +461,23 @@ void Generate(struct ASTNode *node) {
            strtol(node->op->begin, NULL, 0));
     return;
   }
-  if (node->op->type == kTokenPlus) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
+  // binary operators
+  Generate(node->left);
+  Generate(node->right);
+  node->reg = node->left->reg;
+  FreeReg(node->right->reg);
 
+  if (node->op->type == kTokenPlus) {
     printf("add %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     return;
   }
   if (node->op->type == kTokenMinus) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     printf("sub %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     return;
   }
   if (node->op->type == kTokenStar) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     // rdx:rax <- rax * r/m
     printf("xor rdx, rdx\n");
     printf("mov rax, %s\n", reg_names_64[node->reg]);
@@ -495,11 +486,6 @@ void Generate(struct ASTNode *node) {
     return;
   }
   if (node->op->type == kTokenSlash) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     // rax <- rdx:rax / r/m
     printf("xor rdx, rdx\n");
     printf("mov rax, %s\n", reg_names_64[node->reg]);
@@ -508,11 +494,6 @@ void Generate(struct ASTNode *node) {
     return;
   }
   if (node->op->type == kTokenPercent) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     // rdx <- rdx:rax / r/m
     printf("xor rdx, rdx\n");
     printf("mov rax, %s\n", reg_names_64[node->reg]);
@@ -521,33 +502,18 @@ void Generate(struct ASTNode *node) {
     return;
   }
   if (node->op->type == kTokenShiftLeft) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     // r/m <<= CL
     printf("mov rcx, %s\n", reg_names_64[node->right->reg]);
     printf("sal %s, cl\n", reg_names_64[node->reg]);
     return;
   }
   if (node->op->type == kTokenShiftRight) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     // r/m >>= CL
     printf("mov rcx, %s\n", reg_names_64[node->right->reg]);
     printf("sar %s, cl\n", reg_names_64[node->reg]);
     return;
   }
   if (node->op->type == kTokenLessThan) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     printf("cmp %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     printf("setl %s\n", reg_names_8[node->reg]);
@@ -555,11 +521,6 @@ void Generate(struct ASTNode *node) {
     return;
   }
   if (node->op->type == kTokenGreaterThan) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     printf("cmp %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     printf("setg %s\n", reg_names_8[node->reg]);
@@ -567,11 +528,6 @@ void Generate(struct ASTNode *node) {
     return;
   }
   if (node->op->type == kTokenLessThanEq) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     printf("cmp %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     printf("setle %s\n", reg_names_8[node->reg]);
@@ -579,11 +535,6 @@ void Generate(struct ASTNode *node) {
     return;
   }
   if (node->op->type == kTokenGreaterThanEq) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     printf("cmp %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     printf("setge %s\n", reg_names_8[node->reg]);
@@ -591,11 +542,6 @@ void Generate(struct ASTNode *node) {
     return;
   }
   if (node->op->type == kTokenEq) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     printf("cmp %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     printf("sete %s\n", reg_names_8[node->reg]);
@@ -603,11 +549,6 @@ void Generate(struct ASTNode *node) {
     return;
   }
   if (node->op->type == kTokenNotEq) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     printf("cmp %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     printf("setne %s\n", reg_names_8[node->reg]);
@@ -615,31 +556,16 @@ void Generate(struct ASTNode *node) {
     return;
   }
   if (node->op->type == kTokenBitAnd) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     printf("and %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     return;
   }
   if (node->op->type == kTokenBitXor) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     printf("xor %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     return;
   }
   if (node->op->type == kTokenBitOr) {
-    Generate(node->left);
-    Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
-
     printf("or %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     return;
