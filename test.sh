@@ -17,5 +17,7 @@ function test_result {
 test_result '0' 0
 test_result '1' 1
 test_result '17' 17
+test_result '017' 15
+
 test_result '100+7' 107
 test_result '3+5+7+9' 24
