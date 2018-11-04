@@ -21,6 +21,7 @@ enum TokenTypes {
   kTokenDecimalNumber,
   kTokenOctalNumber,
   kTokenPlus,
+  kTokenStar,
   kNumOfTokenTypeNames
 };
 
@@ -28,6 +29,7 @@ struct Token {
   const char *begin;
   int length;
   enum TokenTypes type;
+  const char *src_str;
 };
 
 #define NUM_OF_TOKENS 32
@@ -76,6 +78,7 @@ void InitTokenTypeNames() {
   token_type_names[kTokenDecimalNumber] = "DecimalNumber";
   token_type_names[kTokenOctalNumber] = "OctalNumber";
   token_type_names[kTokenPlus] = "Plus";
+  token_type_names[kTokenStar] = "Star";
 }
 
 const char *GetTokenTypeName(const struct Token *t) {
@@ -84,22 +87,25 @@ const char *GetTokenTypeName(const struct Token *t) {
   return token_type_names[t->type];
 }
 
-void AddToken(const char *begin, int length, enum TokenTypes type) {
+void AddToken(const char *src_str, const char *begin, int length,
+              enum TokenTypes type) {
   assert(tokens_used < NUM_OF_TOKENS);
   tokens[tokens_used].begin = begin;
   tokens[tokens_used].length = length;
   tokens[tokens_used].type = type;
+  tokens[tokens_used].src_str = src_str;
   tokens_used++;
 }
 
-void Tokenize(const char *s) {
+void Tokenize(const char *src) {
+  const char *s = src;
   while (*s) {
     if ('1' <= *s && *s <= '9') {
       int length = 0;
       while ('0' <= s[length] && s[length] <= '9') {
         length++;
       }
-      AddToken(s, length, kTokenDecimalNumber);
+      AddToken(src, s, length, kTokenDecimalNumber);
       s += length;
       continue;
     }
@@ -108,12 +114,16 @@ void Tokenize(const char *s) {
       while ('0' <= s[length] && s[length] <= '7') {
         length++;
       }
-      AddToken(s, length, kTokenOctalNumber);
+      AddToken(src, s, length, kTokenOctalNumber);
       s += length;
       continue;
     }
     if ('+' == *s) {
-      AddToken(s++, 1, kTokenPlus);
+      AddToken(src, s++, 1, kTokenPlus);
+      continue;
+    }
+    if ('*' == *s) {
+      AddToken(src, s++, 1, kTokenStar);
       continue;
     }
     Error("Unexpected char %c", *s);
@@ -140,6 +150,48 @@ struct Token *ConsumeToken(enum TokenTypes type) {
     return &tokens[token_stream_index++];
   }
   return NULL;
+}
+
+struct Token *NextToken() {
+  if (token_stream_index < tokens_used) {
+    return &tokens[token_stream_index++];
+  }
+  return NULL;
+}
+
+_Noreturn void ErrorWithToken(struct Token *t, const char *fmt, ...) {
+  assert(t);
+  const char *line_begin = t->begin;
+  while (t->src_str < line_begin) {
+    if (line_begin[-1] == '\n') break;
+    line_begin--;
+  }
+
+  for (const char *p = line_begin; *p && *p != '\n'; p++) {
+    fputc(*p <= ' ' ? ' ' : *p, stderr);
+  }
+  fputc('\n', stderr);
+  const char *p;
+  for (p = line_begin; p < t->begin; p++) {
+    fputc(' ', stderr);
+  }
+  for (int i = 0; i < t->length; i++) {
+    fputc('^', stderr);
+    p++;
+  }
+  for (; *p && *p != '\n'; p++) {
+    fputc(' ', stderr);
+  }
+  fputc('\n', stderr);
+
+  fflush(stdout);
+  fprintf(stderr, "Error: ");
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  va_end(ap);
+  fputc('\n', stderr);
+  exit(EXIT_FAILURE);
 }
 
 struct ASTNode {
@@ -179,11 +231,11 @@ struct ASTNode *ParsePrimaryExpr() {
   return NULL;
 }
 
-struct ASTNode *ParseAddExpr() {
+struct ASTNode *ParseMulExpr() {
   struct ASTNode *op = ParsePrimaryExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenPlus))) {
+  while ((t = ConsumeToken(kTokenStar))) {
     struct ASTNode *right = ParsePrimaryExpr();
     if (!right) Error("Expected expression after +");
     struct ASTNode *new_op = AllocASTNode();
@@ -195,13 +247,32 @@ struct ASTNode *ParseAddExpr() {
   return op;
 }
 
-struct ASTNode *Parse() {
-  return ParseAddExpr();
+struct ASTNode *ParseAddExpr() {
+  struct ASTNode *op = ParseMulExpr();
+  if (!op) return NULL;
+  struct Token *t;
+  while ((t = ConsumeToken(kTokenPlus))) {
+    struct ASTNode *right = ParseMulExpr();
+    if (!right) Error("Expected expression after +");
+    struct ASTNode *new_op = AllocASTNode();
+    new_op->op = t;
+    new_op->left = op;
+    new_op->right = right;
+    op = new_op;
+  }
+  return op;
 }
 
-#define NUM_OF_SCRATCH_REGS 6
-const char *reg_names_64[NUM_OF_SCRATCH_REGS] = {"rdi", "rsi", "rdx",
-                                                 "rcx", "r8",  "r9"};
+struct ASTNode *Parse() {
+  struct ASTNode *ast = ParseAddExpr();
+  struct Token *t;
+  if (!(t = NextToken())) return ast;
+  ErrorWithToken(t, "Unexpected token");
+}
+
+#define NUM_OF_SCRATCH_REGS 5
+const char *reg_names_64[NUM_OF_SCRATCH_REGS] = {"rdi", "rsi", "rcx", "r8",
+                                                 "r9"};
 
 int reg_used_table[NUM_OF_SCRATCH_REGS];
 
@@ -239,6 +310,20 @@ void Generate(struct ASTNode *node) {
            reg_names_64[node->right->reg]);
     return;
   }
+  if (node->op->type == kTokenStar) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    // rdx:rax <- rax * r/m
+    printf("xor rdx, rdx\n");
+    printf("mov rax, %s\n", reg_names_64[node->reg]);
+    printf("imul %s\n", reg_names_64[node->right->reg]);
+    printf("mov %s, rax\n", reg_names_64[node->reg]);
+    return;
+  }
+  ErrorWithToken(node->op, "Generate: Not implemented");
 }
 
 int main(int argc, char *argv[]) {
@@ -247,6 +332,7 @@ int main(int argc, char *argv[]) {
 
   InitTokenTypeNames();
 
+  fprintf(stderr, "input:\n%s\n", args.input);
   Tokenize(args.input);
   PrintTokens();
 
