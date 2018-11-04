@@ -31,9 +31,12 @@ test_result '3*4' 12
 test_result '3*4*5' 60
 test_result '365/7' 52
 test_result '365/7/8' 6
+test_result '365%7' 1
+test_result '365%7%8' 1
 
 # Mixed priority
 test_result '3*4+5' 17
 test_result '3+4*5' 23
 test_result '3+4*5-9' 14
 test_result '3+14/2' 10
+test_result '12+17%7' 15
