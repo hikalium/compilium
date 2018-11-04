@@ -23,6 +23,19 @@ test_result '017' 15
 # Non-printable
 test_result ' 0 ' 0
 
+# Unary Prefix
+test_result '+0' 0
+test_result '+ +1' 1
+test_result '- -17' 17
+test_result '1 - -2' 3
+
+test_result '~10 & 15' 5
+test_result '~5 & 15' 10
+
+test_result '!0' 1
+test_result '!1' 0
+test_result '!2' 0
+
 # Multiplicative
 test_result '3 * 4' 12
 test_result '3 * 4 * 5' 60
@@ -131,3 +144,4 @@ test_result '3 + 4 * 5 - 9' 14
 test_result '3 + 14 / 2' 10
 test_result '12 + 17 % 7' 15
 test_result '1 + 2 << 3' 24
+test_result '-3 * -4 + -5' 7

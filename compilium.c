@@ -38,6 +38,8 @@ enum TokenTypes {
   kTokenBitOr,
   kTokenBoolAnd,
   kTokenBoolOr,
+  kTokenBitNot,
+  kTokenBoolNot,
   kNumOfTokenTypeNames
 };
 
@@ -111,6 +113,8 @@ void InitTokenTypeNames() {
   token_type_names[kTokenBitOr] = "BitOr";
   token_type_names[kTokenBoolAnd] = "BoolAnd";
   token_type_names[kTokenBoolOr] = "BoolOr";
+  token_type_names[kTokenBitNot] = "BitNot";
+  token_type_names[kTokenBoolNot] = "BoolNot";
 }
 
 const char *GetTokenTypeName(const struct Token *t) {
@@ -237,6 +241,12 @@ void Tokenize(const char *src) {
         s += 2;
         continue;
       }
+      AddToken(src, s++, 1, kTokenBoolNot);
+      continue;
+    }
+    if ('~' == *s) {
+      AddToken(src, s++, 1, kTokenBitNot);
+      continue;
     }
     Error("Unexpected char %c", *s);
   }
@@ -327,6 +337,15 @@ struct ASTNode *AllocAndInitASTNodeBinOp(struct Token *t, struct ASTNode *left,
   return op;
 }
 
+struct ASTNode *AllocAndInitASTNodeUnaryPrefixOp(struct Token *t,
+                                                 struct ASTNode *right) {
+  if (!right) ErrorWithToken(t, "Expected expression after prefix operator");
+  struct ASTNode *op = AllocASTNode();
+  op->op = t;
+  op->right = right;
+  return op;
+}
+
 void PrintASTNode(struct ASTNode *n) {
   fprintf(stderr, "(");
   PrintToken(n->op);
@@ -342,6 +361,8 @@ void PrintASTNode(struct ASTNode *n) {
   fprintf(stderr, ")");
 }
 
+struct ASTNode *ParseCastExpr();
+
 struct ASTNode *ParsePrimaryExpr() {
   struct Token *t;
   if ((t = ConsumeToken(kTokenDecimalNumber)) ||
@@ -353,13 +374,26 @@ struct ASTNode *ParsePrimaryExpr() {
   return NULL;
 }
 
+struct ASTNode *ParseUnaryExpr() {
+  struct Token *t;
+  if ((t = ConsumeToken(kTokenPlus)) || (t = ConsumeToken(kTokenMinus)) ||
+      (t = ConsumeToken(kTokenBitNot)) || (t = ConsumeToken(kTokenBoolNot))) {
+    return AllocAndInitASTNodeUnaryPrefixOp(t, ParseCastExpr());
+  }
+  return ParsePrimaryExpr();
+}
+
+struct ASTNode *ParseCastExpr() {
+  return ParseUnaryExpr();
+}
+
 struct ASTNode *ParseMulExpr() {
-  struct ASTNode *op = ParsePrimaryExpr();
+  struct ASTNode *op = ParseCastExpr();
   if (!op) return NULL;
   struct Token *t;
   while ((t = ConsumeToken(kTokenStar)) || (t = ConsumeToken(kTokenSlash)) ||
          (t = ConsumeToken(kTokenPercent))) {
-    op = AllocAndInitASTNodeBinOp(t, op, ParsePrimaryExpr());
+    op = AllocAndInitASTNodeBinOp(t, op, ParseCastExpr());
   }
   return op;
 }
@@ -488,6 +522,13 @@ void FreeReg(int reg) {
 int label_number;
 int GetLabelNumber() { return ++label_number; }
 
+void EmitConvertToBool(int dst, int src) {
+  // This code also sets zero flag as boolean value
+  printf("cmp %s, 0\n", reg_names_64[src]);
+  printf("setnz %s\n", reg_names_8[src]);
+  printf("movzx %s, %s\n", reg_names_64[dst], reg_names_8[src]);
+}
+
 void Generate(struct ASTNode *node) {
   assert(node && node->op);
   if (node->op->type == kTokenDecimalNumber ||
@@ -498,20 +539,38 @@ void Generate(struct ASTNode *node) {
            strtol(node->op->begin, NULL, 0));
     return;
   }
+  if (!node->left) {
+    // unary prefix operators
+    assert(node->right);
+    Generate(node->right);
+    node->reg = node->right->reg;
+    if (node->op->type == kTokenPlus) {
+      return;
+    }
+    if (node->op->type == kTokenMinus) {
+      printf("neg %s\n", reg_names_64[node->reg]);
+      return;
+    }
+    if (node->op->type == kTokenBitNot) {
+      printf("not %s\n", reg_names_64[node->reg]);
+      return;
+    }
+    if (node->op->type == kTokenBoolNot) {
+      EmitConvertToBool(node->reg, node->reg);
+      printf("setz %s\n", reg_names_8[node->reg]);
+      return;
+    }
+    ErrorWithToken(node->op, "Generate: Not implemented unary prefix op");
+  }
+  // binary operators with shortcircuit eval
   if (node->op->type == kTokenBoolAnd) {
     Generate(node->left);
     node->reg = node->left->reg;
     int skip_label = GetLabelNumber();
-    printf("cmp %s,0\n", reg_names_64[node->left->reg]);
-    printf("setne %s\n", reg_names_8[node->left->reg]);
-    printf("movzx %s, %s\n", reg_names_64[node->reg],
-           reg_names_8[node->left->reg]);
+    EmitConvertToBool(node->reg, node->left->reg);
     printf("jz L%d\n", skip_label);
     Generate(node->right);
-    printf("cmp %s, 0\n", reg_names_64[node->right->reg]);
-    printf("setne %s\n", reg_names_8[node->right->reg]);
-    printf("movzx %s, %s\n", reg_names_64[node->reg],
-           reg_names_8[node->right->reg]);
+    EmitConvertToBool(node->reg, node->right->reg);
     FreeReg(node->right->reg);
     printf("L%d:\n", skip_label);
     return;
@@ -520,16 +579,10 @@ void Generate(struct ASTNode *node) {
     Generate(node->left);
     node->reg = node->left->reg;
     int skip_label = GetLabelNumber();
-    printf("cmp %s,0\n", reg_names_64[node->left->reg]);
-    printf("setne %s\n", reg_names_8[node->left->reg]);
-    printf("movzx %s, %s\n", reg_names_64[node->reg],
-           reg_names_8[node->left->reg]);
+    EmitConvertToBool(node->reg, node->left->reg);
     printf("jnz L%d\n", skip_label);
     Generate(node->right);
-    printf("cmp %s,0\n", reg_names_64[node->right->reg]);
-    printf("setne %s\n", reg_names_8[node->right->reg]);
-    printf("movzx %s, %s\n", reg_names_64[node->reg],
-           reg_names_8[node->right->reg]);
+    EmitConvertToBool(node->reg, node->right->reg);
     FreeReg(node->right->reg);
     printf("L%d:\n", skip_label);
     return;
@@ -657,6 +710,8 @@ int main(int argc, char *argv[]) {
   PrintTokens();
 
   struct ASTNode *ast = Parse();
+  PrintASTNode(ast);
+  fputc('\n', stderr);
 
   printf(".intel_syntax noprefix\n");
   printf(".text\n");
