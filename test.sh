@@ -14,16 +14,23 @@ function test_result {
   fi
 }
 
+# Integer literal
 test_result '0' 0
 test_result '1' 1
 test_result '17' 17
 test_result '017' 15
 
+# Additive
 test_result '100+7' 107
 test_result '3+5+7+9' 24
+test_result '100-7' 93
+test_result '1+3-5-7+9' 1
 
+# Multiplicative
 test_result '3*4' 12
 test_result '3*4*5' 60
 
+# Mixed priority
 test_result '3*4+5' 17
 test_result '3+4*5' 23
+test_result '3+4*5-9' 14

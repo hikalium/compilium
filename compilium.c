@@ -22,6 +22,7 @@ enum TokenTypes {
   kTokenOctalNumber,
   kTokenPlus,
   kTokenStar,
+  kTokenMinus,
   kNumOfTokenTypeNames
 };
 
@@ -79,6 +80,7 @@ void InitTokenTypeNames() {
   token_type_names[kTokenOctalNumber] = "OctalNumber";
   token_type_names[kTokenPlus] = "Plus";
   token_type_names[kTokenStar] = "Star";
+  token_type_names[kTokenMinus] = "Minus";
 }
 
 const char *GetTokenTypeName(const struct Token *t) {
@@ -120,6 +122,10 @@ void Tokenize(const char *src) {
     }
     if ('+' == *s) {
       AddToken(src, s++, 1, kTokenPlus);
+      continue;
+    }
+    if ('-' == *s) {
+      AddToken(src, s++, 1, kTokenMinus);
       continue;
     }
     if ('*' == *s) {
@@ -251,7 +257,7 @@ struct ASTNode *ParseAddExpr() {
   struct ASTNode *op = ParseMulExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenPlus))) {
+  while ((t = ConsumeToken(kTokenPlus)) || (t = ConsumeToken(kTokenMinus))) {
     struct ASTNode *right = ParseMulExpr();
     if (!right) Error("Expected expression after +");
     struct ASTNode *new_op = AllocASTNode();
@@ -307,6 +313,16 @@ void Generate(struct ASTNode *node) {
     FreeReg(node->right->reg);
 
     printf("add %s, %s\n", reg_names_64[node->reg],
+           reg_names_64[node->right->reg]);
+    return;
+  }
+  if (node->op->type == kTokenMinus) {
+    Generate(node->left);
+    Generate(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+
+    printf("sub %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     return;
   }
