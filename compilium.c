@@ -9,9 +9,10 @@ enum OSType {
 };
 
 struct CompilerArgs {
-  enum OSType os_type;
   const char *input;
 };
+
+const char *symbol_prefix;
 
 #define assert(expr) \
   ((void)((expr) || (__assert(#expr, __FILE__, __LINE__), 0)))
@@ -51,16 +52,15 @@ void __assert(const char *expr_str, const char *file, int line) {
 const char *token_type_names[kNumOfTokenTypeNames];
 
 void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
-  args->os_type = kOSDarwin;
   args->input = NULL;
-
+  symbol_prefix = "_";
   for (int i = 1; i < argc; i++) {
-    if (strcmp(argv[i], "--os_type") == 0) {
+    if (strcmp(argv[i], "--target_os") == 0) {
       i++;
       if (strcmp(argv[i], "Darwin") == 0) {
-        args->os_type = kOSDarwin;
+        symbol_prefix = "_";
       } else if (strcmp(argv[i], "Linux") == 0) {
-        args->os_type = kOSLinux;
+        symbol_prefix = "";
       } else {
         Error("Unknown os type %s", argv[i]);
       }
@@ -254,8 +254,8 @@ int main(int argc, char *argv[]) {
 
   printf(".intel_syntax noprefix\n");
   printf(".text\n");
-  printf(".global _main\n");
-  printf("%smain:\n", args.os_type == kOSDarwin ? "_" : "");
+  printf(".global %smain\n", symbol_prefix);
+  printf("%smain:\n", symbol_prefix);
   Generate(ast);
   printf("mov rax, %s\n", reg_names_64[ast->reg]);
   printf("ret\n");
