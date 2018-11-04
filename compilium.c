@@ -42,6 +42,7 @@ enum TokenTypes {
   kTokenBoolNot,
   kTokenConditional,
   kTokenColon,
+  kTokenComma,
   kNumOfTokenTypeNames
 };
 
@@ -119,6 +120,7 @@ void InitTokenTypeNames() {
   token_type_names[kTokenBoolNot] = "BoolNot";
   token_type_names[kTokenConditional] = "Conditional";
   token_type_names[kTokenColon] = "Colon";
+  token_type_names[kTokenComma] = "Comma";
 }
 
 const char *GetTokenTypeName(enum TokenTypes type) {
@@ -258,6 +260,10 @@ void Tokenize(const char *src) {
     }
     if (':' == *s) {
       AddToken(src, s++, 1, kTokenColon);
+      continue;
+    }
+    if (',' == *s) {
+      AddToken(src, s++, 1, kTokenComma);
       continue;
     }
     Error("Unexpected char %c", *s);
@@ -534,8 +540,18 @@ struct ASTNode *ParseConditionalExpr() {
   return expr;
 }
 
+struct ASTNode *ParseExpr() {
+  struct ASTNode *op = ParseConditionalExpr();
+  if (!op) return NULL;
+  struct Token *t;
+  while ((t = ConsumeToken(kTokenComma))) {
+    op = AllocAndInitASTNodeBinOp(t, op, ParseConditionalExpr());
+  }
+  return op;
+}
+
 struct ASTNode *Parse() {
-  struct ASTNode *ast = ParseConditionalExpr();
+  struct ASTNode *ast = ParseExpr();
   struct Token *t;
   if (!(t = NextToken())) return ast;
   ErrorWithToken(t, "Unexpected token");
@@ -650,6 +666,15 @@ void Generate(struct ASTNode *node) {
     printf("L%d:\n", end_label);
     return;
   }
+  // comma expr
+  if (node->op->type == kTokenComma) {
+    Generate(node->left);
+    FreeReg(node->left->reg);
+    Generate(node->right);
+    node->reg = node->right->reg;
+    return;
+  }
+
   // binary operators
   Generate(node->left);
   Generate(node->right);

@@ -142,6 +142,9 @@ test_result '0 ? 3 : 5' 5
 test_result '1 ? 3 : 5' 3
 test_result '2 ? 3 : 5' 3
 
+# comma
+test_result '2, 3' 3
+test_result '2 * 3, 5 + 7' 12
 
 # Mixed priority
 test_result '3 * 4 + 5' 17
