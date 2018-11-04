@@ -21,6 +21,9 @@ test_result '017' 15
 
 test_result '100+7' 107
 test_result '3+5+7+9' 24
+
 test_result '3*4' 12
+test_result '3*4*5' 60
+
 test_result '3*4+5' 17
 test_result '3+4*5' 23
