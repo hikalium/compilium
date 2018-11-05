@@ -139,14 +139,22 @@ const char *GetTokenTypeName(enum TokenTypes type) {
   return token_type_names[type];
 }
 
-void AddToken(const char *src_str, const char *begin, int length,
-              enum TokenTypes type) {
+struct Token *AddToken(const char *src_str, const char *begin, int length,
+                       enum TokenTypes type) {
   assert(tokens_used < NUM_OF_TOKENS);
   tokens[tokens_used].begin = begin;
   tokens[tokens_used].length = length;
   tokens[tokens_used].type = type;
   tokens[tokens_used].src_str = src_str;
-  tokens_used++;
+  return &tokens[tokens_used++];
+}
+
+const char *CreateTokenStr(struct Token *t) {
+  return strndup(t->begin, t->length);
+}
+
+int IsEqualTokenWithCStr(struct Token *t, const char *s) {
+  return strlen(s) == t->length && strncmp(t->begin, s, t->length) == 0;
 }
 
 void Tokenize(const char *src) {
@@ -181,10 +189,9 @@ void Tokenize(const char *src) {
              ('0' <= s[length] && s[length] <= '9')) {
         length++;
       }
-      enum TokenTypes type = kTokenIdent;
-      if (strncmp(s, "return", length) == 0) type = kTokenKwReturn;
-      if (strncmp(s, "int", length) == 0) type = kTokenKwInt;
-      AddToken(src, s, length, type);
+      struct Token *t = AddToken(src, s, length, kTokenIdent);
+      if (IsEqualTokenWithCStr(t, "return")) t->type = kTokenKwReturn;
+      if (IsEqualTokenWithCStr(t, "int")) t->type = kTokenKwInt;
       s += length;
       continue;
     }
@@ -394,6 +401,7 @@ enum ASTType {
   kASTTypeIdent,
   kASTTypeDecl,
   kASTTypeKeyValue,
+  kASTTypeLocalVar,
 };
 
 struct ASTNode {
@@ -410,6 +418,8 @@ struct ASTNode {
   // for key value
   const char *key;
   struct ASTNode *value;
+  // for local var
+  int byte_offset;
 };
 
 struct ASTNode *AllocASTNode(enum ASTType type) {
@@ -459,6 +469,12 @@ struct ASTNode *AllocAndInitASTNodeKeyValue(const char *key,
   return n;
 }
 
+struct ASTNode *AllocAndInitASTNodeLocalVar(int byte_offset) {
+  struct ASTNode *n = AllocASTNode(kASTTypeLocalVar);
+  n->byte_offset = byte_offset;
+  return n;
+}
+
 struct ASTNode *AllocList() {
   return AllocASTNode(kASTTypeList);
 }
@@ -482,6 +498,11 @@ void PushKeyValueToList(struct ASTNode *list, const char *key,
   list->nodes[list->size++] = AllocAndInitASTNodeKeyValue(key, value);
 }
 
+void AddLocalVar(struct ASTNode *list, const char *key) {
+  struct ASTNode *local_var = AllocAndInitASTNodeLocalVar(-4);
+  PushKeyValueToList(list, key, local_var);
+}
+
 int GetSizeOfList(struct ASTNode *list) {
   assert(list && list->type == kASTTypeList);
   return list->size;
@@ -491,6 +512,16 @@ struct ASTNode *GetNodeAt(struct ASTNode *list, int index) {
   assert(list && list->type == kASTTypeList);
   assert(0 <= index && index < list->size);
   return list->nodes[index];
+}
+
+struct ASTNode *GetNodeByTokenKey(struct ASTNode *list, struct Token *key) {
+  assert(list && list->type == kASTTypeList);
+  for (int i = 0; i < list->size; i++) {
+    struct ASTNode *n = list->nodes[i];
+    if (n->type != kASTTypeKeyValue) continue;
+    if (IsEqualTokenWithCStr(key, n->key)) return n->value;
+  }
+  return NULL;
 }
 
 struct ASTNode *GetNodeByKey(struct ASTNode *list, const char *key) {
@@ -558,7 +589,8 @@ struct ASTNode *ParseCastExpr();
 struct ASTNode *ParsePrimaryExpr() {
   struct Token *t;
   if ((t = ConsumeToken(kTokenDecimalNumber)) ||
-      (t = ConsumeToken(kTokenOctalNumber))) {
+      (t = ConsumeToken(kTokenOctalNumber)) ||
+      (t = ConsumeToken(kTokenIdent))) {
     struct ASTNode *op = AllocASTNode(kASTTypePrimaryExpr);
     op->op = t;
     return op;
@@ -807,6 +839,7 @@ void EmitCompareIntegers(int dst, int left, int right, const char *cc) {
   printf("movzx %s, %s\n", reg_names_64[dst], reg_names_8[dst]);
 }
 
+struct ASTNode *var_context;
 void Generate(struct ASTNode *node) {
   assert(node && node->op);
   if (node->type == kASTTypePrimaryExpr) {
@@ -816,6 +849,12 @@ void Generate(struct ASTNode *node) {
       printf("mov %s, %ld\n", reg_names_64[node->reg],
              strtol(node->op->begin, NULL, 0));
       return;
+    } else if (node->op->type == kTokenIdent) {
+      struct ASTNode *var_info = GetNodeByTokenKey(var_context, node->op);
+      if (!var_info || var_info->type != kASTTypeLocalVar)
+        ErrorWithToken(node->op, "Unknown identifier");
+
+      return;
     }
   } else if (node->type == kASTTypeExprStmt) {
     if (node->left) {
@@ -823,16 +862,13 @@ void Generate(struct ASTNode *node) {
     }
     return;
   } else if (node->type == kASTTypeList) {
+    var_context = AllocList();
     for (int i = 0; i < GetSizeOfList(node); i++) {
       Generate(GetNodeAt(node, i));
     }
     return;
   } else if (node->type == kASTTypeDecl) {
-    fprintf(stderr, "decl: ");
-    PrintTokenStr(node->op);
-    fprintf(stderr, " ");
-    PrintTokenStr(node->right->op);
-    fprintf(stderr, "\n");
+    AddLocalVar(var_context, CreateTokenStr(node->right->op));
     return;
   } else if (node->type == kASTTypeUnaryPrefixOp) {
     assert(node->right);
