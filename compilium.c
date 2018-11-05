@@ -44,6 +44,8 @@ enum TokenTypes {
   kTokenColon,
   kTokenComma,
   kTokenSemicolon,
+  kTokenIdent,
+  kTokenKwReturn,
   kNumOfTokenTypeNames
 };
 
@@ -126,6 +128,8 @@ void InitTokenTypeNames() {
   token_type_names[kTokenColon] = "Colon";
   token_type_names[kTokenComma] = "Comma";
   token_type_names[kTokenSemicolon] = "Semicolon";
+  token_type_names[kTokenIdent] = "Ident";
+  token_type_names[kTokenKwReturn] = "`return`";
 }
 
 const char *GetTokenTypeName(enum TokenTypes type) {
@@ -166,6 +170,19 @@ void Tokenize(const char *src) {
         length++;
       }
       AddToken(src, s, length, kTokenOctalNumber);
+      s += length;
+      continue;
+    }
+    if (('A' <= *s && *s <= 'Z') || ('a' <= *s && *s <= 'z') || *s == '_') {
+      int length = 0;
+      while (('A' <= s[length] && s[length] <= 'Z') ||
+             ('a' <= s[length] && s[length] <= 'z') || s[length] == '_' ||
+             ('0' <= s[length] && s[length] <= '9')) {
+        length++;
+      }
+      enum TokenTypes type = kTokenIdent;
+      if (strncmp(s, "return", length) == 0) type = kTokenKwReturn;
+      AddToken(src, s, length, type);
       s += length;
       continue;
     }
@@ -643,8 +660,18 @@ struct ASTNode *ParseExprStmt() {
   return AllocAndInitASTNodeExprStmt(ExpectToken(kTokenSemicolon), expr);
 }
 
+struct ASTNode *ParseReturnStmt() {
+  struct Token *t;
+  if ((t = ConsumeToken(kTokenKwReturn))) {
+    struct ASTNode *expr = ParseExpr();
+    ExpectToken(kTokenSemicolon);
+    return AllocAndInitASTNodeUnaryPrefixOp(t, expr);
+  }
+  return NULL;
+}
+
 struct ASTNode *Parse() {
-  struct ASTNode *ast = ParseExprStmt();
+  struct ASTNode *ast = ParseReturnStmt();
   struct Token *t;
   if (!(t = NextToken())) return ast;
   ErrorWithToken(t, "Unexpected token");
@@ -693,7 +720,6 @@ void Generate(struct ASTNode *node) {
   if (node->type == kASTTypeExprStmt) {
     if (node->left) {
       Generate(node->left);
-      node->reg = node->left->reg;  // TODO: Remove this after impl return stmt
     }
     return;
   }
@@ -716,6 +742,11 @@ void Generate(struct ASTNode *node) {
     if (node->op->type == kTokenBoolNot) {
       EmitConvertToBool(node->reg, node->reg);
       printf("setz %s\n", reg_names_8[node->reg]);
+      return;
+    }
+    if (node->op->type == kTokenKwReturn) {
+      printf("mov rax, %s\n", reg_names_64[node->reg]);
+      printf("ret\n");
       return;
     }
     ErrorWithToken(node->op, "Generate: Not implemented unary prefix op");
@@ -906,7 +937,6 @@ int main(int argc, char *argv[]) {
   printf(".global %smain\n", symbol_prefix);
   printf("%smain:\n", symbol_prefix);
   Generate(ast);
-  printf("mov rax, %s\n", reg_names_64[ast->reg]);
   printf("ret\n");
 
   PrintASTNode(ast);
