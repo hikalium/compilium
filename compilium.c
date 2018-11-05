@@ -43,6 +43,7 @@ enum TokenTypes {
   kTokenConditional,
   kTokenColon,
   kTokenComma,
+  kTokenSemicolon,
   kNumOfTokenTypeNames
 };
 
@@ -124,6 +125,7 @@ void InitTokenTypeNames() {
   token_type_names[kTokenConditional] = "Conditional";
   token_type_names[kTokenColon] = "Colon";
   token_type_names[kTokenComma] = "Comma";
+  token_type_names[kTokenSemicolon] = "Semicolon";
 }
 
 const char *GetTokenTypeName(enum TokenTypes type) {
@@ -269,6 +271,10 @@ void Tokenize(const char *src) {
       AddToken(src, s++, 1, kTokenComma);
       continue;
     }
+    if (';' == *s) {
+      AddToken(src, s++, 1, kTokenSemicolon);
+      continue;
+    }
     Error("Unexpected char %c", *s);
   }
 }
@@ -353,6 +359,7 @@ enum ASTType {
   kASTTypeUnaryPrefixOp,
   kASTTypeCondExpr,
   kASTTypeList,
+  kASTTypeExprStmt,
 };
 
 struct ASTNode {
@@ -390,6 +397,13 @@ struct ASTNode *AllocAndInitASTNodeUnaryPrefixOp(struct Token *t,
   struct ASTNode *op = AllocASTNode(kASTTypeUnaryPrefixOp);
   op->op = t;
   op->right = right;
+  return op;
+}
+struct ASTNode *AllocAndInitASTNodeExprStmt(struct Token *t,
+                                            struct ASTNode *left) {
+  struct ASTNode *op = AllocASTNode(kASTTypeExprStmt);
+  op->op = t;
+  op->left = left;
   return op;
 }
 
@@ -624,8 +638,13 @@ struct ASTNode *ParseExpr() {
   return op;
 }
 
+struct ASTNode *ParseExprStmt() {
+  struct ASTNode *expr = ParseExpr();
+  return AllocAndInitASTNodeExprStmt(ExpectToken(kTokenSemicolon), expr);
+}
+
 struct ASTNode *Parse() {
-  struct ASTNode *ast = ParseExpr();
+  struct ASTNode *ast = ParseExprStmt();
   struct Token *t;
   if (!(t = NextToken())) return ast;
   ErrorWithToken(t, "Unexpected token");
@@ -669,6 +688,13 @@ void Generate(struct ASTNode *node) {
 
     printf("mov %s, %ld\n", reg_names_64[node->reg],
            strtol(node->op->begin, NULL, 0));
+    return;
+  }
+  if (node->type == kASTTypeExprStmt) {
+    if (node->left) {
+      Generate(node->left);
+      node->reg = node->left->reg;  // TODO: Remove this after impl return stmt
+    }
     return;
   }
   if (!node->left) {
