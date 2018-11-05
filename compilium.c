@@ -74,6 +74,7 @@ void __assert(const char *expr_str, const char *file, int line) {
 
 const char *token_type_names[kNumOfTokenTypeNames];
 
+void TestASTList(void);
 void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
   args->input = NULL;
   symbol_prefix = "_";
@@ -87,6 +88,8 @@ void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
       } else {
         Error("Unknown os type %s", argv[i]);
       }
+    } else if (strcmp(argv[i], "--run-unittest=ASTList") == 0) {
+      TestASTList();
     } else {
       args->input = argv[i];
     }
@@ -343,22 +346,38 @@ struct Token *NextToken() {
   return NULL;
 }
 
+enum ASTType {
+  kASTTypeNone,
+  kASTTypePrimaryExpr,
+  kASTTypeBinOp,
+  kASTTypeUnaryPrefixOp,
+  kASTTypeCondExpr,
+  kASTTypeList,
+};
+
 struct ASTNode {
+  enum ASTType type;
   struct Token *op;
   int reg;
   struct ASTNode *left;
   struct ASTNode *right;
   struct ASTNode *cond;
+  // for list
+  int capacity;
+  int size;
+  struct ASTNode **nodes;
 };
 
-struct ASTNode *AllocASTNode() {
-  return calloc(1, sizeof(struct ASTNode));
+struct ASTNode *AllocASTNode(enum ASTType type) {
+  struct ASTNode *node = calloc(1, sizeof(struct ASTNode));
+  node->type = type;
+  return node;
 }
 
 struct ASTNode *AllocAndInitASTNodeBinOp(struct Token *t, struct ASTNode *left,
                                          struct ASTNode *right) {
   if (!right) ErrorWithToken(t, "Expected expression after binary operator");
-  struct ASTNode *op = AllocASTNode();
+  struct ASTNode *op = AllocASTNode(kASTTypeBinOp);
   op->op = t;
   op->left = left;
   op->right = right;
@@ -368,10 +387,65 @@ struct ASTNode *AllocAndInitASTNodeBinOp(struct Token *t, struct ASTNode *left,
 struct ASTNode *AllocAndInitASTNodeUnaryPrefixOp(struct Token *t,
                                                  struct ASTNode *right) {
   if (!right) ErrorWithToken(t, "Expected expression after prefix operator");
-  struct ASTNode *op = AllocASTNode();
+  struct ASTNode *op = AllocASTNode(kASTTypeUnaryPrefixOp);
   op->op = t;
   op->right = right;
   return op;
+}
+
+struct ASTNode *AllocASTList() {
+  return AllocASTNode(kASTTypeList);
+}
+
+void PushToASTList(struct ASTNode *list, struct ASTNode *node) {
+  if (list->size >= list->capacity) {
+    list->capacity = (list->capacity + 1) * 2;
+    list->nodes =
+        realloc(list->nodes, sizeof(struct ASTNode *) * list->capacity);
+    assert(list->nodes);
+  }
+  assert(list->size < list->capacity);
+  list->nodes[list->size++] = node;
+}
+
+int GetSizeOfASTList(struct ASTNode *list) {
+  assert(list && list->type == kASTTypeList);
+  return list->size;
+}
+
+struct ASTNode *GetNodeAt(struct ASTNode *list, int index) {
+  assert(list && list->type == kASTTypeList);
+  assert(0 <= index && index < list->size);
+  return list->nodes[index];
+}
+
+void TestASTList() {
+  fprintf(stderr, "Testing ASTList...");
+
+  struct ASTNode *list = AllocASTList();
+  struct ASTNode *item1 = AllocASTNode(kASTTypeNone);
+  struct ASTNode *item2 = AllocASTNode(kASTTypeNone);
+  assert(list);
+
+  PushToASTList(list, item1);
+  assert(GetSizeOfASTList(list) == 1);
+  PushToASTList(list, item2);
+  assert(GetSizeOfASTList(list) == 2);
+
+  assert(GetNodeAt(list, 0) == item1);
+  assert(GetNodeAt(list, 1) == item2);
+
+  int base_capacity = list->capacity;
+  while (GetSizeOfASTList(list) <= base_capacity) {
+    PushToASTList(list, item1);
+  }
+  assert(list->capacity > base_capacity);
+  assert(GetNodeAt(list, 0) == item1);
+  assert(GetNodeAt(list, 1) == item2);
+  assert(GetNodeAt(list, GetSizeOfASTList(list) - 1) == item1);
+
+  fprintf(stderr, "PASS\n");
+  exit(EXIT_SUCCESS);
 }
 
 void PrintASTNode(struct ASTNode *n) {
@@ -395,7 +469,7 @@ struct ASTNode *ParsePrimaryExpr() {
   struct Token *t;
   if ((t = ConsumeToken(kTokenDecimalNumber)) ||
       (t = ConsumeToken(kTokenOctalNumber))) {
-    struct ASTNode *op = AllocASTNode();
+    struct ASTNode *op = AllocASTNode(kASTTypePrimaryExpr);
     op->op = t;
     return op;
   }
@@ -525,7 +599,7 @@ struct ASTNode *ParseConditionalExpr() {
   if (!expr) return NULL;
   struct Token *t;
   if ((t = ConsumeToken(kTokenConditional))) {
-    struct ASTNode *op = AllocASTNode();
+    struct ASTNode *op = AllocASTNode(kASTTypeCondExpr);
     op->op = t;
     op->cond = expr;
     op->left = ParseConditionalExpr();

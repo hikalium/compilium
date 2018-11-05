@@ -4,8 +4,13 @@ SRCS=compilium.c
 compilium : $(SRCS) Makefile
 	cc $(CFLAGS) -o $@ $(SRCS) 
 
+testall : unittest test
+
 test : compilium
 	./test.sh
+
+unittest : compilium
+	@ ./compilium --run-unittest=ASTList
 
 format:
 	clang-format -i $(SRCS)
