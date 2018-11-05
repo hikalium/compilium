@@ -75,7 +75,7 @@ void __assert(const char *expr_str, const char *file, int line) {
 
 const char *token_type_names[kNumOfTokenTypeNames];
 
-void TestASTList(void);
+void TestList(void);
 void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
   args->input = NULL;
   symbol_prefix = "_";
@@ -89,8 +89,8 @@ void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
       } else {
         Error("Unknown os type %s", argv[i]);
       }
-    } else if (strcmp(argv[i], "--run-unittest=ASTList") == 0) {
-      TestASTList();
+    } else if (strcmp(argv[i], "--run-unittest=List") == 0) {
+      TestList();
     } else {
       args->input = argv[i];
     }
@@ -447,11 +447,11 @@ struct ASTNode *AllocAndInitASTNodeIdent(struct Token *ident) {
   return n;
 }
 
-struct ASTNode *AllocASTList() {
+struct ASTNode *AllocList() {
   return AllocASTNode(kASTTypeList);
 }
 
-void PushToASTList(struct ASTNode *list, struct ASTNode *node) {
+void PushToList(struct ASTNode *list, struct ASTNode *node) {
   if (list->size >= list->capacity) {
     list->capacity = (list->capacity + 1) * 2;
     list->nodes =
@@ -462,7 +462,7 @@ void PushToASTList(struct ASTNode *list, struct ASTNode *node) {
   list->nodes[list->size++] = node;
 }
 
-int GetSizeOfASTList(struct ASTNode *list) {
+int GetSizeOfList(struct ASTNode *list) {
   assert(list && list->type == kASTTypeList);
   return list->size;
 }
@@ -473,30 +473,30 @@ struct ASTNode *GetNodeAt(struct ASTNode *list, int index) {
   return list->nodes[index];
 }
 
-void TestASTList() {
-  fprintf(stderr, "Testing ASTList...");
+void TestList() {
+  fprintf(stderr, "Testing List...");
 
-  struct ASTNode *list = AllocASTList();
+  struct ASTNode *list = AllocList();
   struct ASTNode *item1 = AllocASTNode(kASTTypeNone);
   struct ASTNode *item2 = AllocASTNode(kASTTypeNone);
   assert(list);
 
-  PushToASTList(list, item1);
-  assert(GetSizeOfASTList(list) == 1);
-  PushToASTList(list, item2);
-  assert(GetSizeOfASTList(list) == 2);
+  PushToList(list, item1);
+  assert(GetSizeOfList(list) == 1);
+  PushToList(list, item2);
+  assert(GetSizeOfList(list) == 2);
 
   assert(GetNodeAt(list, 0) == item1);
   assert(GetNodeAt(list, 1) == item2);
 
   int base_capacity = list->capacity;
-  while (GetSizeOfASTList(list) <= base_capacity) {
-    PushToASTList(list, item1);
+  while (GetSizeOfList(list) <= base_capacity) {
+    PushToList(list, item1);
   }
   assert(list->capacity > base_capacity);
   assert(GetNodeAt(list, 0) == item1);
   assert(GetNodeAt(list, 1) == item2);
-  assert(GetNodeAt(list, GetSizeOfASTList(list) - 1) == item1);
+  assert(GetNodeAt(list, GetSizeOfList(list) - 1) == item1);
 
   fprintf(stderr, "PASS\n");
   exit(EXIT_SUCCESS);
@@ -718,11 +718,11 @@ struct ASTNode *ParseDecl() {
 struct ASTNode *ParseCompStmt() {
   struct Token *t;
   if (!(t = ConsumeToken(kTokenLBrace))) return NULL;
-  struct ASTNode *list = AllocASTList();
+  struct ASTNode *list = AllocList();
   list->op = t;
   struct ASTNode *stmt;
   while ((stmt = ParseDecl()) || (stmt = ParseStmt())) {
-    PushToASTList(list, stmt);
+    PushToList(list, stmt);
   }
   ExpectToken(kTokenRBrace);
   return list;
@@ -787,7 +787,7 @@ void Generate(struct ASTNode *node) {
     }
     return;
   } else if (node->type == kASTTypeList) {
-    for (int i = 0; i < GetSizeOfASTList(node); i++) {
+    for (int i = 0; i < GetSizeOfList(node); i++) {
       Generate(GetNodeAt(node, i));
     }
     return;

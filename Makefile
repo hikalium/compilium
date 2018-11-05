@@ -10,7 +10,7 @@ test : compilium
 	./test.sh
 
 unittest : compilium
-	@ ./compilium --run-unittest=ASTList
+	@ ./compilium --run-unittest=List
 
 format:
 	clang-format -i $(SRCS)
