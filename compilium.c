@@ -41,6 +41,7 @@ enum TokenTypes {
   kTokenSemicolon,
   kTokenIdent,
   kTokenKwReturn,
+  kTokenKwInt,
   kTokenLBrace,
   kTokenRBrace,
   kNumOfTokenTypeNames
@@ -127,6 +128,7 @@ void InitTokenTypeNames() {
   token_type_names[kTokenSemicolon] = "Semicolon";
   token_type_names[kTokenIdent] = "Ident";
   token_type_names[kTokenKwReturn] = "`return`";
+  token_type_names[kTokenKwInt] = "`int`";
   token_type_names[kTokenLBrace] = "LBrace";
   token_type_names[kTokenRBrace] = "RBrace";
 }
@@ -181,6 +183,7 @@ void Tokenize(const char *src) {
       }
       enum TokenTypes type = kTokenIdent;
       if (strncmp(s, "return", length) == 0) type = kTokenKwReturn;
+      if (strncmp(s, "int", length) == 0) type = kTokenKwInt;
       AddToken(src, s, length, type);
       s += length;
       continue;
@@ -308,6 +311,10 @@ void PrintToken(struct Token *t) {
           GetTokenTypeName(t->type));
 }
 
+void PrintTokenStr(struct Token *t) {
+  fprintf(stderr, "%.*s", t->length, t->begin);
+}
+
 void PrintTokens() {
   for (int i = 0; i < tokens_used; i++) {
     struct Token *t = &tokens[i];
@@ -384,6 +391,8 @@ enum ASTType {
   kASTTypeCondExpr,
   kASTTypeList,
   kASTTypeExprStmt,
+  kASTTypeIdent,
+  kASTTypeDecl,
 };
 
 struct ASTNode {
@@ -423,12 +432,19 @@ struct ASTNode *AllocAndInitASTNodeUnaryPrefixOp(struct Token *t,
   op->right = right;
   return op;
 }
+
 struct ASTNode *AllocAndInitASTNodeExprStmt(struct Token *t,
                                             struct ASTNode *left) {
   struct ASTNode *op = AllocASTNode(kASTTypeExprStmt);
   op->op = t;
   op->left = left;
   return op;
+}
+
+struct ASTNode *AllocAndInitASTNodeIdent(struct Token *ident) {
+  struct ASTNode *n = AllocASTNode(kASTTypeIdent);
+  n->op = ident;
+  return n;
 }
 
 struct ASTNode *AllocASTList() {
@@ -689,13 +705,23 @@ struct ASTNode *ParseStmt() {
   return NULL;
 }
 
+struct ASTNode *ParseDecl() {
+  struct Token *t;
+  if (!(t = ConsumeToken(kTokenKwInt))) return NULL;
+  struct ASTNode *n = AllocASTNode(kASTTypeDecl);
+  n->op = t;
+  n->right = AllocAndInitASTNodeIdent(ExpectToken(kTokenIdent));
+  ExpectToken(kTokenSemicolon);
+  return n;
+}
+
 struct ASTNode *ParseCompStmt() {
   struct Token *t;
   if (!(t = ConsumeToken(kTokenLBrace))) return NULL;
   struct ASTNode *list = AllocASTList();
   list->op = t;
   struct ASTNode *stmt;
-  while ((stmt = ParseStmt())) {
+  while ((stmt = ParseDecl()) || (stmt = ParseStmt())) {
     PushToASTList(list, stmt);
   }
   ExpectToken(kTokenRBrace);
@@ -747,15 +773,15 @@ void EmitCompareIntegers(int dst, int left, int right, const char *cc) {
 
 void Generate(struct ASTNode *node) {
   assert(node && node->op);
-  if (node->op->type == kTokenDecimalNumber ||
-      node->op->type == kTokenOctalNumber) {
-    node->reg = AllocReg();
-
-    printf("mov %s, %ld\n", reg_names_64[node->reg],
-           strtol(node->op->begin, NULL, 0));
-    return;
-  }
-  if (node->type == kASTTypeExprStmt) {
+  if (node->type == kASTTypePrimaryExpr) {
+    if (node->op->type == kTokenDecimalNumber ||
+        node->op->type == kTokenOctalNumber) {
+      node->reg = AllocReg();
+      printf("mov %s, %ld\n", reg_names_64[node->reg],
+             strtol(node->op->begin, NULL, 0));
+      return;
+    }
+  } else if (node->type == kASTTypeExprStmt) {
     if (node->left) {
       Generate(node->left);
     }
@@ -765,9 +791,14 @@ void Generate(struct ASTNode *node) {
       Generate(GetNodeAt(node, i));
     }
     return;
-  }
-  if (!node->left) {
-    // unary prefix operators
+  } else if (node->type == kASTTypeDecl) {
+    fprintf(stderr, "decl: ");
+    PrintTokenStr(node->op);
+    fprintf(stderr, " ");
+    PrintTokenStr(node->right->op);
+    fprintf(stderr, "\n");
+    return;
+  } else if (node->type == kASTTypeUnaryPrefixOp) {
     assert(node->right);
     Generate(node->right);
     node->reg = node->right->reg;
@@ -793,34 +824,7 @@ void Generate(struct ASTNode *node) {
       return;
     }
     ErrorWithToken(node->op, "Generate: Not implemented unary prefix op");
-  }
-  // binary operators with shortcircuit eval
-  if (node->op->type == kTokenBoolAnd) {
-    Generate(node->left);
-    node->reg = node->left->reg;
-    int skip_label = GetLabelNumber();
-    EmitConvertToBool(node->reg, node->left->reg);
-    printf("jz L%d\n", skip_label);
-    Generate(node->right);
-    EmitConvertToBool(node->reg, node->right->reg);
-    FreeReg(node->right->reg);
-    printf("L%d:\n", skip_label);
-    return;
-  }
-  if (node->op->type == kTokenBoolOr) {
-    Generate(node->left);
-    node->reg = node->left->reg;
-    int skip_label = GetLabelNumber();
-    EmitConvertToBool(node->reg, node->left->reg);
-    printf("jnz L%d\n", skip_label);
-    Generate(node->right);
-    EmitConvertToBool(node->reg, node->right->reg);
-    FreeReg(node->right->reg);
-    printf("L%d:\n", skip_label);
-    return;
-  }
-  // conditional expr
-  if (node->op->type == kTokenConditional) {
+  } else if (node->type == kASTTypeCondExpr) {
     Generate(node->cond);
     node->reg = node->cond->reg;
     int false_label = GetLabelNumber();
@@ -839,106 +843,110 @@ void Generate(struct ASTNode *node) {
     FreeReg(node->right->reg);
     printf("L%d:\n", end_label);
     return;
-  }
-  // comma expr
-  if (node->op->type == kTokenComma) {
+  } else if (node->type == kASTTypeBinOp) {
+    if (node->op->type == kTokenBoolAnd) {
+      Generate(node->left);
+      node->reg = node->left->reg;
+      int skip_label = GetLabelNumber();
+      EmitConvertToBool(node->reg, node->left->reg);
+      printf("jz L%d\n", skip_label);
+      Generate(node->right);
+      EmitConvertToBool(node->reg, node->right->reg);
+      FreeReg(node->right->reg);
+      printf("L%d:\n", skip_label);
+      return;
+    } else if (node->op->type == kTokenBoolOr) {
+      Generate(node->left);
+      node->reg = node->left->reg;
+      int skip_label = GetLabelNumber();
+      EmitConvertToBool(node->reg, node->left->reg);
+      printf("jnz L%d\n", skip_label);
+      Generate(node->right);
+      EmitConvertToBool(node->reg, node->right->reg);
+      FreeReg(node->right->reg);
+      printf("L%d:\n", skip_label);
+      return;
+    } else if (node->op->type == kTokenComma) {
+      Generate(node->left);
+      FreeReg(node->left->reg);
+      Generate(node->right);
+      node->reg = node->right->reg;
+      return;
+    }
     Generate(node->left);
-    FreeReg(node->left->reg);
     Generate(node->right);
-    node->reg = node->right->reg;
-    return;
-  }
-
-  // binary operators
-  Generate(node->left);
-  Generate(node->right);
-  node->reg = node->left->reg;
-  FreeReg(node->right->reg);
-
-  if (node->op->type == kTokenPlus) {
-    printf("add %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->right->reg]);
-    return;
-  }
-  if (node->op->type == kTokenMinus) {
-    printf("sub %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->right->reg]);
-    return;
-  }
-  if (node->op->type == kTokenStar) {
-    // rdx:rax <- rax * r/m
-    printf("xor rdx, rdx\n");
-    printf("mov rax, %s\n", reg_names_64[node->reg]);
-    printf("imul %s\n", reg_names_64[node->right->reg]);
-    printf("mov %s, rax\n", reg_names_64[node->reg]);
-    return;
-  }
-  if (node->op->type == kTokenSlash) {
-    // rax <- rdx:rax / r/m
-    printf("xor rdx, rdx\n");
-    printf("mov rax, %s\n", reg_names_64[node->reg]);
-    printf("idiv %s\n", reg_names_64[node->right->reg]);
-    printf("mov %s, rax\n", reg_names_64[node->reg]);
-    return;
-  }
-  if (node->op->type == kTokenPercent) {
-    // rdx <- rdx:rax / r/m
-    printf("xor rdx, rdx\n");
-    printf("mov rax, %s\n", reg_names_64[node->reg]);
-    printf("idiv %s\n", reg_names_64[node->right->reg]);
-    printf("mov %s, rdx\n", reg_names_64[node->reg]);
-    return;
-  }
-  if (node->op->type == kTokenShiftLeft) {
-    // r/m <<= CL
-    printf("mov rcx, %s\n", reg_names_64[node->right->reg]);
-    printf("sal %s, cl\n", reg_names_64[node->reg]);
-    return;
-  }
-  if (node->op->type == kTokenShiftRight) {
-    // r/m >>= CL
-    printf("mov rcx, %s\n", reg_names_64[node->right->reg]);
-    printf("sar %s, cl\n", reg_names_64[node->reg]);
-    return;
-  }
-  if (node->op->type == kTokenLessThan) {
-    EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "l");
-    return;
-  }
-  if (node->op->type == kTokenGreaterThan) {
-    EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "g");
-    return;
-  }
-  if (node->op->type == kTokenLessThanEq) {
-    EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "le");
-    return;
-  }
-  if (node->op->type == kTokenGreaterThanEq) {
-    EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "ge");
-    return;
-  }
-  if (node->op->type == kTokenEq) {
-    EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "e");
-    return;
-  }
-  if (node->op->type == kTokenNotEq) {
-    EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "ne");
-    return;
-  }
-  if (node->op->type == kTokenBitAnd) {
-    printf("and %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->right->reg]);
-    return;
-  }
-  if (node->op->type == kTokenBitXor) {
-    printf("xor %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->right->reg]);
-    return;
-  }
-  if (node->op->type == kTokenBitOr) {
-    printf("or %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->right->reg]);
-    return;
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+    if (node->op->type == kTokenPlus) {
+      printf("add %s, %s\n", reg_names_64[node->reg],
+             reg_names_64[node->right->reg]);
+      return;
+    } else if (node->op->type == kTokenMinus) {
+      printf("sub %s, %s\n", reg_names_64[node->reg],
+             reg_names_64[node->right->reg]);
+      return;
+    } else if (node->op->type == kTokenStar) {
+      // rdx:rax <- rax * r/m
+      printf("xor rdx, rdx\n");
+      printf("mov rax, %s\n", reg_names_64[node->reg]);
+      printf("imul %s\n", reg_names_64[node->right->reg]);
+      printf("mov %s, rax\n", reg_names_64[node->reg]);
+      return;
+    } else if (node->op->type == kTokenSlash) {
+      // rax <- rdx:rax / r/m
+      printf("xor rdx, rdx\n");
+      printf("mov rax, %s\n", reg_names_64[node->reg]);
+      printf("idiv %s\n", reg_names_64[node->right->reg]);
+      printf("mov %s, rax\n", reg_names_64[node->reg]);
+      return;
+    } else if (node->op->type == kTokenPercent) {
+      // rdx <- rdx:rax / r/m
+      printf("xor rdx, rdx\n");
+      printf("mov rax, %s\n", reg_names_64[node->reg]);
+      printf("idiv %s\n", reg_names_64[node->right->reg]);
+      printf("mov %s, rdx\n", reg_names_64[node->reg]);
+      return;
+    } else if (node->op->type == kTokenShiftLeft) {
+      // r/m <<= CL
+      printf("mov rcx, %s\n", reg_names_64[node->right->reg]);
+      printf("sal %s, cl\n", reg_names_64[node->reg]);
+      return;
+    } else if (node->op->type == kTokenShiftRight) {
+      // r/m >>= CL
+      printf("mov rcx, %s\n", reg_names_64[node->right->reg]);
+      printf("sar %s, cl\n", reg_names_64[node->reg]);
+      return;
+    } else if (node->op->type == kTokenLessThan) {
+      EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "l");
+      return;
+    } else if (node->op->type == kTokenGreaterThan) {
+      EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "g");
+      return;
+    } else if (node->op->type == kTokenLessThanEq) {
+      EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "le");
+      return;
+    } else if (node->op->type == kTokenGreaterThanEq) {
+      EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "ge");
+      return;
+    } else if (node->op->type == kTokenEq) {
+      EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "e");
+      return;
+    } else if (node->op->type == kTokenNotEq) {
+      EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "ne");
+      return;
+    } else if (node->op->type == kTokenBitAnd) {
+      printf("and %s, %s\n", reg_names_64[node->reg],
+             reg_names_64[node->right->reg]);
+      return;
+    } else if (node->op->type == kTokenBitXor) {
+      printf("xor %s, %s\n", reg_names_64[node->reg],
+             reg_names_64[node->right->reg]);
+      return;
+    } else if (node->op->type == kTokenBitOr) {
+      printf("or %s, %s\n", reg_names_64[node->reg],
+             reg_names_64[node->right->reg]);
+      return;
+    }
   }
   ErrorWithToken(node->op, "Generate: Not implemented");
 }
@@ -966,5 +974,4 @@ int main(int argc, char *argv[]) {
 
   PrintASTNode(ast);
   fputc('\n', stderr);
-  return 0;
 }
