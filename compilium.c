@@ -46,6 +46,8 @@ enum TokenTypes {
   kTokenSemicolon,
   kTokenIdent,
   kTokenKwReturn,
+  kTokenLBrace,
+  kTokenRBrace,
   kNumOfTokenTypeNames
 };
 
@@ -130,6 +132,8 @@ void InitTokenTypeNames() {
   token_type_names[kTokenSemicolon] = "Semicolon";
   token_type_names[kTokenIdent] = "Ident";
   token_type_names[kTokenKwReturn] = "`return`";
+  token_type_names[kTokenLBrace] = "LBrace";
+  token_type_names[kTokenRBrace] = "RBrace";
 }
 
 const char *GetTokenTypeName(enum TokenTypes type) {
@@ -290,6 +294,14 @@ void Tokenize(const char *src) {
     }
     if (';' == *s) {
       AddToken(src, s++, 1, kTokenSemicolon);
+      continue;
+    }
+    if ('{' == *s) {
+      AddToken(src, s++, 1, kTokenLBrace);
+      continue;
+    }
+    if ('}' == *s) {
+      AddToken(src, s++, 1, kTokenRBrace);
       continue;
     }
     Error("Unexpected char %c", *s);
@@ -682,8 +694,21 @@ struct ASTNode *ParseStmt() {
   return NULL;
 }
 
+struct ASTNode *ParseCompStmt() {
+  struct Token *t;
+  if (!(t = ConsumeToken(kTokenLBrace))) return NULL;
+  struct ASTNode *list = AllocASTList();
+  list->op = t;
+  struct ASTNode *stmt;
+  while ((stmt = ParseStmt())) {
+    PushToASTList(list, stmt);
+  }
+  ExpectToken(kTokenRBrace);
+  return list;
+}
+
 struct ASTNode *Parse() {
-  struct ASTNode *ast = ParseStmt();
+  struct ASTNode *ast = ParseCompStmt();
   struct Token *t;
   if (!(t = NextToken())) return ast;
   ErrorWithToken(t, "Unexpected token");
@@ -738,6 +763,11 @@ void Generate(struct ASTNode *node) {
   if (node->type == kASTTypeExprStmt) {
     if (node->left) {
       Generate(node->left);
+    }
+    return;
+  } else if (node->type == kASTTypeList) {
+    for (int i = 0; i < GetSizeOfASTList(node); i++) {
+      Generate(GetNodeAt(node, i));
     }
     return;
   }
