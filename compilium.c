@@ -393,6 +393,7 @@ enum ASTType {
   kASTTypeExprStmt,
   kASTTypeIdent,
   kASTTypeDecl,
+  kASTTypeKeyValue,
 };
 
 struct ASTNode {
@@ -406,6 +407,9 @@ struct ASTNode {
   int capacity;
   int size;
   struct ASTNode **nodes;
+  // for key value
+  const char *key;
+  struct ASTNode *value;
 };
 
 struct ASTNode *AllocASTNode(enum ASTType type) {
@@ -447,19 +451,35 @@ struct ASTNode *AllocAndInitASTNodeIdent(struct Token *ident) {
   return n;
 }
 
+struct ASTNode *AllocAndInitASTNodeKeyValue(const char *key,
+                                            struct ASTNode *value) {
+  struct ASTNode *n = AllocASTNode(kASTTypeKeyValue);
+  n->key = key;
+  n->value = value;
+  return n;
+}
+
 struct ASTNode *AllocList() {
   return AllocASTNode(kASTTypeList);
 }
 
-void PushToList(struct ASTNode *list, struct ASTNode *node) {
-  if (list->size >= list->capacity) {
-    list->capacity = (list->capacity + 1) * 2;
-    list->nodes =
-        realloc(list->nodes, sizeof(struct ASTNode *) * list->capacity);
-    assert(list->nodes);
-  }
+void ExpandListSizeIfNeeded(struct ASTNode *list) {
+  if (list->size < list->capacity) return;
+  list->capacity = (list->capacity + 1) * 2;
+  list->nodes = realloc(list->nodes, sizeof(struct ASTNode *) * list->capacity);
+  assert(list->nodes);
   assert(list->size < list->capacity);
+}
+
+void PushToList(struct ASTNode *list, struct ASTNode *node) {
+  ExpandListSizeIfNeeded(list);
   list->nodes[list->size++] = node;
+}
+
+void PushKeyValueToList(struct ASTNode *list, const char *key,
+                        struct ASTNode *value) {
+  ExpandListSizeIfNeeded(list);
+  list->nodes[list->size++] = AllocAndInitASTNodeKeyValue(key, value);
 }
 
 int GetSizeOfList(struct ASTNode *list) {
@@ -471,6 +491,16 @@ struct ASTNode *GetNodeAt(struct ASTNode *list, int index) {
   assert(list && list->type == kASTTypeList);
   assert(0 <= index && index < list->size);
   return list->nodes[index];
+}
+
+struct ASTNode *GetNodeByKey(struct ASTNode *list, const char *key) {
+  assert(list && list->type == kASTTypeList);
+  for (int i = 0; i < list->size; i++) {
+    struct ASTNode *n = list->nodes[i];
+    if (n->type != kASTTypeKeyValue) continue;
+    if (strcmp(n->key, key) == 0) return n->value;
+  }
+  return NULL;
 }
 
 void TestList() {
@@ -497,6 +527,12 @@ void TestList() {
   assert(GetNodeAt(list, 0) == item1);
   assert(GetNodeAt(list, 1) == item2);
   assert(GetNodeAt(list, GetSizeOfList(list) - 1) == item1);
+
+  PushKeyValueToList(list, "item1", item1);
+  PushKeyValueToList(list, "item2", item2);
+  assert(GetNodeByKey(list, "item1") == item1);
+  assert(GetNodeByKey(list, "item2") == item2);
+  assert(GetNodeByKey(list, "not_existed") == NULL);
 
   fprintf(stderr, "PASS\n");
   exit(EXIT_SUCCESS);
