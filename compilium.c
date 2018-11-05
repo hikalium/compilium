@@ -657,7 +657,13 @@ struct ASTNode *ParseExpr() {
 
 struct ASTNode *ParseExprStmt() {
   struct ASTNode *expr = ParseExpr();
-  return AllocAndInitASTNodeExprStmt(ExpectToken(kTokenSemicolon), expr);
+  struct Token *t;
+  if ((t = ConsumeToken(kTokenSemicolon))) {
+    return AllocAndInitASTNodeExprStmt(t, expr);
+  } else if (expr) {
+    ExpectToken(kTokenSemicolon);
+  }
+  return NULL;
 }
 
 struct ASTNode *ParseReturnStmt() {
@@ -670,8 +676,14 @@ struct ASTNode *ParseReturnStmt() {
   return NULL;
 }
 
+struct ASTNode *ParseStmt() {
+  struct ASTNode *stmt;
+  if ((stmt = ParseExprStmt()) || (stmt = ParseReturnStmt())) return stmt;
+  return NULL;
+}
+
 struct ASTNode *Parse() {
-  struct ASTNode *ast = ParseReturnStmt();
+  struct ASTNode *ast = ParseStmt();
   struct Token *t;
   if (!(t = NextToken())) return ast;
   ErrorWithToken(t, "Unexpected token");
