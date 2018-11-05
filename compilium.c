@@ -79,7 +79,7 @@ void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
   args->input = NULL;
   symbol_prefix = "_";
   for (int i = 1; i < argc; i++) {
-    if (strcmp(argv[i], "--target_os") == 0) {
+    if (strcmp(argv[i], "--target-os") == 0) {
       i++;
       if (strcmp(argv[i], "Darwin") == 0) {
         symbol_prefix = "_";
