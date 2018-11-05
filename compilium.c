@@ -707,6 +707,12 @@ void EmitConvertToBool(int dst, int src) {
   printf("movzx %s, %s\n", reg_names_64[dst], reg_names_8[src]);
 }
 
+void EmitCompareIntegers(int dst, int left, int right, const char *cc) {
+  printf("cmp %s, %s\n", reg_names_64[left], reg_names_64[right]);
+  printf("set%s %s\n", cc, reg_names_8[dst]);
+  printf("movzx %s, %s\n", reg_names_64[dst], reg_names_8[dst]);
+}
+
 void Generate(struct ASTNode *node) {
   assert(node && node->op);
   if (node->op->type == kTokenDecimalNumber ||
@@ -859,45 +865,27 @@ void Generate(struct ASTNode *node) {
     return;
   }
   if (node->op->type == kTokenLessThan) {
-    printf("cmp %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->right->reg]);
-    printf("setl %s\n", reg_names_8[node->reg]);
-    printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
+    EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "l");
     return;
   }
   if (node->op->type == kTokenGreaterThan) {
-    printf("cmp %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->right->reg]);
-    printf("setg %s\n", reg_names_8[node->reg]);
-    printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
+    EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "g");
     return;
   }
   if (node->op->type == kTokenLessThanEq) {
-    printf("cmp %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->right->reg]);
-    printf("setle %s\n", reg_names_8[node->reg]);
-    printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
+    EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "le");
     return;
   }
   if (node->op->type == kTokenGreaterThanEq) {
-    printf("cmp %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->right->reg]);
-    printf("setge %s\n", reg_names_8[node->reg]);
-    printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
+    EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "ge");
     return;
   }
   if (node->op->type == kTokenEq) {
-    printf("cmp %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->right->reg]);
-    printf("sete %s\n", reg_names_8[node->reg]);
-    printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
+    EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "e");
     return;
   }
   if (node->op->type == kTokenNotEq) {
-    printf("cmp %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->right->reg]);
-    printf("setne %s\n", reg_names_8[node->reg]);
-    printf("movzx %s, %s\n", reg_names_64[node->reg], reg_names_8[node->reg]);
+    EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "ne");
     return;
   }
   if (node->op->type == kTokenBitAnd) {
