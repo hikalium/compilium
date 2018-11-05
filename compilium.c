@@ -3,11 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-enum OSType {
-  kOSDarwin,
-  kOSLinux,
-};
-
 struct CompilerArgs {
   const char *input;
 };
