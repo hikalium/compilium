@@ -17,7 +17,7 @@ format:
 
 commit:
 	make format
-	make test
+	make testall
 	git add .
 	git diff HEAD
 	git commit
