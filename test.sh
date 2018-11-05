@@ -1,17 +1,26 @@
 #!/bin/bash -e
 
-function test_expr_result {
+function test_result {
   input="$1"
   expected="$2"
-  ./compilium --target-os `uname` "{return $input;}" > out.S
+  testname="$3"
+  ./compilium --target-os `uname` "$input" > out.S
   gcc out.S
   actual=0
   ./a.out || actual=$?
   if [ $expected = $actual ]; then
-    echo "PASS $input returns $expected";
+    echo "PASS $testname returns $expected";
   else
-    echo "FAIL $input: expected $expected but got $actual"; exit 1; 
+    echo "FAIL $testname: expected $expected but got $actual"; exit 1; 
   fi
+}
+
+function test_expr_result {
+  test_result "{return $1;}" "$2" "$1"
+}
+
+function test_stmt_result {
+  test_result "{$1}" "$2" "$1"
 }
 
 # Integer literal
@@ -154,3 +163,6 @@ test_expr_result '3 + 14 / 2' 10
 test_expr_result '12 + 17 % 7' 15
 test_expr_result '1 + 2 << 3' 24
 test_expr_result '-3 * -4 + -5' 7
+
+test_stmt_result '; ; return 0;' 0
+test_stmt_result '; return 2; return 0;' 2
