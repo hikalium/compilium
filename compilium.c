@@ -44,6 +44,7 @@ enum TokenTypes {
   kTokenKwInt,
   kTokenLBrace,
   kTokenRBrace,
+  kTokenAssign,
   kNumOfTokenTypeNames
 };
 
@@ -134,6 +135,7 @@ void InitTokenTypeNames() {
   token_type_names[kTokenKwInt] = "`int`";
   token_type_names[kTokenLBrace] = "LBrace";
   token_type_names[kTokenRBrace] = "RBrace";
+  token_type_names[kTokenAssign] = "Assign";
 }
 
 const char *GetTokenTypeName(enum TokenTypes type) {
@@ -242,6 +244,7 @@ struct Token *CreateNextToken(const char **p, const char *src) {
       (*p) += 2;
       return t;
     }
+    return AllocToken(src, (*p)++, 1, kTokenAssign);
   } else if ('!' == *(*p)) {
     if ((*p)[1] == '=') {
       struct Token *t = AllocToken(src, (*p), 2, kTokenNotEq);
@@ -538,7 +541,7 @@ void PushKeyValueToList(struct ASTNode *list, const char *key,
 
 void AddLocalVar(struct ASTNode *list, const char *key,
                  struct ASTNode *var_type) {
-  struct ASTNode *local_var = AllocAndInitASTNodeLocalVar(-4, var_type);
+  struct ASTNode *local_var = AllocAndInitASTNodeLocalVar(8, var_type);
   PushKeyValueToList(list, key, local_var);
 }
 
@@ -805,12 +808,31 @@ struct ASTNode *ParseConditionalExpr() {
   return expr;
 }
 
+struct ASTNode *ParseAssignExpr() {
+  struct ASTNode *left = ParseConditionalExpr();
+  if (!left) return NULL;
+  // TODO: Add kASTTypeUnaryPostfixOp after its implementation
+  if (left->type != kASTTypeUnaryPrefixOp && left->type != kASTTypePrimaryExpr)
+    return left;
+  int last_token_stream_index = token_stream_index;
+  struct Token *t;
+  if ((t = ConsumeToken(kTokenAssign))) {
+    struct ASTNode *right = ParseAssignExpr();
+    if (!right) {
+      token_stream_index = last_token_stream_index;
+      return left;
+    }
+    return AllocAndInitASTNodeBinOp(t, left, right);
+  }
+  return left;
+}
+
 struct ASTNode *ParseExpr() {
-  struct ASTNode *op = ParseConditionalExpr();
+  struct ASTNode *op = ParseAssignExpr();
   if (!op) return NULL;
   struct Token *t;
   while ((t = ConsumeToken(kTokenComma))) {
-    op = AllocAndInitASTNodeBinOp(t, op, ParseConditionalExpr());
+    op = AllocAndInitASTNodeBinOp(t, op, ParseAssignExpr());
   }
   return op;
 }
@@ -913,6 +935,8 @@ void EmitCompareIntegers(int dst, int left, int right, const char *cc) {
   printf("movzx %s, %s\n", reg_names_64[dst], reg_names_8[dst]);
 }
 
+void GenerateRValue(struct ASTNode *node);
+
 struct ASTNode *var_context;
 void Generate(struct ASTNode *node) {
   assert(node && node->op);
@@ -929,6 +953,9 @@ void Generate(struct ASTNode *node) {
       if (!var_info || var_info->type != kASTTypeLocalVar)
         ErrorWithToken(node->op, "Unknown identifier");
       node->expr_type = AllocAndInitLValueOf(var_info->expr_type);
+      node->reg = AllocReg();
+      printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg],
+             var_info->byte_offset);
       return;
     }
   } else if (node->type == kASTTypeExprStmt) {
@@ -947,10 +974,10 @@ void Generate(struct ASTNode *node) {
                 AllocAndInitBaseType(node->op));
     return;
   } else if (node->type == kASTTypeJumpStmt) {
-    assert(node->right);
-    Generate(node->right);
-    FreeReg(node->right->reg);
     if (node->op->type == kTokenKwReturn) {
+      assert(node->right);
+      GenerateRValue(node->right);
+      FreeReg(node->right->reg);
       printf("mov rax, %s\n", reg_names_64[node->right->reg]);
       printf("mov rsp, rbp\n");
       printf("pop rbp\n");
@@ -1036,6 +1063,15 @@ void Generate(struct ASTNode *node) {
       Generate(node->right);
       node->reg = node->right->reg;
       return;
+    } else if (node->op->type == kTokenAssign) {
+      Generate(node->left);
+      Generate(node->right);
+      printf("mov [%s], %s\n", reg_names_64[node->left->reg],
+             reg_names_64[node->right->reg]);
+
+      FreeReg(node->left->reg);
+      node->reg = node->right->reg;
+      return;
     }
     Generate(node->left);
     Generate(node->right);
@@ -1113,6 +1149,12 @@ void Generate(struct ASTNode *node) {
     }
   }
   ErrorWithToken(node->op, "Generate: Not implemented");
+}
+
+void GenerateRValue(struct ASTNode *node) {
+  Generate(node);
+  if (!node->expr_type || node->expr_type->type != kASTTypeLValueOf) return;
+  printf("mov %s, [%s]\n", reg_names_64[node->reg], reg_names_64[node->reg]);
 }
 
 int main(int argc, char *argv[]) {

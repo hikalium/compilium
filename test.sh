@@ -22,7 +22,9 @@ function test_expr_result {
 function test_stmt_result {
   test_result "{$1}" "$2" "$1"
 }
-test_stmt_result 'int a; a; return 0;' 0
+
+test_stmt_result 'int a; a = 0; a = 2; return a;' 2
+test_stmt_result 'int a; a = 2; a = 0; return a;' 0
 
 # Integer literal
 test_expr_result '0' 0
