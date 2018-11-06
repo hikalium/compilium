@@ -296,6 +296,15 @@ void PrintToken(struct Token *t) {
           GetTokenTypeName(t->type));
 }
 
+void PrintTokenBrief(struct Token *t) {
+  fprintf(stderr, "(Token %s", GetTokenTypeName(t->type));
+  if (t->type == kTokenDecimalNumber || t->type == kTokenOctalNumber ||
+      t->type == kTokenIdent) {
+    fprintf(stderr, ":%.*s", t->length, t->begin);
+  }
+  fputc(')', stderr);
+}
+
 void PrintTokenStr(struct Token *t) {
   fprintf(stderr, "%.*s", t->length, t->begin);
 }
@@ -594,20 +603,38 @@ void TestList() {
   exit(EXIT_SUCCESS);
 }
 
-void PrintASTNode(struct ASTNode *n) {
+void PrintPadding(int depth) {
+  for (int i = 0; i < depth; i++) {
+    fputc(' ', stderr);
+  }
+}
+
+void PrintASTNodeSub(struct ASTNode *n, int depth) {
+  if (n->type == kASTTypeList) {
+    fprintf(stderr, "[\n");
+    for (int i = 0; i < GetSizeOfList(n); i++) {
+      if (i) fprintf(stderr, ",\n");
+      PrintPadding(depth + 1);
+      PrintASTNodeSub(GetNodeAt(n, i), depth + 1);
+    }
+    fprintf(stderr, "\n]");
+    return;
+  }
   fprintf(stderr, "(");
-  PrintToken(n->op);
+  PrintTokenBrief(n->op);
   fprintf(stderr, " reg: %d", n->reg);
   if (n->left) {
     fprintf(stderr, " left: ");
-    PrintASTNode(n->left);
+    PrintASTNodeSub(n->left, depth + 1);
   }
   if (n->right) {
     fprintf(stderr, " right: ");
-    PrintASTNode(n->right);
+    PrintASTNodeSub(n->right, depth + 1);
   }
   fprintf(stderr, ")");
 }
+
+void PrintASTNode(struct ASTNode *n) { PrintASTNodeSub(n, 0); }
 
 struct ASTNode *ParseCastExpr();
 
