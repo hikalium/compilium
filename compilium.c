@@ -622,7 +622,7 @@ void PrintASTNodeSub(struct ASTNode *n, int depth) {
   }
   fprintf(stderr, "(");
   PrintTokenBrief(n->op);
-  fprintf(stderr, " reg: %d", n->reg);
+  if (n->reg) fprintf(stderr, " reg: %d", n->reg);
   if (n->left) {
     fprintf(stderr, " left: ");
     PrintASTNodeSub(n->left, depth + 1);
@@ -856,13 +856,15 @@ struct ASTNode *Parse() {
 }
 
 #define NUM_OF_SCRATCH_REGS 4
-const char *reg_names_64[NUM_OF_SCRATCH_REGS] = {"rdi", "rsi", "r8", "r9"};
-const char *reg_names_8[NUM_OF_SCRATCH_REGS] = {"dil", "sil", "r8b", "r9b"};
+const char *reg_names_64[NUM_OF_SCRATCH_REGS + 1] = {NULL, "rdi", "rsi", "r8",
+                                                     "r9"};
+const char *reg_names_8[NUM_OF_SCRATCH_REGS + 1] = {NULL, "dil", "sil", "r8b",
+                                                    "r9b"};
 
 int reg_used_table[NUM_OF_SCRATCH_REGS];
 
 int AllocReg() {
-  for (int i = 0; i < NUM_OF_SCRATCH_REGS; i++) {
+  for (int i = 1; i <= NUM_OF_SCRATCH_REGS; i++) {
     if (!reg_used_table[i]) {
       reg_used_table[i] = 1;
       return i;
@@ -871,7 +873,7 @@ int AllocReg() {
   Error("No more regs");
 }
 void FreeReg(int reg) {
-  assert(0 <= reg && reg < NUM_OF_SCRATCH_REGS);
+  assert(1 <= reg && reg <= NUM_OF_SCRATCH_REGS);
   reg_used_table[reg] = 0;
 }
 
@@ -943,7 +945,9 @@ void Generate(struct ASTNode *node) {
       return;
     }
     if (node->op->type == kTokenKwReturn) {
-      printf("mov rax, %s\n", reg_names_64[node->reg]);
+      printf("mov rax, %s\n", reg_names_64[node->right->reg]);
+      node->reg = 0;
+      FreeReg(node->right->reg);
       printf("mov rsp, rbp\n");
       printf("pop rbp\n");
       printf("ret\n");
