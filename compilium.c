@@ -55,7 +55,7 @@ struct Token {
 };
 
 #define NUM_OF_TOKENS 32
-struct Token tokens[NUM_OF_TOKENS];
+struct Token *tokens[NUM_OF_TOKENS];
 int tokens_used;
 
 _Noreturn void Error(const char *fmt, ...) {
@@ -139,14 +139,19 @@ const char *GetTokenTypeName(enum TokenTypes type) {
   return token_type_names[type];
 }
 
-struct Token *AddToken(const char *src_str, const char *begin, int length,
-                       enum TokenTypes type) {
+struct Token *AllocToken(const char *src_str, const char *begin, int length,
+                         enum TokenTypes type) {
+  struct Token *t = calloc(1, sizeof(struct Token));
+  t->begin = begin;
+  t->length = length;
+  t->type = type;
+  t->src_str = src_str;
+  return t;
+}
+
+void AddToken(struct Token *t) {
   assert(tokens_used < NUM_OF_TOKENS);
-  tokens[tokens_used].begin = begin;
-  tokens[tokens_used].length = length;
-  tokens[tokens_used].type = type;
-  tokens[tokens_used].src_str = src_str;
-  return &tokens[tokens_used++];
+  tokens[tokens_used++] = t;
 }
 
 const char *CreateTokenStr(struct Token *t) {
@@ -157,159 +162,125 @@ int IsEqualTokenWithCStr(struct Token *t, const char *s) {
   return strlen(s) == t->length && strncmp(t->begin, s, t->length) == 0;
 }
 
-void Tokenize(const char *src) {
-  const char *s = src;
-  while (*s) {
-    if (*s <= ' ') {
-      s++;
-      continue;
+struct Token *CreateNextToken(const char **p, const char *src) {
+  while (*(*p) <= ' ') {
+    if (!*(*p)) return NULL;
+    (*p)++;
+  }
+  if ('1' <= *(*p) && *(*p) <= '9') {
+    int length = 0;
+    while ('0' <= (*p)[length] && (*p)[length] <= '9') {
+      length++;
     }
-    if ('1' <= *s && *s <= '9') {
-      int length = 0;
-      while ('0' <= s[length] && s[length] <= '9') {
-        length++;
-      }
-      AddToken(src, s, length, kTokenDecimalNumber);
-      s += length;
-      continue;
+    struct Token *t = AllocToken(src, (*p), length, kTokenDecimalNumber);
+    (*p) += length;
+    return t;
+  } else if ('0' == *(*p)) {
+    int length = 0;
+    while ('0' <= (*p)[length] && (*p)[length] <= '7') {
+      length++;
     }
-    if ('0' == *s) {
-      int length = 0;
-      while ('0' <= s[length] && s[length] <= '7') {
-        length++;
-      }
-      AddToken(src, s, length, kTokenOctalNumber);
-      s += length;
-      continue;
+    struct Token *t = AllocToken(src, (*p), length, kTokenOctalNumber);
+    (*p) += length;
+    return t;
+  } else if (('A' <= *(*p) && *(*p) <= 'Z') || ('a' <= *(*p) && *(*p) <= 'z') ||
+             *(*p) == '_') {
+    int length = 0;
+    while (('A' <= (*p)[length] && (*p)[length] <= 'Z') ||
+           ('a' <= (*p)[length] && (*p)[length] <= 'z') ||
+           (*p)[length] == '_' ||
+           ('0' <= (*p)[length] && (*p)[length] <= '9')) {
+      length++;
     }
-    if (('A' <= *s && *s <= 'Z') || ('a' <= *s && *s <= 'z') || *s == '_') {
-      int length = 0;
-      while (('A' <= s[length] && s[length] <= 'Z') ||
-             ('a' <= s[length] && s[length] <= 'z') || s[length] == '_' ||
-             ('0' <= s[length] && s[length] <= '9')) {
-        length++;
-      }
-      struct Token *t = AddToken(src, s, length, kTokenIdent);
-      if (IsEqualTokenWithCStr(t, "return")) t->type = kTokenKwReturn;
-      if (IsEqualTokenWithCStr(t, "int")) t->type = kTokenKwInt;
-      s += length;
-      continue;
+    struct Token *t = AllocToken(src, (*p), length, kTokenIdent);
+    if (IsEqualTokenWithCStr(t, "return")) t->type = kTokenKwReturn;
+    if (IsEqualTokenWithCStr(t, "int")) t->type = kTokenKwInt;
+    (*p) += length;
+    return t;
+  } else if ('&' == *(*p)) {
+    if ((*p)[1] == '&') {
+      struct Token *t = AllocToken(src, (*p), 2, kTokenBoolAnd);
+      (*p) += 2;
+      return t;
     }
-    if ('+' == *s) {
-      AddToken(src, s++, 1, kTokenPlus);
-      continue;
+    return AllocToken(src, (*p)++, 1, kTokenBitAnd);
+  } else if ('|' == *(*p)) {
+    if ((*p)[1] == '|') {
+      struct Token *t = AllocToken(src, (*p), 2, kTokenBoolOr);
+      (*p) += 2;
+      return t;
     }
-    if ('-' == *s) {
-      AddToken(src, s++, 1, kTokenMinus);
-      continue;
+    return AllocToken(src, (*p)++, 1, kTokenBitOr);
+  } else if ('<' == *(*p)) {
+    if ((*p)[1] == '<') {
+      struct Token *t = AllocToken(src, (*p), 2, kTokenShiftLeft);
+      (*p) += 2;
+      return t;
+    } else if ((*p)[1] == '=') {
+      struct Token *t = AllocToken(src, (*p), 2, kTokenLessThanEq);
+      (*p) += 2;
+      return t;
     }
-    if ('*' == *s) {
-      AddToken(src, s++, 1, kTokenStar);
-      continue;
+    return AllocToken(src, (*p)++, 1, kTokenLessThan);
+  } else if ('>' == *(*p)) {
+    if ((*p)[1] == '>') {
+      struct Token *t = AllocToken(src, (*p), 2, kTokenShiftRight);
+      (*p) += 2;
+      return t;
+    } else if ((*p)[1] == '=') {
+      struct Token *t = AllocToken(src, (*p), 2, kTokenGreaterThanEq);
+      (*p) += 2;
+      return t;
     }
-    if ('/' == *s) {
-      AddToken(src, s++, 1, kTokenSlash);
-      continue;
+    return AllocToken(src, (*p)++, 1, kTokenGreaterThan);
+  } else if ('=' == *(*p)) {
+    if ((*p)[1] == '=') {
+      struct Token *t = AllocToken(src, (*p), 2, kTokenEq);
+      (*p) += 2;
+      return t;
     }
-    if ('%' == *s) {
-      AddToken(src, s++, 1, kTokenPercent);
-      continue;
+  } else if ('!' == *(*p)) {
+    if ((*p)[1] == '=') {
+      struct Token *t = AllocToken(src, (*p), 2, kTokenNotEq);
+      (*p) += 2;
+      return t;
     }
-    if ('&' == *s) {
-      if (s[1] == '&') {
-        AddToken(src, s, 2, kTokenBoolAnd);
-        s += 2;
-        continue;
-      }
-      AddToken(src, s++, 1, kTokenBitAnd);
-      continue;
-    }
-    if ('^' == *s) {
-      AddToken(src, s++, 1, kTokenBitXor);
-      continue;
-    }
-    if ('|' == *s) {
-      if (s[1] == '|') {
-        AddToken(src, s, 2, kTokenBoolOr);
-        s += 2;
-        continue;
-      }
-      AddToken(src, s++, 1, kTokenBitOr);
-      continue;
-    }
-    if ('<' == *s) {
-      if (s[1] == '<') {
-        AddToken(src, s, 2, kTokenShiftLeft);
-        s += 2;
-        continue;
-      }
-      if (s[1] == '=') {
-        AddToken(src, s, 2, kTokenLessThanEq);
-        s += 2;
-        continue;
-      }
-      AddToken(src, s++, 1, kTokenLessThan);
-      continue;
-    }
-    if ('>' == *s) {
-      if (s[1] == '>') {
-        AddToken(src, s, 2, kTokenShiftRight);
-        s += 2;
-        continue;
-      }
-      if (s[1] == '=') {
-        AddToken(src, s, 2, kTokenGreaterThanEq);
-        s += 2;
-        continue;
-      }
-      AddToken(src, s++, 1, kTokenGreaterThan);
-      continue;
-    }
-    if ('=' == *s) {
-      if (s[1] == '=') {
-        AddToken(src, s, 2, kTokenEq);
-        s += 2;
-        continue;
-      }
-    }
-    if ('!' == *s) {
-      if (s[1] == '=') {
-        AddToken(src, s, 2, kTokenNotEq);
-        s += 2;
-        continue;
-      }
-      AddToken(src, s++, 1, kTokenBoolNot);
-      continue;
-    }
-    if ('~' == *s) {
-      AddToken(src, s++, 1, kTokenBitNot);
-      continue;
-    }
-    if ('?' == *s) {
-      AddToken(src, s++, 1, kTokenConditional);
-      continue;
-    }
-    if (':' == *s) {
-      AddToken(src, s++, 1, kTokenColon);
-      continue;
-    }
-    if (',' == *s) {
-      AddToken(src, s++, 1, kTokenComma);
-      continue;
-    }
-    if (';' == *s) {
-      AddToken(src, s++, 1, kTokenSemicolon);
-      continue;
-    }
-    if ('{' == *s) {
-      AddToken(src, s++, 1, kTokenLBrace);
-      continue;
-    }
-    if ('}' == *s) {
-      AddToken(src, s++, 1, kTokenRBrace);
-      continue;
-    }
-    Error("Unexpected char %c", *s);
+    return AllocToken(src, (*p)++, 1, kTokenBoolNot);
+  } else if ('^' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenBitXor);
+  } else if ('+' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenPlus);
+  } else if ('-' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenMinus);
+  } else if ('*' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenStar);
+  } else if ('/' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenSlash);
+  } else if ('%' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenPercent);
+  } else if ('~' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenBitNot);
+  } else if ('?' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenConditional);
+  } else if (':' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenColon);
+  } else if (',' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenComma);
+  } else if (';' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenSemicolon);
+  } else if ('{' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenLBrace);
+  } else if ('}' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenRBrace);
+  }
+  Error("Unexpected char %c", *(*p));
+}
+
+void Tokenize(const char *input) {
+  const char *p = input;
+  struct Token *t;
+  while ((t = CreateNextToken(&p, input))) {
+    AddToken(t);
   }
 }
 
@@ -324,7 +295,7 @@ void PrintTokenStr(struct Token *t) {
 
 void PrintTokens() {
   for (int i = 0; i < tokens_used; i++) {
-    struct Token *t = &tokens[i];
+    struct Token *t = tokens[i];
     PrintToken(t);
     fputc('\n', stderr);
   }
@@ -368,26 +339,24 @@ _Noreturn void ErrorWithToken(struct Token *t, const char *fmt, ...) {
 int token_stream_index;
 struct Token *ConsumeToken(enum TokenTypes type) {
   if (token_stream_index < tokens_used &&
-      tokens[token_stream_index].type == type) {
-    return &tokens[token_stream_index++];
+      tokens[token_stream_index]->type == type) {
+    return tokens[token_stream_index++];
   }
   return NULL;
 }
 
 struct Token *ExpectToken(enum TokenTypes type) {
   if (token_stream_index < tokens_used &&
-      tokens[token_stream_index].type == type) {
-    return &tokens[token_stream_index++];
+      tokens[token_stream_index]->type == type) {
+    return tokens[token_stream_index++];
   }
-  ErrorWithToken(&tokens[token_stream_index], "Expected %s here",
+  ErrorWithToken(tokens[token_stream_index], "Expected %s here",
                  GetTokenTypeName(type));
 }
 
 struct Token *NextToken() {
-  if (token_stream_index < tokens_used) {
-    return &tokens[token_stream_index++];
-  }
-  return NULL;
+  if (token_stream_index >= tokens_used) return NULL;
+  return tokens[token_stream_index++];
 }
 
 enum ASTType {
