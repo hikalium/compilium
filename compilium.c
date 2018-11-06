@@ -379,11 +379,12 @@ struct Token *NextToken() {
 enum ASTType {
   kASTTypeNone,
   kASTTypePrimaryExpr,
-  kASTTypeBinOp,
   kASTTypeUnaryPrefixOp,
+  kASTTypeBinOp,
   kASTTypeCondExpr,
   kASTTypeList,
   kASTTypeExprStmt,
+  kASTTypeJumpStmt,
   kASTTypeIdent,
   kASTTypeDecl,
   kASTTypeKeyValue,
@@ -825,19 +826,22 @@ struct ASTNode *ParseExprStmt() {
   return NULL;
 }
 
-struct ASTNode *ParseReturnStmt() {
+struct ASTNode *ParseJumpStmt() {
   struct Token *t;
   if ((t = ConsumeToken(kTokenKwReturn))) {
     struct ASTNode *expr = ParseExpr();
     ExpectToken(kTokenSemicolon);
-    return AllocAndInitASTNodeUnaryPrefixOp(t, expr);
+    struct ASTNode *stmt = AllocASTNode(kASTTypeJumpStmt);
+    stmt->op = t;
+    stmt->right = expr;
+    return stmt;
   }
   return NULL;
 }
 
 struct ASTNode *ParseStmt() {
   struct ASTNode *stmt;
-  if ((stmt = ParseExprStmt()) || (stmt = ParseReturnStmt())) return stmt;
+  if ((stmt = ParseExprStmt()) || (stmt = ParseJumpStmt())) return stmt;
   return NULL;
 }
 
@@ -942,6 +946,18 @@ void Generate(struct ASTNode *node) {
     AddLocalVar(var_context, CreateTokenStr(node->right->op),
                 AllocAndInitBaseType(node->op));
     return;
+  } else if (node->type == kASTTypeJumpStmt) {
+    assert(node->right);
+    Generate(node->right);
+    FreeReg(node->right->reg);
+    if (node->op->type == kTokenKwReturn) {
+      printf("mov rax, %s\n", reg_names_64[node->right->reg]);
+      printf("mov rsp, rbp\n");
+      printf("pop rbp\n");
+      printf("ret\n");
+      return;
+    }
+    ErrorWithToken(node->op, "Generate: Not implemented jump stmt");
   } else if (node->type == kASTTypeUnaryPrefixOp) {
     assert(node->right);
     Generate(node->right);
