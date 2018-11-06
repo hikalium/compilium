@@ -11,6 +11,7 @@ test : compilium
 
 unittest : compilium
 	@ ./compilium --run-unittest=List
+	@ ./compilium --run-unittest=Type
 
 format:
 	clang-format -i $(SRCS)

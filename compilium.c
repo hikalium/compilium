@@ -76,6 +76,7 @@ void __assert(const char *expr_str, const char *file, int line) {
 const char *token_type_names[kNumOfTokenTypeNames];
 
 void TestList(void);
+void TestType(void);
 void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
   args->input = NULL;
   symbol_prefix = "_";
@@ -91,6 +92,8 @@ void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
       }
     } else if (strcmp(argv[i], "--run-unittest=List") == 0) {
       TestList();
+    } else if (strcmp(argv[i], "--run-unittest=Type") == 0) {
+      TestType();
     } else {
       args->input = argv[i];
     }
@@ -276,6 +279,10 @@ struct Token *CreateNextToken(const char **p, const char *src) {
   Error("Unexpected char %c", *(*p));
 }
 
+struct Token *CreateToken(const char *input) {
+  return CreateNextToken(&input, input);
+}
+
 void Tokenize(const char *input) {
   const char *p = input;
   struct Token *t;
@@ -371,12 +378,15 @@ enum ASTType {
   kASTTypeDecl,
   kASTTypeKeyValue,
   kASTTypeLocalVar,
+  kASTTypeBaseType,
+  kASTTypeLValueOf,
 };
 
 struct ASTNode {
   enum ASTType type;
-  struct Token *op;
   int reg;
+  struct ASTNode *expr_type;
+  struct Token *op;
   struct ASTNode *left;
   struct ASTNode *right;
   struct ASTNode *cond;
@@ -442,6 +452,52 @@ struct ASTNode *AllocAndInitASTNodeLocalVar(int byte_offset) {
   struct ASTNode *n = AllocASTNode(kASTTypeLocalVar);
   n->byte_offset = byte_offset;
   return n;
+}
+
+struct ASTNode *AllocAndInitBaseType(struct Token *t) {
+  struct ASTNode *n = AllocASTNode(kASTTypeBaseType);
+  n->op = t;
+  return n;
+}
+
+struct ASTNode *AllocAndInitLValueOf(struct ASTNode *type) {
+  struct ASTNode *n = AllocASTNode(kASTTypeLValueOf);
+  n->right = type;
+  return n;
+}
+
+int IsSameType(struct ASTNode *a, struct ASTNode *b) {
+  assert(a && b);
+  if (a->type != b->type) return 0;
+  if (a->type == kASTTypeBaseType) {
+    assert(a->op && b->op);
+    return a->op->type == b->op->type;
+  } else if (a->type == kASTTypeLValueOf) {
+    return IsSameType(a->right, b->right);
+  }
+  Error("IsSameType: Comparing non-type nodes");
+}
+
+int IsAssignable(struct ASTNode *dst, struct ASTNode *src) {
+  assert(dst && src);
+  if (dst->type != kASTTypeLValueOf) return 0;
+  return IsSameType(dst->right, src);
+}
+
+void TestType() {
+  fprintf(stderr, "Testing Type...");
+
+  struct ASTNode *int_type = AllocAndInitBaseType(CreateToken("int"));
+  struct ASTNode *another_int_type = AllocAndInitBaseType(CreateToken("int"));
+  struct ASTNode *lvalue_int_type = AllocAndInitLValueOf(int_type);
+
+  assert(IsSameType(int_type, int_type));
+  assert(IsSameType(int_type, another_int_type));
+  assert(!IsSameType(int_type, lvalue_int_type));
+  assert(IsSameType(lvalue_int_type, lvalue_int_type));
+
+  fprintf(stderr, "PASS\n");
+  exit(EXIT_SUCCESS);
 }
 
 struct ASTNode *AllocList() {
@@ -861,6 +917,8 @@ void Generate(struct ASTNode *node) {
     }
     if (node->op->type == kTokenKwReturn) {
       printf("mov rax, %s\n", reg_names_64[node->reg]);
+      printf("mov rsp, rbp\n");
+      printf("pop rbp\n");
       printf("ret\n");
       return;
     }
@@ -1010,7 +1068,11 @@ int main(int argc, char *argv[]) {
   printf(".text\n");
   printf(".global %smain\n", symbol_prefix);
   printf("%smain:\n", symbol_prefix);
+  printf("push rbp\n");
+  printf("mov rbp, rsp\n");
   Generate(ast);
+  printf("mov rsp, rbp\n");
+  printf("pop rbp\n");
   printf("ret\n");
 
   PrintASTNode(ast);
