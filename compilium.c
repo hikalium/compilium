@@ -909,6 +909,7 @@ int AllocReg() {
   for (int i = 1; i <= NUM_OF_SCRATCH_REGS; i++) {
     if (!reg_used_table[i]) {
       reg_used_table[i] = 1;
+      fprintf(stderr, "reg alloc: %d\n", i);
       return i;
     }
   }
@@ -916,6 +917,7 @@ int AllocReg() {
 }
 void FreeReg(int reg) {
   assert(1 <= reg && reg <= NUM_OF_SCRATCH_REGS);
+  fprintf(stderr, "reg free: %d\n", reg);
   reg_used_table[reg] = 0;
 }
 
@@ -938,35 +940,32 @@ void EmitCompareIntegers(int dst, int left, int right, const char *cc) {
 void GenerateRValue(struct ASTNode *node);
 
 struct ASTNode *var_context;
-void Generate(struct ASTNode *node) {
+void Analyze(struct ASTNode *node) {
   assert(node && node->op);
   if (node->type == kASTTypePrimaryExpr) {
     if (node->op->type == kTokenDecimalNumber ||
         node->op->type == kTokenOctalNumber) {
       node->reg = AllocReg();
       node->expr_type = AllocAndInitBaseType(CreateToken("int"));
-      printf("mov %s, %ld\n", reg_names_64[node->reg],
-             strtol(node->op->begin, NULL, 0));
       return;
     } else if (node->op->type == kTokenIdent) {
       struct ASTNode *var_info = GetNodeByTokenKey(var_context, node->op);
       if (!var_info || var_info->type != kASTTypeLocalVar)
         ErrorWithToken(node->op, "Unknown identifier");
+      node->byte_offset = var_info->byte_offset;
       node->expr_type = AllocAndInitLValueOf(var_info->expr_type);
       node->reg = AllocReg();
-      printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg],
-             var_info->byte_offset);
       return;
     }
   } else if (node->type == kASTTypeExprStmt) {
-    if (node->left) {
-      Generate(node->left);
-    }
+    if (!node->left) return;
+    Analyze(node->left);
+    if (node->left->reg) FreeReg(node->left->reg);
     return;
   } else if (node->type == kASTTypeList) {
     var_context = AllocList();
     for (int i = 0; i < GetSizeOfList(node); i++) {
-      Generate(GetNodeAt(node, i));
+      Analyze(GetNodeAt(node, i));
     }
     return;
   } else if (node->type == kASTTypeDecl) {
@@ -976,8 +975,85 @@ void Generate(struct ASTNode *node) {
   } else if (node->type == kASTTypeJumpStmt) {
     if (node->op->type == kTokenKwReturn) {
       assert(node->right);
-      GenerateRValue(node->right);
+      Analyze(node->right);
       FreeReg(node->right->reg);
+      return;
+    }
+    ErrorWithToken(node->op, "Analyze: Not implemented jump stmt");
+  } else if (node->type == kASTTypeUnaryPrefixOp) {
+    assert(node->right);
+    Analyze(node->right);
+    node->reg = node->right->reg;
+    return;
+  } else if (node->type == kASTTypeCondExpr) {
+    Analyze(node->cond);
+    node->reg = node->cond->reg;
+    Analyze(node->left);
+    FreeReg(node->left->reg);
+    Analyze(node->right);
+    FreeReg(node->right->reg);
+    return;
+  } else if (node->type == kASTTypeBinOp) {
+    if (node->op->type == kTokenBoolAnd) {
+      Analyze(node->left);
+      node->reg = node->left->reg;
+      Analyze(node->right);
+      FreeReg(node->right->reg);
+      return;
+    } else if (node->op->type == kTokenBoolOr) {
+      Analyze(node->left);
+      node->reg = node->left->reg;
+      Analyze(node->right);
+      FreeReg(node->right->reg);
+      return;
+    } else if (node->op->type == kTokenComma) {
+      Analyze(node->left);
+      FreeReg(node->left->reg);
+      Analyze(node->right);
+      node->reg = node->right->reg;
+      return;
+    } else if (node->op->type == kTokenAssign) {
+      Analyze(node->left);
+      Analyze(node->right);
+      FreeReg(node->left->reg);
+      node->reg = node->right->reg;
+      return;
+    }
+    Analyze(node->left);
+    Analyze(node->right);
+    node->reg = node->left->reg;
+    FreeReg(node->right->reg);
+    return;
+  }
+  ErrorWithToken(node->op, "Analyze: Not implemented");
+}
+
+void Generate(struct ASTNode *node) {
+  assert(node && node->op);
+  if (node->type == kASTTypePrimaryExpr) {
+    if (node->op->type == kTokenDecimalNumber ||
+        node->op->type == kTokenOctalNumber) {
+      printf("mov %s, %ld\n", reg_names_64[node->reg],
+             strtol(node->op->begin, NULL, 0));
+      return;
+    } else if (node->op->type == kTokenIdent) {
+      printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg],
+             node->byte_offset);
+      return;
+    }
+  } else if (node->type == kASTTypeExprStmt) {
+    if (node->left) Generate(node->left);
+    return;
+  } else if (node->type == kASTTypeList) {
+    for (int i = 0; i < GetSizeOfList(node); i++) {
+      Generate(GetNodeAt(node, i));
+    }
+    return;
+  } else if (node->type == kASTTypeDecl) {
+    return;
+  } else if (node->type == kASTTypeJumpStmt) {
+    if (node->op->type == kTokenKwReturn) {
+      GenerateRValue(node->right);
       printf("mov rax, %s\n", reg_names_64[node->right->reg]);
       printf("mov rsp, rbp\n");
       printf("pop rbp\n");
@@ -986,9 +1062,7 @@ void Generate(struct ASTNode *node) {
     }
     ErrorWithToken(node->op, "Generate: Not implemented jump stmt");
   } else if (node->type == kASTTypeUnaryPrefixOp) {
-    assert(node->right);
     Generate(node->right);
-    node->reg = node->right->reg;
     if (node->op->type == kTokenPlus) {
       return;
     }
@@ -1005,19 +1079,9 @@ void Generate(struct ASTNode *node) {
       printf("setz %s\n", reg_names_8[node->reg]);
       return;
     }
-    if (node->op->type == kTokenKwReturn) {
-      printf("mov rax, %s\n", reg_names_64[node->right->reg]);
-      node->reg = 0;
-      FreeReg(node->right->reg);
-      printf("mov rsp, rbp\n");
-      printf("pop rbp\n");
-      printf("ret\n");
-      return;
-    }
     ErrorWithToken(node->op, "Generate: Not implemented unary prefix op");
   } else if (node->type == kASTTypeCondExpr) {
     Generate(node->cond);
-    node->reg = node->cond->reg;
     int false_label = GetLabelNumber();
     int end_label = GetLabelNumber();
     EmitConvertToBool(node->cond->reg, node->cond->reg);
@@ -1025,58 +1089,45 @@ void Generate(struct ASTNode *node) {
     Generate(node->left);
     printf("mov %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->left->reg]);
-    FreeReg(node->left->reg);
     printf("jmp L%d\n", end_label);
     printf("L%d:\n", false_label);
     Generate(node->right);
     printf("mov %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
-    FreeReg(node->right->reg);
     printf("L%d:\n", end_label);
     return;
   } else if (node->type == kASTTypeBinOp) {
     if (node->op->type == kTokenBoolAnd) {
       Generate(node->left);
-      node->reg = node->left->reg;
       int skip_label = GetLabelNumber();
       EmitConvertToBool(node->reg, node->left->reg);
       printf("jz L%d\n", skip_label);
       Generate(node->right);
       EmitConvertToBool(node->reg, node->right->reg);
-      FreeReg(node->right->reg);
       printf("L%d:\n", skip_label);
       return;
     } else if (node->op->type == kTokenBoolOr) {
       Generate(node->left);
-      node->reg = node->left->reg;
       int skip_label = GetLabelNumber();
       EmitConvertToBool(node->reg, node->left->reg);
       printf("jnz L%d\n", skip_label);
       Generate(node->right);
       EmitConvertToBool(node->reg, node->right->reg);
-      FreeReg(node->right->reg);
       printf("L%d:\n", skip_label);
       return;
     } else if (node->op->type == kTokenComma) {
       Generate(node->left);
-      FreeReg(node->left->reg);
       Generate(node->right);
-      node->reg = node->right->reg;
       return;
     } else if (node->op->type == kTokenAssign) {
       Generate(node->left);
       Generate(node->right);
       printf("mov [%s], %s\n", reg_names_64[node->left->reg],
              reg_names_64[node->right->reg]);
-
-      FreeReg(node->left->reg);
-      node->reg = node->right->reg;
       return;
     }
     Generate(node->left);
     Generate(node->right);
-    node->reg = node->left->reg;
-    FreeReg(node->right->reg);
     if (node->op->type == kTokenPlus) {
       printf("add %s, %s\n", reg_names_64[node->reg],
              reg_names_64[node->right->reg]);
@@ -1168,6 +1219,10 @@ int main(int argc, char *argv[]) {
   PrintTokens();
 
   struct ASTNode *ast = Parse();
+  PrintASTNode(ast);
+  fputc('\n', stderr);
+
+  Analyze(ast);
   PrintASTNode(ast);
   fputc('\n', stderr);
 
