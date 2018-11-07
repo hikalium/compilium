@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+char *strndup(const char *s, size_t n);
+
 struct CompilerArgs {
   const char *input;
 };
