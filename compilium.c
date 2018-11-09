@@ -955,8 +955,8 @@ void Analyze(struct ASTNode *node) {
       if (!var_info || var_info->type != kASTTypeLocalVar)
         ErrorWithToken(node->op, "Unknown identifier");
       node->byte_offset = var_info->byte_offset;
-      node->expr_type = AllocAndInitLValueOf(var_info->expr_type);
       node->reg = AllocReg();
+      node->expr_type = AllocAndInitLValueOf(var_info->expr_type);
       return;
     }
   } else if (node->type == kASTTypeExprStmt) {
@@ -976,55 +976,32 @@ void Analyze(struct ASTNode *node) {
     return;
   } else if (node->type == kASTTypeJumpStmt) {
     if (node->op->type == kTokenKwReturn) {
-      assert(node->right);
       Analyze(node->right);
       FreeReg(node->right->reg);
       return;
     }
-    ErrorWithToken(node->op, "Analyze: Not implemented jump stmt");
   } else if (node->type == kASTTypeUnaryPrefixOp) {
-    assert(node->right);
     Analyze(node->right);
     node->reg = node->right->reg;
     return;
   } else if (node->type == kASTTypeCondExpr) {
     Analyze(node->cond);
-    node->reg = node->cond->reg;
     Analyze(node->left);
-    FreeReg(node->left->reg);
     Analyze(node->right);
+    FreeReg(node->left->reg);
     FreeReg(node->right->reg);
+    node->reg = node->cond->reg;
     return;
   } else if (node->type == kASTTypeBinOp) {
-    if (node->op->type == kTokenBoolAnd) {
-      Analyze(node->left);
-      node->reg = node->left->reg;
-      Analyze(node->right);
-      FreeReg(node->right->reg);
-      return;
-    } else if (node->op->type == kTokenBoolOr) {
-      Analyze(node->left);
-      node->reg = node->left->reg;
-      Analyze(node->right);
-      FreeReg(node->right->reg);
-      return;
-    } else if (node->op->type == kTokenComma) {
-      Analyze(node->left);
-      FreeReg(node->left->reg);
-      Analyze(node->right);
-      node->reg = node->right->reg;
-      return;
-    } else if (node->op->type == kTokenAssign) {
-      Analyze(node->left);
-      Analyze(node->right);
+    Analyze(node->left);
+    Analyze(node->right);
+    if (node->op->type == kTokenAssign || node->op->type == kTokenComma) {
       FreeReg(node->left->reg);
       node->reg = node->right->reg;
       return;
     }
-    Analyze(node->left);
-    Analyze(node->right);
-    node->reg = node->left->reg;
     FreeReg(node->right->reg);
+    node->reg = node->left->reg;
     return;
   }
   ErrorWithToken(node->op, "Analyze: Not implemented");
