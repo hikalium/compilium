@@ -1064,7 +1064,7 @@ void Generate(struct ASTNode *node) {
     }
     ErrorWithToken(node->op, "Generate: Not implemented jump stmt");
   } else if (node->type == kASTTypeUnaryPrefixOp) {
-    Generate(node->right);
+    GenerateRValue(node->right);
     if (node->op->type == kTokenPlus) {
       return;
     }
@@ -1083,53 +1083,53 @@ void Generate(struct ASTNode *node) {
     }
     ErrorWithToken(node->op, "Generate: Not implemented unary prefix op");
   } else if (node->type == kASTTypeCondExpr) {
-    Generate(node->cond);
+    GenerateRValue(node->cond);
     int false_label = GetLabelNumber();
     int end_label = GetLabelNumber();
     EmitConvertToBool(node->cond->reg, node->cond->reg);
     printf("jz L%d\n", false_label);
-    Generate(node->left);
+    GenerateRValue(node->left);
     printf("mov %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->left->reg]);
     printf("jmp L%d\n", end_label);
     printf("L%d:\n", false_label);
-    Generate(node->right);
+    GenerateRValue(node->right);
     printf("mov %s, %s\n", reg_names_64[node->reg],
            reg_names_64[node->right->reg]);
     printf("L%d:\n", end_label);
     return;
   } else if (node->type == kASTTypeBinOp) {
     if (node->op->type == kTokenBoolAnd) {
-      Generate(node->left);
+      GenerateRValue(node->left);
       int skip_label = GetLabelNumber();
       EmitConvertToBool(node->reg, node->left->reg);
       printf("jz L%d\n", skip_label);
-      Generate(node->right);
+      GenerateRValue(node->right);
       EmitConvertToBool(node->reg, node->right->reg);
       printf("L%d:\n", skip_label);
       return;
     } else if (node->op->type == kTokenBoolOr) {
-      Generate(node->left);
+      GenerateRValue(node->left);
       int skip_label = GetLabelNumber();
       EmitConvertToBool(node->reg, node->left->reg);
       printf("jnz L%d\n", skip_label);
-      Generate(node->right);
+      GenerateRValue(node->right);
       EmitConvertToBool(node->reg, node->right->reg);
       printf("L%d:\n", skip_label);
       return;
     } else if (node->op->type == kTokenComma) {
       Generate(node->left);
-      Generate(node->right);
+      GenerateRValue(node->right);
       return;
     } else if (node->op->type == kTokenAssign) {
       Generate(node->left);
-      Generate(node->right);
+      GenerateRValue(node->right);
       printf("mov [%s], %s\n", reg_names_64[node->left->reg],
              reg_names_64[node->right->reg]);
       return;
     }
-    Generate(node->left);
-    Generate(node->right);
+    GenerateRValue(node->left);
+    GenerateRValue(node->right);
     if (node->op->type == kTokenPlus) {
       printf("add %s, %s\n", reg_names_64[node->reg],
              reg_names_64[node->right->reg]);
