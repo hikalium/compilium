@@ -917,7 +917,6 @@ int AllocReg() {
   for (int i = 1; i <= NUM_OF_SCRATCH_REGS; i++) {
     if (!reg_used_table[i]) {
       reg_used_table[i] = 1;
-      fprintf(stderr, "reg alloc: %d\n", i);
       return i;
     }
   }
@@ -925,7 +924,6 @@ int AllocReg() {
 }
 void FreeReg(int reg) {
   assert(1 <= reg && reg <= NUM_OF_SCRATCH_REGS);
-  fprintf(stderr, "reg free: %d\n", reg);
   reg_used_table[reg] = 0;
 }
 
@@ -1227,7 +1225,4 @@ int main(int argc, char *argv[]) {
   printf("mov rsp, rbp\n");
   printf("pop rbp\n");
   printf("ret\n");
-
-  PrintASTNode(ast);
-  fputc('\n', stderr);
 }
