@@ -496,10 +496,16 @@ int IsSameType(struct ASTNode *a, struct ASTNode *b) {
   Error("IsSameType: Comparing non-type nodes");
 }
 
+struct ASTNode *GetRValueType(struct ASTNode *t) {
+  if (!t) return NULL;
+  if (t->type != kASTTypeLValueOf) return t;
+  return t->right;
+}
+
 int IsAssignable(struct ASTNode *dst, struct ASTNode *src) {
   assert(dst && src);
   if (dst->type != kASTTypeLValueOf) return 0;
-  return IsSameType(dst->right, src);
+  return IsSameType(GetRValueType(dst), src);
 }
 
 void TestType() {
@@ -983,6 +989,7 @@ void Analyze(struct ASTNode *node) {
   } else if (node->type == kASTTypeUnaryPrefixOp) {
     Analyze(node->right);
     node->reg = node->right->reg;
+    node->expr_type = GetRValueType(node->right->expr_type);
     return;
   } else if (node->type == kASTTypeCondExpr) {
     Analyze(node->cond);
@@ -990,7 +997,10 @@ void Analyze(struct ASTNode *node) {
     Analyze(node->right);
     FreeReg(node->left->reg);
     FreeReg(node->right->reg);
+    assert(IsSameType(GetRValueType(node->left->expr_type),
+                      GetRValueType(node->right->expr_type)));
     node->reg = node->cond->reg;
+    node->expr_type = GetRValueType(node->right->expr_type);
     return;
   } else if (node->type == kASTTypeBinOp) {
     Analyze(node->left);
@@ -998,10 +1008,12 @@ void Analyze(struct ASTNode *node) {
     if (node->op->type == kTokenAssign || node->op->type == kTokenComma) {
       FreeReg(node->left->reg);
       node->reg = node->right->reg;
+      node->expr_type = GetRValueType(node->right->expr_type);
       return;
     }
     FreeReg(node->right->reg);
     node->reg = node->left->reg;
+    node->expr_type = GetRValueType(node->left->expr_type);
     return;
   }
   ErrorWithToken(node->op, "Analyze: Not implemented");
