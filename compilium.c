@@ -46,6 +46,8 @@ enum TokenTypes {
   kTokenKwInt,
   kTokenLBrace,
   kTokenRBrace,
+  kTokenLParen,
+  kTokenRParen,
   kTokenAssign,
   kNumOfTokenTypeNames
 };
@@ -137,6 +139,8 @@ void InitTokenTypeNames() {
   token_type_names[kTokenKwInt] = "`int`";
   token_type_names[kTokenLBrace] = "LBrace";
   token_type_names[kTokenRBrace] = "RBrace";
+  token_type_names[kTokenLParen] = "LParen";
+  token_type_names[kTokenRParen] = "RParen";
   token_type_names[kTokenAssign] = "Assign";
 }
 
@@ -280,6 +284,10 @@ struct Token *CreateNextToken(const char **p, const char *src) {
     return AllocToken(src, (*p)++, 1, kTokenLBrace);
   } else if ('}' == *(*p)) {
     return AllocToken(src, (*p)++, 1, kTokenRBrace);
+  } else if ('(' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenLParen);
+  } else if (')' == *(*p)) {
+    return AllocToken(src, (*p)++, 1, kTokenRParen);
   }
   Error("Unexpected char %c", *(*p));
 }
@@ -678,6 +686,7 @@ void PrintASTNode(struct ASTNode *n) { PrintASTNodeSub(n, 0); }
 
 struct ASTNode *ParseCastExpr();
 
+struct ASTNode *ParseExpr(void);
 struct ASTNode *ParsePrimaryExpr() {
   struct Token *t;
   if ((t = ConsumeToken(kTokenDecimalNumber)) ||
@@ -685,6 +694,14 @@ struct ASTNode *ParsePrimaryExpr() {
       (t = ConsumeToken(kTokenIdent))) {
     struct ASTNode *op = AllocASTNode(kASTTypePrimaryExpr);
     op->op = t;
+    return op;
+  }
+  if ((t = ConsumeToken(kTokenLParen))) {
+    struct ASTNode *op = AllocASTNode(kASTTypePrimaryExpr);
+    op->op = t;
+    op->right = ParseExpr();
+    if (!op->right) ErrorWithToken(t, "Expected expr after this token");
+    ExpectToken(kTokenRParen);
     return op;
   }
   return NULL;
@@ -971,6 +988,11 @@ void Analyze(struct ASTNode *node) {
       node->reg = AllocReg();
       node->expr_type = AllocAndInitBaseType(CreateToken("int"));
       return;
+    } else if (node->op->type == kTokenLParen) {
+      Analyze(node->right);
+      node->reg = node->right->reg;
+      node->expr_type = node->right->expr_type;
+      return;
     } else if (node->op->type == kTokenIdent) {
       struct ASTNode *var_info = GetNodeByTokenKey(var_context, node->op);
       if (!var_info || var_info->type != kASTTypeLocalVar)
@@ -1040,6 +1062,9 @@ void Generate(struct ASTNode *node) {
         node->op->type == kTokenOctalNumber) {
       printf("mov %s, %ld\n", reg_names_64[node->reg],
              strtol(node->op->begin, NULL, 0));
+      return;
+    } else if (node->op->type == kTokenLParen) {
+      Generate(node->right);
       return;
     } else if (node->op->type == kTokenIdent) {
       printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg],

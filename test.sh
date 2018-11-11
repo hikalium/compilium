@@ -35,6 +35,13 @@ test_expr_result '1' 1
 test_expr_result '17' 17
 test_expr_result '017' 15
 
+# Paren
+test_expr_result '(0)' 0
+test_expr_result '(1)' 1
+test_expr_result '(1 ? 2 : 3)' 2
+test_expr_result '(0 ? 1 : 2)' 2
+test_expr_result '2 * (3 + 4)' 14
+
 # Non-printable
 test_expr_result ' 0 ' 0
 
