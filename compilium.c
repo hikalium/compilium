@@ -396,6 +396,7 @@ enum ASTType {
   kASTTypeLocalVar,
   kASTTypeBaseType,
   kASTTypeLValueOf,
+  kASTTypePointerOf,
 };
 
 struct ASTNode {
@@ -484,13 +485,19 @@ struct ASTNode *AllocAndInitLValueOf(struct ASTNode *type) {
   return n;
 }
 
+struct ASTNode *AllocAndInitPointerOf(struct ASTNode *type) {
+  struct ASTNode *n = AllocASTNode(kASTTypePointerOf);
+  n->right = type;
+  return n;
+}
+
 int IsSameType(struct ASTNode *a, struct ASTNode *b) {
   assert(a && b);
   if (a->type != b->type) return 0;
   if (a->type == kASTTypeBaseType) {
     assert(a->op && b->op);
     return a->op->type == b->op->type;
-  } else if (a->type == kASTTypeLValueOf) {
+  } else if (a->type == kASTTypeLValueOf || a->type == kASTTypePointerOf) {
     return IsSameType(a->right, b->right);
   }
   Error("IsSameType: Comparing non-type nodes");
@@ -514,11 +521,16 @@ void TestType() {
   struct ASTNode *int_type = AllocAndInitBaseType(CreateToken("int"));
   struct ASTNode *another_int_type = AllocAndInitBaseType(CreateToken("int"));
   struct ASTNode *lvalue_int_type = AllocAndInitLValueOf(int_type);
+  struct ASTNode *pointer_of_int_type = AllocAndInitPointerOf(int_type);
+  struct ASTNode *another_pointer_of_int_type =
+      AllocAndInitPointerOf(another_int_type);
 
   assert(IsSameType(int_type, int_type));
   assert(IsSameType(int_type, another_int_type));
   assert(!IsSameType(int_type, lvalue_int_type));
   assert(IsSameType(lvalue_int_type, lvalue_int_type));
+  assert(!IsSameType(int_type, pointer_of_int_type));
+  assert(IsSameType(pointer_of_int_type, another_pointer_of_int_type));
 
   fprintf(stderr, "PASS\n");
   exit(EXIT_SUCCESS);
@@ -880,7 +892,12 @@ struct ASTNode *ParseDecl() {
   if (!(t = ConsumeToken(kTokenKwInt))) return NULL;
   struct ASTNode *n = AllocASTNode(kASTTypeDecl);
   n->op = t;
+  struct ASTNode *type = AllocAndInitBaseType(t);
+  while ((t = ConsumeToken(kTokenStar))) {
+    type = AllocAndInitPointerOf(type);
+  }
   n->right = AllocAndInitASTNodeIdent(ExpectToken(kTokenIdent));
+  n->left = AllocAndInitBaseType(n->op);
   ExpectToken(kTokenSemicolon);
   return n;
 }
@@ -975,8 +992,7 @@ void Analyze(struct ASTNode *node) {
     }
     return;
   } else if (node->type == kASTTypeDecl) {
-    AddLocalVar(var_context, CreateTokenStr(node->right->op),
-                AllocAndInitBaseType(node->op));
+    AddLocalVar(var_context, CreateTokenStr(node->right->op), node->left);
     return;
   } else if (node->type == kASTTypeJumpStmt) {
     if (node->op->type == kTokenKwReturn) {
