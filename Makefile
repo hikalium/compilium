@@ -18,7 +18,7 @@ format:
 
 commit:
 	make format
-	make testall
 	git add .
-	git diff HEAD
+	git diff HEAD --color=always | less -R
+	make testall
 	git commit

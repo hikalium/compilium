@@ -728,7 +728,7 @@ struct ASTNode *ParseUnaryExpr() {
   struct Token *t;
   if ((t = ConsumeToken(kTokenPlus)) || (t = ConsumeToken(kTokenMinus)) ||
       (t = ConsumeToken(kTokenBitNot)) || (t = ConsumeToken(kTokenBoolNot)) ||
-      (t = ConsumeToken(kTokenBitAnd))) {
+      (t = ConsumeToken(kTokenBitAnd)) || (t = ConsumeToken(kTokenStar))) {
     return AllocAndInitASTNodeUnaryPrefixOp(t, ParseCastExpr());
   } else if ((t = ConsumeToken(kTokenKwSizeof))) {
     return AllocAndInitASTNodeUnaryPrefixOp(t, ParseUnaryExpr());
@@ -1011,7 +1011,7 @@ void AddLocalVar(struct ASTNode *list, const char *key,
   }
   ofs += GetSizeOfType(var_type);
   int align = GetSizeOfType(var_type);
-  ofs = (ofs + align - 1) % align;
+  ofs = (ofs + align - 1) / align * align;
   struct ASTNode *local_var = AllocAndInitASTNodeLocalVar(ofs, var_type);
   PushKeyValueToList(list, key, local_var);
 }
@@ -1072,6 +1072,12 @@ void Analyze(struct ASTNode *node) {
     if (node->op->type == kTokenBitAnd) {
       node->expr_type =
           AllocAndInitPointerOf(GetRValueType(node->right->expr_type));
+      return;
+    }
+    if (node->op->type == kTokenStar) {
+      struct ASTNode *rtype = GetRValueType(node->right->expr_type);
+      assert(rtype && rtype->type == kASTTypePointerOf);
+      node->expr_type = AllocAndInitLValueOf(rtype->right);
       return;
     }
     node->expr_type = GetRValueType(node->right->expr_type);
@@ -1147,6 +1153,7 @@ void Generate(struct ASTNode *node) {
       return;
     }
     if (node->op->type == kTokenBitAnd) {
+      Generate(node->right);
       return;
     }
     GenerateRValue(node->right);
@@ -1164,6 +1171,9 @@ void Generate(struct ASTNode *node) {
     if (node->op->type == kTokenBoolNot) {
       EmitConvertToBool(node->reg, node->reg);
       printf("setz %s\n", reg_names_8[node->reg]);
+      return;
+    }
+    if (node->op->type == kTokenStar) {
       return;
     }
     ErrorWithToken(node->op, "Generate: Not implemented unary prefix op");
