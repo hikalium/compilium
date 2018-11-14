@@ -532,7 +532,7 @@ int GetSizeOfType(struct ASTNode *t) {
   assert(t);
   if (t->type == kASTTypeBaseType) {
     assert(t->op);
-    if (t->op->type == kTokenKwInt) return 8;
+    if (t->op->type == kTokenKwInt) return 4;
   } else if (t->type == kASTTypePointerOf) {
     return 8;
   }
@@ -556,7 +556,7 @@ void TestType() {
   assert(!IsSameType(int_type, pointer_of_int_type));
   assert(IsSameType(pointer_of_int_type, another_pointer_of_int_type));
 
-  assert(GetSizeOfType(int_type) == 8);
+  assert(GetSizeOfType(int_type) == 4);
   assert(GetSizeOfType(pointer_of_int_type) == 8);
 
   fprintf(stderr, "PASS\n");
@@ -961,6 +961,8 @@ struct ASTNode *Parse() {
 #define NUM_OF_SCRATCH_REGS 4
 const char *reg_names_64[NUM_OF_SCRATCH_REGS + 1] = {NULL, "rdi", "rsi", "r8",
                                                      "r9"};
+const char *reg_names_32[NUM_OF_SCRATCH_REGS + 1] = {NULL, "edi", "esi", "r8d",
+                                                     "r9d"};
 const char *reg_names_8[NUM_OF_SCRATCH_REGS + 1] = {NULL, "dil", "sil", "r8b",
                                                     "r9b"};
 
@@ -1198,9 +1200,17 @@ void Generate(struct ASTNode *node) {
     } else if (node->op->type == kTokenAssign) {
       Generate(node->left);
       GenerateRValue(node->right);
-      printf("mov [%s], %s\n", reg_names_64[node->left->reg],
-             reg_names_64[node->right->reg]);
-      return;
+      int size = GetSizeOfType(node->right->expr_type);
+      if (size == 8) {
+        printf("mov [%s], %s\n", reg_names_64[node->left->reg],
+               reg_names_64[node->right->reg]);
+        return;
+      } else if (size == 4) {
+        printf("mov [%s], %s\n", reg_names_64[node->left->reg],
+               reg_names_32[node->right->reg]);
+        return;
+      }
+      ErrorWithToken(node->op, "Assigning %d bytes is not implemented.", size);
     }
     GenerateRValue(node->left);
     GenerateRValue(node->right);
@@ -1281,7 +1291,16 @@ void Generate(struct ASTNode *node) {
 void GenerateRValue(struct ASTNode *node) {
   Generate(node);
   if (!node->expr_type || node->expr_type->type != kASTTypeLValueOf) return;
-  printf("mov %s, [%s]\n", reg_names_64[node->reg], reg_names_64[node->reg]);
+  int size = GetSizeOfType(GetRValueType(node->expr_type));
+  if (size == 8) {
+    printf("mov %s, [%s]\n", reg_names_64[node->reg], reg_names_64[node->reg]);
+    return;
+  } else if (size == 4) {
+    printf("movsxd %s, dword ptr[%s]\n", reg_names_64[node->reg],
+           reg_names_64[node->reg]);
+    return;
+  }
+  ErrorWithToken(node->op, "Dereferencing %d bytes is not implemented.", size);
 }
 
 int main(int argc, char *argv[]) {
