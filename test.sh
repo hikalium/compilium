@@ -23,6 +23,7 @@ function test_stmt_result {
   test_result "{$1}" "$2" "$1"
 }
 
+test_stmt_result 'int a; int *p; p = &a; return p ? 1 : 0;' 1
 test_stmt_result 'int a; int b; int c; a = 3; b = 5; c = 7; return a + b + c;' 15
 test_stmt_result 'int a; return sizeof(a);' 4
 test_stmt_result 'int *a; return sizeof(a);' 8

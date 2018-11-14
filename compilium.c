@@ -727,7 +727,8 @@ struct ASTNode *ParsePrimaryExpr() {
 struct ASTNode *ParseUnaryExpr() {
   struct Token *t;
   if ((t = ConsumeToken(kTokenPlus)) || (t = ConsumeToken(kTokenMinus)) ||
-      (t = ConsumeToken(kTokenBitNot)) || (t = ConsumeToken(kTokenBoolNot))) {
+      (t = ConsumeToken(kTokenBitNot)) || (t = ConsumeToken(kTokenBoolNot)) ||
+      (t = ConsumeToken(kTokenBitAnd))) {
     return AllocAndInitASTNodeUnaryPrefixOp(t, ParseCastExpr());
   } else if ((t = ConsumeToken(kTokenKwSizeof))) {
     return AllocAndInitASTNodeUnaryPrefixOp(t, ParseUnaryExpr());
@@ -1068,6 +1069,11 @@ void Analyze(struct ASTNode *node) {
       return;
     }
     node->reg = node->right->reg;
+    if (node->op->type == kTokenBitAnd) {
+      node->expr_type =
+          AllocAndInitPointerOf(GetRValueType(node->right->expr_type));
+      return;
+    }
     node->expr_type = GetRValueType(node->right->expr_type);
     return;
   } else if (node->type == kASTTypeCondExpr) {
@@ -1138,6 +1144,9 @@ void Generate(struct ASTNode *node) {
     if (node->op->type == kTokenKwSizeof) {
       printf("mov %s, %d\n", reg_names_64[node->reg],
              GetSizeOfType(node->right->expr_type));
+      return;
+    }
+    if (node->op->type == kTokenBitAnd) {
       return;
     }
     GenerateRValue(node->right);
