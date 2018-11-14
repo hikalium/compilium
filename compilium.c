@@ -586,12 +586,6 @@ void PushKeyValueToList(struct ASTNode *list, const char *key,
   list->nodes[list->size++] = AllocAndInitASTNodeKeyValue(key, value);
 }
 
-void AddLocalVar(struct ASTNode *list, const char *key,
-                 struct ASTNode *var_type) {
-  struct ASTNode *local_var = AllocAndInitASTNodeLocalVar(8, var_type);
-  PushKeyValueToList(list, key, local_var);
-}
-
 int GetSizeOfList(struct ASTNode *list) {
   assert(list && list->type == kASTTypeList);
   return list->size;
@@ -1000,6 +994,23 @@ void EmitCompareIntegers(int dst, int left, int right, const char *cc) {
   printf("cmp %s, %s\n", reg_names_64[left], reg_names_64[right]);
   printf("set%s %s\n", cc, reg_names_8[dst]);
   printf("movzx %s, %s\n", reg_names_64[dst], reg_names_8[dst]);
+}
+
+void AddLocalVar(struct ASTNode *list, const char *key,
+                 struct ASTNode *var_type) {
+  int ofs = 0;
+  if (GetSizeOfList(list)) {
+    struct ASTNode *n = GetNodeAt(list, GetSizeOfList(list) - 1);
+    assert(n && n->type == kASTTypeKeyValue);
+    struct ASTNode *v = n->value;
+    assert(v && v->type == kASTTypeLocalVar);
+    ofs = v->byte_offset;
+  }
+  ofs += GetSizeOfType(var_type);
+  int align = GetSizeOfType(var_type);
+  ofs = (ofs + align - 1) % align;
+  struct ASTNode *local_var = AllocAndInitASTNodeLocalVar(ofs, var_type);
+  PushKeyValueToList(list, key, local_var);
 }
 
 void GenerateRValue(struct ASTNode *node);
