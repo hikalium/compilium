@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -44,6 +45,7 @@ enum TokenTypes {
   kTokenIdent,
   kTokenKwReturn,
   kTokenKwInt,
+  kTokenKwSizeof,
   kTokenLBrace,
   kTokenRBrace,
   kTokenLParen,
@@ -74,7 +76,7 @@ _Noreturn void Error(const char *fmt, ...) {
   exit(EXIT_FAILURE);
 }
 
-void __assert(const char *expr_str, const char *file, int line) {
+_Noreturn void __assert(const char *expr_str, const char *file, int line) {
   Error("Assertion failed: %s at %s:%d\n", expr_str, file, line);
 }
 
@@ -137,6 +139,7 @@ void InitTokenTypeNames() {
   token_type_names[kTokenIdent] = "Ident";
   token_type_names[kTokenKwReturn] = "`return`";
   token_type_names[kTokenKwInt] = "`int`";
+  token_type_names[kTokenKwSizeof] = "`sizeof`";
   token_type_names[kTokenLBrace] = "LBrace";
   token_type_names[kTokenRBrace] = "RBrace";
   token_type_names[kTokenLParen] = "LParen";
@@ -206,6 +209,7 @@ struct Token *CreateNextToken(const char **p, const char *src) {
     struct Token *t = AllocToken(src, (*p), length, kTokenIdent);
     if (IsEqualTokenWithCStr(t, "return")) t->type = kTokenKwReturn;
     if (IsEqualTokenWithCStr(t, "int")) t->type = kTokenKwInt;
+    if (IsEqualTokenWithCStr(t, "sizeof")) t->type = kTokenKwSizeof;
     (*p) += length;
     return t;
   } else if ('&' == *(*p)) {
@@ -523,6 +527,18 @@ int IsAssignable(struct ASTNode *dst, struct ASTNode *src) {
   return IsSameType(GetRValueType(dst), src);
 }
 
+int GetSizeOfType(struct ASTNode *t) {
+  t = GetRValueType(t);
+  assert(t);
+  if (t->type == kASTTypeBaseType) {
+    assert(t->op);
+    if (t->op->type == kTokenKwInt) return 8;
+  } else if (t->type == kASTTypePointerOf) {
+    return 8;
+  }
+  assert(false);
+}
+
 void TestType() {
   fprintf(stderr, "Testing Type...");
 
@@ -539,6 +555,9 @@ void TestType() {
   assert(IsSameType(lvalue_int_type, lvalue_int_type));
   assert(!IsSameType(int_type, pointer_of_int_type));
   assert(IsSameType(pointer_of_int_type, another_pointer_of_int_type));
+
+  assert(GetSizeOfType(int_type) == 8);
+  assert(GetSizeOfType(pointer_of_int_type) == 8);
 
   fprintf(stderr, "PASS\n");
   exit(EXIT_SUCCESS);
@@ -663,6 +682,10 @@ void PrintASTNodeSub(struct ASTNode *n, int depth) {
     PrintASTNodeSub(n->right, depth + 1);
     fprintf(stderr, ">");
     return;
+  } else if (n->type == kASTTypePointerOf) {
+    fprintf(stderr, "*");
+    PrintASTNodeSub(n->right, depth + 1);
+    return;
   }
   fprintf(stderr, "(");
   PrintTokenBrief(n->op);
@@ -712,6 +735,8 @@ struct ASTNode *ParseUnaryExpr() {
   if ((t = ConsumeToken(kTokenPlus)) || (t = ConsumeToken(kTokenMinus)) ||
       (t = ConsumeToken(kTokenBitNot)) || (t = ConsumeToken(kTokenBoolNot))) {
     return AllocAndInitASTNodeUnaryPrefixOp(t, ParseCastExpr());
+  } else if ((t = ConsumeToken(kTokenKwSizeof))) {
+    return AllocAndInitASTNodeUnaryPrefixOp(t, ParseUnaryExpr());
   }
   return ParsePrimaryExpr();
 }
@@ -914,7 +939,7 @@ struct ASTNode *ParseDecl() {
     type = AllocAndInitPointerOf(type);
   }
   n->right = AllocAndInitASTNodeIdent(ExpectToken(kTokenIdent));
-  n->left = AllocAndInitBaseType(n->op);
+  n->left = type;
   ExpectToken(kTokenSemicolon);
   return n;
 }
@@ -1024,6 +1049,11 @@ void Analyze(struct ASTNode *node) {
     }
   } else if (node->type == kASTTypeUnaryPrefixOp) {
     Analyze(node->right);
+    if (node->op->type == kTokenKwSizeof) {
+      node->reg = AllocReg();
+      node->expr_type = AllocAndInitBaseType(CreateToken("int"));
+      return;
+    }
     node->reg = node->right->reg;
     node->expr_type = GetRValueType(node->right->expr_type);
     return;
@@ -1092,6 +1122,11 @@ void Generate(struct ASTNode *node) {
     }
     ErrorWithToken(node->op, "Generate: Not implemented jump stmt");
   } else if (node->type == kASTTypeUnaryPrefixOp) {
+    if (node->op->type == kTokenKwSizeof) {
+      printf("mov %s, %d\n", reg_names_64[node->reg],
+             GetSizeOfType(node->right->expr_type));
+      return;
+    }
     GenerateRValue(node->right);
     if (node->op->type == kTokenPlus) {
       return;
