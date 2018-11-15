@@ -44,6 +44,7 @@ enum TokenTypes {
   kTokenSemicolon,
   kTokenIdent,
   kTokenKwReturn,
+  kTokenKwChar,
   kTokenKwInt,
   kTokenKwSizeof,
   kTokenLBrace,
@@ -138,6 +139,7 @@ void InitTokenTypeNames() {
   token_type_names[kTokenSemicolon] = "Semicolon";
   token_type_names[kTokenIdent] = "Ident";
   token_type_names[kTokenKwReturn] = "`return`";
+  token_type_names[kTokenKwChar] = "`char`";
   token_type_names[kTokenKwInt] = "`int`";
   token_type_names[kTokenKwSizeof] = "`sizeof`";
   token_type_names[kTokenLBrace] = "LBrace";
@@ -208,6 +210,7 @@ struct Token *CreateNextToken(const char **p, const char *src) {
     }
     struct Token *t = AllocToken(src, (*p), length, kTokenIdent);
     if (IsEqualTokenWithCStr(t, "return")) t->type = kTokenKwReturn;
+    if (IsEqualTokenWithCStr(t, "char")) t->type = kTokenKwChar;
     if (IsEqualTokenWithCStr(t, "int")) t->type = kTokenKwInt;
     if (IsEqualTokenWithCStr(t, "sizeof")) t->type = kTokenKwSizeof;
     (*p) += length;
@@ -533,6 +536,7 @@ int GetSizeOfType(struct ASTNode *t) {
   if (t->type == kASTTypeBaseType) {
     assert(t->op);
     if (t->op->type == kTokenKwInt) return 4;
+    if (t->op->type == kTokenKwChar) return 1;
   } else if (t->type == kASTTypePointerOf) {
     return 8;
   }
@@ -926,7 +930,8 @@ struct ASTNode *ParseStmt() {
 
 struct ASTNode *ParseDecl() {
   struct Token *t;
-  if (!(t = ConsumeToken(kTokenKwInt))) return NULL;
+  (t = ConsumeToken(kTokenKwInt)) || (t = ConsumeToken(kTokenKwChar));
+  if (!t) return NULL;
   struct ASTNode *n = AllocASTNode(kASTTypeDecl);
   n->op = t;
   struct ASTNode *type = AllocAndInitBaseType(t);
@@ -1228,6 +1233,10 @@ void Generate(struct ASTNode *node) {
         printf("mov [%s], %s\n", reg_names_64[node->left->reg],
                reg_names_32[node->right->reg]);
         return;
+      } else if (size == 1) {
+        printf("mov [%s], %s\n", reg_names_64[node->left->reg],
+               reg_names_8[node->right->reg]);
+        return;
       }
       ErrorWithToken(node->op, "Assigning %d bytes is not implemented.", size);
     }
@@ -1316,6 +1325,10 @@ void GenerateRValue(struct ASTNode *node) {
     return;
   } else if (size == 4) {
     printf("movsxd %s, dword ptr[%s]\n", reg_names_64[node->reg],
+           reg_names_64[node->reg]);
+    return;
+  } else if (size == 1) {
+    printf("movsx %s, byte ptr[%s]\n", reg_names_64[node->reg],
            reg_names_64[node->reg]);
     return;
   }
