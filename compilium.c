@@ -52,6 +52,7 @@ enum TokenTypes {
   kTokenLParen,
   kTokenRParen,
   kTokenAssign,
+  kTokenCharLiteral,
   kNumOfTokenTypeNames
 };
 
@@ -147,6 +148,7 @@ void InitTokenTypeNames() {
   token_type_names[kTokenLParen] = "LParen";
   token_type_names[kTokenRParen] = "RParen";
   token_type_names[kTokenAssign] = "Assign";
+  token_type_names[kTokenCharLiteral] = "CharLiteral";
 }
 
 const char *GetTokenTypeName(enum TokenTypes type) {
@@ -215,6 +217,20 @@ struct Token *CreateNextToken(const char **p, const char *src) {
     if (IsEqualTokenWithCStr(t, "sizeof")) t->type = kTokenKwSizeof;
     (*p) += length;
     return t;
+  } else if ('\'' == *(*p)) {
+    const char *q = *p + 1;
+    while (*q && *q != '\'') {
+      if (*q == '\\' && *(q + 1)) {
+        q++;
+      }
+      q++;
+    }
+    if (*q != '\'') {
+      Error("Expected end of char literal (')");
+    }
+    int length = q - *p + 1;
+    (*p) += length;
+    return AllocToken(src, (*p) - length, length, kTokenCharLiteral);
   } else if ('&' == *(*p)) {
     if ((*p)[1] == '&') {
       struct Token *t = AllocToken(src, (*p), 2, kTokenBoolAnd);
@@ -712,7 +728,8 @@ struct ASTNode *ParsePrimaryExpr() {
   struct Token *t;
   if ((t = ConsumeToken(kTokenDecimalNumber)) ||
       (t = ConsumeToken(kTokenOctalNumber)) ||
-      (t = ConsumeToken(kTokenIdent))) {
+      (t = ConsumeToken(kTokenIdent)) ||
+      (t = ConsumeToken(kTokenCharLiteral))) {
     struct ASTNode *op = AllocASTNode(kASTTypePrimaryExpr);
     op->op = t;
     return op;
@@ -1028,7 +1045,8 @@ void Analyze(struct ASTNode *node) {
   assert(node && node->op);
   if (node->type == kASTTypePrimaryExpr) {
     if (node->op->type == kTokenDecimalNumber ||
-        node->op->type == kTokenOctalNumber) {
+        node->op->type == kTokenOctalNumber ||
+        node->op->type == kTokenCharLiteral) {
       node->reg = AllocReg();
       node->expr_type = AllocAndInitBaseType(CreateToken("int"));
       return;
@@ -1123,6 +1141,11 @@ void Generate(struct ASTNode *node) {
       printf("mov %s, %ld\n", reg_names_64[node->reg],
              strtol(node->op->begin, NULL, 0));
       return;
+    } else if (node->op->type == kTokenCharLiteral) {
+      if (node->op->length == (1 + 1 + 1)) {
+        printf("mov %s, %d\n", reg_names_64[node->reg], node->op->begin[1]);
+        return;
+      }
     } else if (node->op->type == kTokenLParen) {
       Generate(node->right);
       return;
