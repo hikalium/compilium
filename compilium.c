@@ -180,150 +180,131 @@ int IsEqualTokenWithCStr(struct Token *t, const char *s) {
   return strlen(s) == t->length && strncmp(t->begin, s, t->length) == 0;
 }
 
-struct Token *CreateNextToken(const char **p, const char *src) {
-  while (*(*p) <= ' ') {
-    if (!*(*p)) return NULL;
-    (*p)++;
+struct Token *CreateNextToken(const char *p, const char *src) {
+  while (*p <= ' ') {
+    if (!*p) return NULL;
+    p++;
   }
-  if ('1' <= *(*p) && *(*p) <= '9') {
+  if ('1' <= *p && *p <= '9') {
     int length = 0;
-    while ('0' <= (*p)[length] && (*p)[length] <= '9') {
+    while ('0' <= p[length] && p[length] <= '9') {
       length++;
     }
-    struct Token *t = AllocToken(src, (*p), length, kTokenDecimalNumber);
-    (*p) += length;
-    return t;
-  } else if ('0' == *(*p)) {
+    return AllocToken(src, p, length, kTokenDecimalNumber);
+  } else if ('0' == *p) {
     int length = 0;
-    while ('0' <= (*p)[length] && (*p)[length] <= '7') {
+    while ('0' <= p[length] && p[length] <= '7') {
       length++;
     }
-    struct Token *t = AllocToken(src, (*p), length, kTokenOctalNumber);
-    (*p) += length;
-    return t;
-  } else if (('A' <= *(*p) && *(*p) <= 'Z') || ('a' <= *(*p) && *(*p) <= 'z') ||
-             *(*p) == '_') {
+    return AllocToken(src, p, length, kTokenDecimalNumber);
+  } else if (('A' <= *p && *p <= 'Z') || ('a' <= *p && *p <= 'z') ||
+             *p == '_') {
     int length = 0;
-    while (('A' <= (*p)[length] && (*p)[length] <= 'Z') ||
-           ('a' <= (*p)[length] && (*p)[length] <= 'z') ||
-           (*p)[length] == '_' ||
-           ('0' <= (*p)[length] && (*p)[length] <= '9')) {
+    while (('A' <= p[length] && p[length] <= 'Z') ||
+           ('a' <= p[length] && p[length] <= 'z') || p[length] == '_' ||
+           ('0' <= p[length] && p[length] <= '9')) {
       length++;
     }
-    struct Token *t = AllocToken(src, (*p), length, kTokenIdent);
+    struct Token *t = AllocToken(src, p, length, kTokenIdent);
     if (IsEqualTokenWithCStr(t, "return")) t->type = kTokenKwReturn;
     if (IsEqualTokenWithCStr(t, "char")) t->type = kTokenKwChar;
     if (IsEqualTokenWithCStr(t, "int")) t->type = kTokenKwInt;
     if (IsEqualTokenWithCStr(t, "sizeof")) t->type = kTokenKwSizeof;
-    (*p) += length;
     return t;
-  } else if ('\'' == *(*p)) {
-    const char *q = *p + 1;
-    while (*q && *q != '\'') {
-      if (*q == '\\' && *(q + 1)) {
-        q++;
+  } else if ('\'' == *p) {
+    int length = 1;
+    while (p[length] && p[length] != '\'') {
+      if (p[length] == '\\' && p[length + 1]) {
+        length++;
       }
-      q++;
+      length++;
     }
-    if (*q != '\'') {
+    if (p[length] != '\'') {
       Error("Expected end of char literal (')");
     }
-    int length = q - *p + 1;
-    (*p) += length;
-    return AllocToken(src, (*p) - length, length, kTokenCharLiteral);
-  } else if ('&' == *(*p)) {
-    if ((*p)[1] == '&') {
-      struct Token *t = AllocToken(src, (*p), 2, kTokenBoolAnd);
-      (*p) += 2;
-      return t;
+    length++;
+    return AllocToken(src, p, length, kTokenCharLiteral);
+  } else if ('&' == *p) {
+    if (p[1] == '&') {
+      return AllocToken(src, p, 2, kTokenBoolAnd);
     }
-    return AllocToken(src, (*p)++, 1, kTokenBitAnd);
-  } else if ('|' == *(*p)) {
-    if ((*p)[1] == '|') {
-      struct Token *t = AllocToken(src, (*p), 2, kTokenBoolOr);
-      (*p) += 2;
-      return t;
+    return AllocToken(src, p, 1, kTokenBitAnd);
+  } else if ('|' == *p) {
+    if (p[1] == '|') {
+      return AllocToken(src, p, 2, kTokenBoolOr);
     }
-    return AllocToken(src, (*p)++, 1, kTokenBitOr);
-  } else if ('<' == *(*p)) {
-    if ((*p)[1] == '<') {
-      struct Token *t = AllocToken(src, (*p), 2, kTokenShiftLeft);
-      (*p) += 2;
-      return t;
-    } else if ((*p)[1] == '=') {
-      struct Token *t = AllocToken(src, (*p), 2, kTokenLessThanEq);
-      (*p) += 2;
-      return t;
+    return AllocToken(src, p, 1, kTokenBitOr);
+  } else if ('<' == *p) {
+    if (p[1] == '<') {
+      return AllocToken(src, p, 2, kTokenShiftLeft);
+    } else if (p[1] == '=') {
+      return AllocToken(src, p, 2, kTokenLessThanEq);
     }
-    return AllocToken(src, (*p)++, 1, kTokenLessThan);
-  } else if ('>' == *(*p)) {
-    if ((*p)[1] == '>') {
-      struct Token *t = AllocToken(src, (*p), 2, kTokenShiftRight);
-      (*p) += 2;
-      return t;
-    } else if ((*p)[1] == '=') {
-      struct Token *t = AllocToken(src, (*p), 2, kTokenGreaterThanEq);
-      (*p) += 2;
-      return t;
+    return AllocToken(src, p, 1, kTokenLessThan);
+  } else if ('>' == *p) {
+    if (p[1] == '>') {
+      return AllocToken(src, p, 2, kTokenShiftRight);
+    } else if (p[1] == '=') {
+      return AllocToken(src, p, 2, kTokenGreaterThanEq);
     }
-    return AllocToken(src, (*p)++, 1, kTokenGreaterThan);
-  } else if ('=' == *(*p)) {
-    if ((*p)[1] == '=') {
-      struct Token *t = AllocToken(src, (*p), 2, kTokenEq);
-      (*p) += 2;
-      return t;
+    return AllocToken(src, p, 1, kTokenGreaterThan);
+  } else if ('=' == *p) {
+    if (p[1] == '=') {
+      return AllocToken(src, p, 2, kTokenEq);
     }
-    return AllocToken(src, (*p)++, 1, kTokenAssign);
-  } else if ('!' == *(*p)) {
-    if ((*p)[1] == '=') {
-      struct Token *t = AllocToken(src, (*p), 2, kTokenNotEq);
-      (*p) += 2;
-      return t;
+    return AllocToken(src, p, 1, kTokenAssign);
+  } else if ('!' == *p) {
+    if (p[1] == '=') {
+      return AllocToken(src, p, 2, kTokenNotEq);
     }
-    return AllocToken(src, (*p)++, 1, kTokenBoolNot);
-  } else if ('^' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenBitXor);
-  } else if ('+' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenPlus);
-  } else if ('-' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenMinus);
-  } else if ('*' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenStar);
-  } else if ('/' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenSlash);
-  } else if ('%' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenPercent);
-  } else if ('~' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenBitNot);
-  } else if ('?' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenConditional);
-  } else if (':' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenColon);
-  } else if (',' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenComma);
-  } else if (';' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenSemicolon);
-  } else if ('{' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenLBrace);
-  } else if ('}' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenRBrace);
-  } else if ('(' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenLParen);
-  } else if (')' == *(*p)) {
-    return AllocToken(src, (*p)++, 1, kTokenRParen);
+    return AllocToken(src, p, 1, kTokenBoolNot);
+  } else if ('^' == *p) {
+    return AllocToken(src, p, 1, kTokenBitXor);
+  } else if ('+' == *p) {
+    return AllocToken(src, p, 1, kTokenPlus);
+  } else if ('-' == *p) {
+    return AllocToken(src, p, 1, kTokenMinus);
+  } else if ('*' == *p) {
+    return AllocToken(src, p, 1, kTokenStar);
+  } else if ('/' == *p) {
+    return AllocToken(src, p, 1, kTokenSlash);
+  } else if ('%' == *p) {
+    return AllocToken(src, p, 1, kTokenPercent);
+  } else if ('~' == *p) {
+    return AllocToken(src, p, 1, kTokenBitNot);
+  } else if ('?' == *p) {
+    return AllocToken(src, p, 1, kTokenConditional);
+  } else if (':' == *p) {
+    return AllocToken(src, p, 1, kTokenColon);
+  } else if (',' == *p) {
+    return AllocToken(src, p, 1, kTokenComma);
+  } else if (';' == *p) {
+    return AllocToken(src, p, 1, kTokenSemicolon);
+  } else if ('{' == *p) {
+    return AllocToken(src, p, 1, kTokenLBrace);
+  } else if ('}' == *p) {
+    return AllocToken(src, p, 1, kTokenRBrace);
+  } else if ('(' == *p) {
+    return AllocToken(src, p, 1, kTokenLParen);
+  } else if (')' == *p) {
+    return AllocToken(src, p, 1, kTokenRParen);
   }
-  Error("Unexpected char %c", *(*p));
+  Error("Unexpected char %c", *p);
 }
 
 struct Token *CreateToken(const char *input) {
-  return CreateNextToken(&input, input);
+  return CreateNextToken(input, input);
 }
 
+void PrintToken(struct Token *t);
 void Tokenize(const char *input) {
   const char *p = input;
   struct Token *t;
-  while ((t = CreateNextToken(&p, input))) {
+  while ((t = CreateNextToken(p, input))) {
     AddToken(t);
+    PrintToken(t);
+    fputc('\n', stderr);
+    p = t->begin + t->length;
   }
 }
 
