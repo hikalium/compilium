@@ -23,6 +23,8 @@ function test_stmt_result {
   test_result "{$1}" "$2" "$1"
 }
 
+test_stmt_result 'return *("compilium" + 1);' 111
+test_stmt_result 'return *"compilium";' 99
 test_stmt_result "return 'C';" 67
 test_stmt_result 'char c; c = 2; c = c + 1; return c;' 3
 test_stmt_result 'char c; return sizeof(c);' 1

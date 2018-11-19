@@ -53,6 +53,7 @@ enum TokenTypes {
   kTokenRParen,
   kTokenAssign,
   kTokenCharLiteral,
+  kTokenStringLiteral,
   kNumOfTokenTypeNames
 };
 
@@ -149,6 +150,7 @@ void InitTokenTypeNames() {
   token_type_names[kTokenRParen] = "RParen";
   token_type_names[kTokenAssign] = "Assign";
   token_type_names[kTokenCharLiteral] = "CharLiteral";
+  token_type_names[kTokenStringLiteral] = "StringLiteral";
 }
 
 const char *GetTokenTypeName(enum TokenTypes type) {
@@ -224,6 +226,19 @@ struct Token *CreateNextToken(const char *p, const char *src) {
     }
     length++;
     return AllocToken(src, p, length, kTokenCharLiteral);
+  } else if ('"' == *p) {
+    int length = 1;
+    while (p[length] && p[length] != '"') {
+      if (p[length] == '\\' && p[length + 1]) {
+        length++;
+      }
+      length++;
+    }
+    if (p[length] != '"') {
+      Error("Expected end of string literal (\")");
+    }
+    length++;
+    return AllocToken(src, p, length, kTokenStringLiteral);
   } else if ('&' == *p) {
     if (p[1] == '&') {
       return AllocToken(src, p, 2, kTokenBoolAnd);
@@ -323,9 +338,11 @@ void PrintTokenBrief(struct Token *t) {
   fputc(')', stderr);
 }
 
-void PrintTokenStr(struct Token *t) {
-  fprintf(stderr, "%.*s", t->length, t->begin);
+void PrintTokenStrToFile(struct Token *t, FILE *fp) {
+  fprintf(fp, "%.*s", t->length, t->begin);
 }
+
+void PrintTokenStr(struct Token *t) { PrintTokenStrToFile(t, stderr); }
 
 void PrintTokens() {
   for (int i = 0; i < tokens_used; i++) {
@@ -428,6 +445,8 @@ struct ASTNode {
   struct ASTNode *value;
   // for local var
   int byte_offset;
+  // for string literal
+  int label_number;
 };
 
 struct ASTNode *AllocASTNode(enum ASTType type) {
@@ -710,7 +729,8 @@ struct ASTNode *ParsePrimaryExpr() {
   if ((t = ConsumeToken(kTokenDecimalNumber)) ||
       (t = ConsumeToken(kTokenOctalNumber)) ||
       (t = ConsumeToken(kTokenIdent)) ||
-      (t = ConsumeToken(kTokenCharLiteral))) {
+      (t = ConsumeToken(kTokenCharLiteral)) ||
+      (t = ConsumeToken(kTokenStringLiteral))) {
     struct ASTNode *op = AllocASTNode(kASTTypePrimaryExpr);
     op->op = t;
     return op;
@@ -1031,6 +1051,11 @@ void Analyze(struct ASTNode *node) {
       node->reg = AllocReg();
       node->expr_type = AllocAndInitBaseType(CreateToken("int"));
       return;
+    } else if (node->op->type == kTokenStringLiteral) {
+      node->reg = AllocReg();
+      node->expr_type =
+          AllocAndInitPointerOf(AllocAndInitBaseType(CreateToken("char")));
+      return;
     } else if (node->op->type == kTokenLParen) {
       Analyze(node->right);
       node->reg = node->right->reg;
@@ -1114,6 +1139,7 @@ void Analyze(struct ASTNode *node) {
   ErrorWithToken(node->op, "Analyze: Not implemented");
 }
 
+struct ASTNode *str_list;
 void Generate(struct ASTNode *node) {
   assert(node && node->op);
   if (node->type == kASTTypePrimaryExpr) {
@@ -1133,6 +1159,12 @@ void Generate(struct ASTNode *node) {
     } else if (node->op->type == kTokenIdent) {
       printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg],
              node->byte_offset);
+      return;
+    } else if (node->op->type == kTokenStringLiteral) {
+      int str_label = GetLabelNumber();
+      printf("lea %s, [rip + L%d]\n", reg_names_64[node->reg], str_label);
+      node->label_number = str_label;
+      PushToList(str_list, node);
       return;
     }
   } else if (node->type == kASTTypeExprStmt) {
@@ -1357,6 +1389,7 @@ int main(int argc, char *argv[]) {
   PrintASTNode(ast);
   fputc('\n', stderr);
 
+  str_list = AllocList();
   printf(".intel_syntax noprefix\n");
   printf(".text\n");
   printf(".global %smain\n", symbol_prefix);
@@ -1367,4 +1400,13 @@ int main(int argc, char *argv[]) {
   printf("mov rsp, rbp\n");
   printf("pop rbp\n");
   printf("ret\n");
+
+  printf(".data\n");
+  for (int i = 0; i < GetSizeOfList(str_list); i++) {
+    struct ASTNode *n = GetNodeAt(str_list, i);
+    printf("L%d: ", n->label_number);
+    printf(".asciz ");
+    PrintTokenStrToFile(n->op, stdout);
+    putchar('\n');
+  }
 }
