@@ -412,7 +412,7 @@ struct Token *NextToken() {
 
 enum ASTType {
   kASTTypeNone,
-  kASTTypePrimaryExpr,
+  kASTTypeExpr,
   kASTTypeUnaryPrefixOp,
   kASTTypeBinOp,
   kASTTypeCondExpr,
@@ -731,12 +731,12 @@ struct ASTNode *ParsePrimaryExpr() {
       (t = ConsumeToken(kTokenIdent)) ||
       (t = ConsumeToken(kTokenCharLiteral)) ||
       (t = ConsumeToken(kTokenStringLiteral))) {
-    struct ASTNode *op = AllocASTNode(kASTTypePrimaryExpr);
+    struct ASTNode *op = AllocASTNode(kASTTypeExpr);
     op->op = t;
     return op;
   }
   if ((t = ConsumeToken(kTokenLParen))) {
-    struct ASTNode *op = AllocASTNode(kASTTypePrimaryExpr);
+    struct ASTNode *op = AllocASTNode(kASTTypeExpr);
     op->op = t;
     op->right = ParseExpr();
     if (!op->right) ErrorWithToken(t, "Expected expr after this token");
@@ -890,17 +890,10 @@ struct ASTNode *ParseConditionalExpr() {
 struct ASTNode *ParseAssignExpr() {
   struct ASTNode *left = ParseConditionalExpr();
   if (!left) return NULL;
-  // TODO: Add kASTTypeUnaryPostfixOp after its implementation
-  if (left->type != kASTTypeUnaryPrefixOp && left->type != kASTTypePrimaryExpr)
-    return left;
-  int last_token_stream_index = token_stream_index;
   struct Token *t;
   if ((t = ConsumeToken(kTokenAssign))) {
     struct ASTNode *right = ParseAssignExpr();
-    if (!right) {
-      token_stream_index = last_token_stream_index;
-      return left;
-    }
+    if (!right) ErrorWithToken(t, "Expected expr after this token");
     return AllocAndInitASTNodeBinOp(t, left, right);
   }
   return left;
@@ -1044,33 +1037,32 @@ void GenerateRValue(struct ASTNode *node);
 struct ASTNode *var_context;
 void Analyze(struct ASTNode *node) {
   assert(node && node->op);
-  if (node->type == kASTTypePrimaryExpr) {
-    if (node->op->type == kTokenDecimalNumber ||
-        node->op->type == kTokenOctalNumber ||
-        node->op->type == kTokenCharLiteral) {
-      node->reg = AllocReg();
-      node->expr_type = AllocAndInitBaseType(CreateToken("int"));
-      return;
-    } else if (node->op->type == kTokenStringLiteral) {
-      node->reg = AllocReg();
-      node->expr_type =
-          AllocAndInitPointerOf(AllocAndInitBaseType(CreateToken("char")));
-      return;
-    } else if (node->op->type == kTokenLParen) {
-      Analyze(node->right);
-      node->reg = node->right->reg;
-      node->expr_type = node->right->expr_type;
-      return;
-    } else if (node->op->type == kTokenIdent) {
-      struct ASTNode *var_info = GetNodeByTokenKey(var_context, node->op);
-      if (!var_info || var_info->type != kASTTypeLocalVar)
-        ErrorWithToken(node->op, "Unknown identifier");
-      node->byte_offset = var_info->byte_offset;
-      node->reg = AllocReg();
-      node->expr_type = AllocAndInitLValueOf(var_info->expr_type);
-      return;
-    }
-  } else if (node->type == kASTTypeExprStmt) {
+  if (node->op->type == kTokenDecimalNumber ||
+      node->op->type == kTokenOctalNumber ||
+      node->op->type == kTokenCharLiteral) {
+    node->reg = AllocReg();
+    node->expr_type = AllocAndInitBaseType(CreateToken("int"));
+    return;
+  } else if (node->op->type == kTokenStringLiteral) {
+    node->reg = AllocReg();
+    node->expr_type =
+        AllocAndInitPointerOf(AllocAndInitBaseType(CreateToken("char")));
+    return;
+  } else if (node->op->type == kTokenLParen) {
+    Analyze(node->right);
+    node->reg = node->right->reg;
+    node->expr_type = node->right->expr_type;
+    return;
+  } else if (node->op->type == kTokenIdent) {
+    struct ASTNode *var_info = GetNodeByTokenKey(var_context, node->op);
+    if (!var_info || var_info->type != kASTTypeLocalVar)
+      ErrorWithToken(node->op, "Unknown identifier");
+    node->byte_offset = var_info->byte_offset;
+    node->reg = AllocReg();
+    node->expr_type = AllocAndInitLValueOf(var_info->expr_type);
+    return;
+  }
+  if (node->type == kASTTypeExprStmt) {
     if (!node->left) return;
     Analyze(node->left);
     if (node->left->reg) FreeReg(node->left->reg);
@@ -1142,32 +1134,30 @@ void Analyze(struct ASTNode *node) {
 struct ASTNode *str_list;
 void Generate(struct ASTNode *node) {
   assert(node && node->op);
-  if (node->type == kASTTypePrimaryExpr) {
-    if (node->op->type == kTokenDecimalNumber ||
-        node->op->type == kTokenOctalNumber) {
-      printf("mov %s, %ld\n", reg_names_64[node->reg],
-             strtol(node->op->begin, NULL, 0));
-      return;
-    } else if (node->op->type == kTokenCharLiteral) {
-      if (node->op->length == (1 + 1 + 1)) {
-        printf("mov %s, %d\n", reg_names_64[node->reg], node->op->begin[1]);
-        return;
-      }
-    } else if (node->op->type == kTokenLParen) {
-      Generate(node->right);
-      return;
-    } else if (node->op->type == kTokenIdent) {
-      printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg],
-             node->byte_offset);
-      return;
-    } else if (node->op->type == kTokenStringLiteral) {
-      int str_label = GetLabelNumber();
-      printf("lea %s, [rip + L%d]\n", reg_names_64[node->reg], str_label);
-      node->label_number = str_label;
-      PushToList(str_list, node);
+  if (node->op->type == kTokenDecimalNumber ||
+      node->op->type == kTokenOctalNumber) {
+    printf("mov %s, %ld\n", reg_names_64[node->reg],
+           strtol(node->op->begin, NULL, 0));
+    return;
+  } else if (node->op->type == kTokenCharLiteral) {
+    if (node->op->length == (1 + 1 + 1)) {
+      printf("mov %s, %d\n", reg_names_64[node->reg], node->op->begin[1]);
       return;
     }
-  } else if (node->type == kASTTypeExprStmt) {
+  } else if (node->op->type == kTokenLParen) {
+    Generate(node->right);
+    return;
+  } else if (node->op->type == kTokenIdent) {
+    printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg], node->byte_offset);
+    return;
+  } else if (node->op->type == kTokenStringLiteral) {
+    int str_label = GetLabelNumber();
+    printf("lea %s, [rip + L%d]\n", reg_names_64[node->reg], str_label);
+    node->label_number = str_label;
+    PushToList(str_list, node);
+    return;
+  }
+  if (node->type == kASTTypeExprStmt) {
     if (node->left) Generate(node->left);
     return;
   } else if (node->type == kASTTypeList) {
