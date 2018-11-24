@@ -413,7 +413,6 @@ struct Token *NextToken() {
 enum ASTType {
   kASTTypeNone,
   kASTTypeExpr,
-  kASTTypeCondExpr,
   kASTTypeList,
   kASTTypeExprStmt,
   kASTTypeJumpStmt,
@@ -870,7 +869,7 @@ struct ASTNode *ParseConditionalExpr() {
   if (!expr) return NULL;
   struct Token *t;
   if ((t = ConsumeToken(kTokenConditional))) {
-    struct ASTNode *op = AllocASTNode(kASTTypeCondExpr);
+    struct ASTNode *op = AllocASTNode(kASTTypeExpr);
     op->op = t;
     op->cond = expr;
     op->left = ParseConditionalExpr();
@@ -1060,6 +1059,17 @@ void Analyze(struct ASTNode *node) {
       node->reg = AllocReg();
       node->expr_type = AllocAndInitLValueOf(var_info->expr_type);
       return;
+    } else if (node->cond) {
+      Analyze(node->cond);
+      Analyze(node->left);
+      Analyze(node->right);
+      FreeReg(node->left->reg);
+      FreeReg(node->right->reg);
+      assert(IsSameType(GetRValueType(node->left->expr_type),
+                        GetRValueType(node->right->expr_type)));
+      node->reg = node->cond->reg;
+      node->expr_type = GetRValueType(node->right->expr_type);
+      return;
     } else if (!node->left && node->right) {
       Analyze(node->right);
       if (node->op->type == kTokenKwSizeof) {
@@ -1116,17 +1126,6 @@ void Analyze(struct ASTNode *node) {
       FreeReg(node->right->reg);
       return;
     }
-  } else if (node->type == kASTTypeCondExpr) {
-    Analyze(node->cond);
-    Analyze(node->left);
-    Analyze(node->right);
-    FreeReg(node->left->reg);
-    FreeReg(node->right->reg);
-    assert(IsSameType(GetRValueType(node->left->expr_type),
-                      GetRValueType(node->right->expr_type)));
-    node->reg = node->cond->reg;
-    node->expr_type = GetRValueType(node->right->expr_type);
-    return;
   }
   ErrorWithToken(node->op, "Analyze: Not implemented");
 }
@@ -1157,6 +1156,22 @@ void Generate(struct ASTNode *node) {
       printf("lea %s, [rip + L%d]\n", reg_names_64[node->reg], str_label);
       node->label_number = str_label;
       PushToList(str_list, node);
+      return;
+    } else if (node->cond) {
+      GenerateRValue(node->cond);
+      int false_label = GetLabelNumber();
+      int end_label = GetLabelNumber();
+      EmitConvertToBool(node->cond->reg, node->cond->reg);
+      printf("jz L%d\n", false_label);
+      GenerateRValue(node->left);
+      printf("mov %s, %s\n", reg_names_64[node->reg],
+             reg_names_64[node->left->reg]);
+      printf("jmp L%d\n", end_label);
+      printf("L%d:\n", false_label);
+      GenerateRValue(node->right);
+      printf("mov %s, %s\n", reg_names_64[node->reg],
+             reg_names_64[node->right->reg]);
+      printf("L%d:\n", end_label);
       return;
     } else if (!node->left && node->right) {
       if (node->op->type == kTokenKwSizeof) {
@@ -1326,22 +1341,6 @@ void Generate(struct ASTNode *node) {
       return;
     }
     ErrorWithToken(node->op, "Generate: Not implemented jump stmt");
-  } else if (node->type == kASTTypeCondExpr) {
-    GenerateRValue(node->cond);
-    int false_label = GetLabelNumber();
-    int end_label = GetLabelNumber();
-    EmitConvertToBool(node->cond->reg, node->cond->reg);
-    printf("jz L%d\n", false_label);
-    GenerateRValue(node->left);
-    printf("mov %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->left->reg]);
-    printf("jmp L%d\n", end_label);
-    printf("L%d:\n", false_label);
-    GenerateRValue(node->right);
-    printf("mov %s, %s\n", reg_names_64[node->reg],
-           reg_names_64[node->right->reg]);
-    printf("L%d:\n", end_label);
-    return;
   }
   ErrorWithToken(node->op, "Generate: Not implemented");
 }
