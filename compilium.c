@@ -413,7 +413,6 @@ struct Token *NextToken() {
 enum ASTType {
   kASTTypeNone,
   kASTTypeExpr,
-  kASTTypeUnaryPrefixOp,
   kASTTypeBinOp,
   kASTTypeCondExpr,
   kASTTypeList,
@@ -468,7 +467,7 @@ struct ASTNode *AllocAndInitASTNodeBinOp(struct Token *t, struct ASTNode *left,
 struct ASTNode *AllocAndInitASTNodeUnaryPrefixOp(struct Token *t,
                                                  struct ASTNode *right) {
   if (!right) ErrorWithToken(t, "Expected expression after prefix operator");
-  struct ASTNode *op = AllocASTNode(kASTTypeUnaryPrefixOp);
+  struct ASTNode *op = AllocASTNode(kASTTypeExpr);
   op->op = t;
   op->right = right;
   return op;
@@ -1037,30 +1036,53 @@ void GenerateRValue(struct ASTNode *node);
 struct ASTNode *var_context;
 void Analyze(struct ASTNode *node) {
   assert(node && node->op);
-  if (node->op->type == kTokenDecimalNumber ||
-      node->op->type == kTokenOctalNumber ||
-      node->op->type == kTokenCharLiteral) {
-    node->reg = AllocReg();
-    node->expr_type = AllocAndInitBaseType(CreateToken("int"));
-    return;
-  } else if (node->op->type == kTokenStringLiteral) {
-    node->reg = AllocReg();
-    node->expr_type =
-        AllocAndInitPointerOf(AllocAndInitBaseType(CreateToken("char")));
-    return;
-  } else if (node->op->type == kTokenLParen) {
-    Analyze(node->right);
-    node->reg = node->right->reg;
-    node->expr_type = node->right->expr_type;
-    return;
-  } else if (node->op->type == kTokenIdent) {
-    struct ASTNode *var_info = GetNodeByTokenKey(var_context, node->op);
-    if (!var_info || var_info->type != kASTTypeLocalVar)
-      ErrorWithToken(node->op, "Unknown identifier");
-    node->byte_offset = var_info->byte_offset;
-    node->reg = AllocReg();
-    node->expr_type = AllocAndInitLValueOf(var_info->expr_type);
-    return;
+  if (node->type == kASTTypeExpr) {
+    if (node->op->type == kTokenDecimalNumber ||
+        node->op->type == kTokenOctalNumber ||
+        node->op->type == kTokenCharLiteral) {
+      node->reg = AllocReg();
+      node->expr_type = AllocAndInitBaseType(CreateToken("int"));
+      return;
+    } else if (node->op->type == kTokenStringLiteral) {
+      node->reg = AllocReg();
+      node->expr_type =
+          AllocAndInitPointerOf(AllocAndInitBaseType(CreateToken("char")));
+      return;
+    } else if (node->op->type == kTokenLParen) {
+      Analyze(node->right);
+      node->reg = node->right->reg;
+      node->expr_type = node->right->expr_type;
+      return;
+    } else if (node->op->type == kTokenIdent) {
+      struct ASTNode *var_info = GetNodeByTokenKey(var_context, node->op);
+      if (!var_info || var_info->type != kASTTypeLocalVar)
+        ErrorWithToken(node->op, "Unknown identifier");
+      node->byte_offset = var_info->byte_offset;
+      node->reg = AllocReg();
+      node->expr_type = AllocAndInitLValueOf(var_info->expr_type);
+      return;
+    } else if (!node->left && node->right) {
+      Analyze(node->right);
+      if (node->op->type == kTokenKwSizeof) {
+        node->reg = AllocReg();
+        node->expr_type = AllocAndInitBaseType(CreateToken("int"));
+        return;
+      }
+      node->reg = node->right->reg;
+      if (node->op->type == kTokenBitAnd) {
+        node->expr_type =
+            AllocAndInitPointerOf(GetRValueType(node->right->expr_type));
+        return;
+      }
+      if (node->op->type == kTokenStar) {
+        struct ASTNode *rtype = GetRValueType(node->right->expr_type);
+        assert(rtype && rtype->type == kASTTypePointerOf);
+        node->expr_type = AllocAndInitLValueOf(rtype->right);
+        return;
+      }
+      node->expr_type = GetRValueType(node->right->expr_type);
+      return;
+    }
   }
   if (node->type == kASTTypeExprStmt) {
     if (!node->left) return;
@@ -1082,27 +1104,6 @@ void Analyze(struct ASTNode *node) {
       FreeReg(node->right->reg);
       return;
     }
-  } else if (node->type == kASTTypeUnaryPrefixOp) {
-    Analyze(node->right);
-    if (node->op->type == kTokenKwSizeof) {
-      node->reg = AllocReg();
-      node->expr_type = AllocAndInitBaseType(CreateToken("int"));
-      return;
-    }
-    node->reg = node->right->reg;
-    if (node->op->type == kTokenBitAnd) {
-      node->expr_type =
-          AllocAndInitPointerOf(GetRValueType(node->right->expr_type));
-      return;
-    }
-    if (node->op->type == kTokenStar) {
-      struct ASTNode *rtype = GetRValueType(node->right->expr_type);
-      assert(rtype && rtype->type == kASTTypePointerOf);
-      node->expr_type = AllocAndInitLValueOf(rtype->right);
-      return;
-    }
-    node->expr_type = GetRValueType(node->right->expr_type);
-    return;
   } else if (node->type == kASTTypeCondExpr) {
     Analyze(node->cond);
     Analyze(node->left);
@@ -1134,28 +1135,62 @@ void Analyze(struct ASTNode *node) {
 struct ASTNode *str_list;
 void Generate(struct ASTNode *node) {
   assert(node && node->op);
-  if (node->op->type == kTokenDecimalNumber ||
-      node->op->type == kTokenOctalNumber) {
-    printf("mov %s, %ld\n", reg_names_64[node->reg],
-           strtol(node->op->begin, NULL, 0));
-    return;
-  } else if (node->op->type == kTokenCharLiteral) {
-    if (node->op->length == (1 + 1 + 1)) {
-      printf("mov %s, %d\n", reg_names_64[node->reg], node->op->begin[1]);
+  if (node->type == kASTTypeExpr) {
+    if (node->op->type == kTokenDecimalNumber ||
+        node->op->type == kTokenOctalNumber) {
+      printf("mov %s, %ld\n", reg_names_64[node->reg],
+             strtol(node->op->begin, NULL, 0));
       return;
+    } else if (node->op->type == kTokenCharLiteral) {
+      if (node->op->length == (1 + 1 + 1)) {
+        printf("mov %s, %d\n", reg_names_64[node->reg], node->op->begin[1]);
+        return;
+      }
+    } else if (node->op->type == kTokenLParen) {
+      Generate(node->right);
+      return;
+    } else if (node->op->type == kTokenIdent) {
+      printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg],
+             node->byte_offset);
+      return;
+    } else if (node->op->type == kTokenStringLiteral) {
+      int str_label = GetLabelNumber();
+      printf("lea %s, [rip + L%d]\n", reg_names_64[node->reg], str_label);
+      node->label_number = str_label;
+      PushToList(str_list, node);
+      return;
+    } else if (!node->left && node->right) {
+      if (node->op->type == kTokenKwSizeof) {
+        printf("mov %s, %d\n", reg_names_64[node->reg],
+               GetSizeOfType(node->right->expr_type));
+        return;
+      }
+      if (node->op->type == kTokenBitAnd) {
+        Generate(node->right);
+        return;
+      }
+      GenerateRValue(node->right);
+      if (node->op->type == kTokenPlus) {
+        return;
+      }
+      if (node->op->type == kTokenMinus) {
+        printf("neg %s\n", reg_names_64[node->reg]);
+        return;
+      }
+      if (node->op->type == kTokenBitNot) {
+        printf("not %s\n", reg_names_64[node->reg]);
+        return;
+      }
+      if (node->op->type == kTokenBoolNot) {
+        EmitConvertToBool(node->reg, node->reg);
+        printf("setz %s\n", reg_names_8[node->reg]);
+        return;
+      }
+      if (node->op->type == kTokenStar) {
+        return;
+      }
+      ErrorWithToken(node->op, "Generate: Not implemented unary prefix op");
     }
-  } else if (node->op->type == kTokenLParen) {
-    Generate(node->right);
-    return;
-  } else if (node->op->type == kTokenIdent) {
-    printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg], node->byte_offset);
-    return;
-  } else if (node->op->type == kTokenStringLiteral) {
-    int str_label = GetLabelNumber();
-    printf("lea %s, [rip + L%d]\n", reg_names_64[node->reg], str_label);
-    node->label_number = str_label;
-    PushToList(str_list, node);
-    return;
   }
   if (node->type == kASTTypeExprStmt) {
     if (node->left) Generate(node->left);
@@ -1177,37 +1212,6 @@ void Generate(struct ASTNode *node) {
       return;
     }
     ErrorWithToken(node->op, "Generate: Not implemented jump stmt");
-  } else if (node->type == kASTTypeUnaryPrefixOp) {
-    if (node->op->type == kTokenKwSizeof) {
-      printf("mov %s, %d\n", reg_names_64[node->reg],
-             GetSizeOfType(node->right->expr_type));
-      return;
-    }
-    if (node->op->type == kTokenBitAnd) {
-      Generate(node->right);
-      return;
-    }
-    GenerateRValue(node->right);
-    if (node->op->type == kTokenPlus) {
-      return;
-    }
-    if (node->op->type == kTokenMinus) {
-      printf("neg %s\n", reg_names_64[node->reg]);
-      return;
-    }
-    if (node->op->type == kTokenBitNot) {
-      printf("not %s\n", reg_names_64[node->reg]);
-      return;
-    }
-    if (node->op->type == kTokenBoolNot) {
-      EmitConvertToBool(node->reg, node->reg);
-      printf("setz %s\n", reg_names_8[node->reg]);
-      return;
-    }
-    if (node->op->type == kTokenStar) {
-      return;
-    }
-    ErrorWithToken(node->op, "Generate: Not implemented unary prefix op");
   } else if (node->type == kASTTypeCondExpr) {
     GenerateRValue(node->cond);
     int false_label = GetLabelNumber();
