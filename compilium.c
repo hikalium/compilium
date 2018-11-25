@@ -18,42 +18,14 @@ const char *symbol_prefix;
 enum TokenTypes {
   kTokenDecimalNumber,
   kTokenOctalNumber,
-  kTokenPlus,
-  kTokenStar,
-  kTokenMinus,
-  kTokenSlash,
-  kTokenPercent,
-  kTokenShiftLeft,
-  kTokenLessThanEq,
-  kTokenLessThan,
-  kTokenShiftRight,
-  kTokenGreaterThanEq,
-  kTokenGreaterThan,
-  kTokenEq,
-  kTokenNotEq,
-  kTokenBitAnd,
-  kTokenBitXor,
-  kTokenBitOr,
-  kTokenBoolAnd,
-  kTokenBoolOr,
-  kTokenBitNot,
-  kTokenBoolNot,
-  kTokenConditional,
-  kTokenColon,
-  kTokenComma,
-  kTokenSemicolon,
   kTokenIdent,
   kTokenKwReturn,
   kTokenKwChar,
   kTokenKwInt,
   kTokenKwSizeof,
-  kTokenLBrace,
-  kTokenRBrace,
-  kTokenLParen,
-  kTokenRParen,
-  kTokenAssign,
   kTokenCharLiteral,
   kTokenStringLiteral,
+  kTokenPunctuator,
   kNumOfTokenTypeNames
 };
 
@@ -115,42 +87,14 @@ void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
 void InitTokenTypeNames() {
   token_type_names[kTokenDecimalNumber] = "DecimalNumber";
   token_type_names[kTokenOctalNumber] = "OctalNumber";
-  token_type_names[kTokenPlus] = "Plus";
-  token_type_names[kTokenStar] = "Star";
-  token_type_names[kTokenMinus] = "Minus";
-  token_type_names[kTokenSlash] = "Slash";
-  token_type_names[kTokenPercent] = "Percent";
-  token_type_names[kTokenShiftLeft] = "ShiftLeft";
-  token_type_names[kTokenLessThanEq] = "LessThanEq";
-  token_type_names[kTokenLessThan] = "LessThan";
-  token_type_names[kTokenShiftRight] = "ShiftRight";
-  token_type_names[kTokenGreaterThanEq] = "GreaterThanEq";
-  token_type_names[kTokenGreaterThan] = "GreaterThan";
-  token_type_names[kTokenEq] = "Eq";
-  token_type_names[kTokenNotEq] = "NotEq";
-  token_type_names[kTokenBitAnd] = "BitAnd";
-  token_type_names[kTokenBitXor] = "BitXor";
-  token_type_names[kTokenBitOr] = "BitOr";
-  token_type_names[kTokenBoolAnd] = "BoolAnd";
-  token_type_names[kTokenBoolOr] = "BoolOr";
-  token_type_names[kTokenBitNot] = "BitNot";
-  token_type_names[kTokenBoolNot] = "BoolNot";
-  token_type_names[kTokenConditional] = "Conditional";
-  token_type_names[kTokenColon] = "Colon";
-  token_type_names[kTokenComma] = "Comma";
-  token_type_names[kTokenSemicolon] = "Semicolon";
   token_type_names[kTokenIdent] = "Ident";
   token_type_names[kTokenKwReturn] = "`return`";
   token_type_names[kTokenKwChar] = "`char`";
   token_type_names[kTokenKwInt] = "`int`";
   token_type_names[kTokenKwSizeof] = "`sizeof`";
-  token_type_names[kTokenLBrace] = "LBrace";
-  token_type_names[kTokenRBrace] = "RBrace";
-  token_type_names[kTokenLParen] = "LParen";
-  token_type_names[kTokenRParen] = "RParen";
-  token_type_names[kTokenAssign] = "Assign";
   token_type_names[kTokenCharLiteral] = "CharLiteral";
   token_type_names[kTokenStringLiteral] = "StringLiteral";
+  token_type_names[kTokenPunctuator] = "Punctuator";
 }
 
 const char *GetTokenTypeName(enum TokenTypes type) {
@@ -241,68 +185,68 @@ struct Token *CreateNextToken(const char *p, const char *src) {
     return AllocToken(src, p, length, kTokenStringLiteral);
   } else if ('&' == *p) {
     if (p[1] == '&') {
-      return AllocToken(src, p, 2, kTokenBoolAnd);
+      return AllocToken(src, p, 2, kTokenPunctuator);
     }
-    return AllocToken(src, p, 1, kTokenBitAnd);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('|' == *p) {
     if (p[1] == '|') {
-      return AllocToken(src, p, 2, kTokenBoolOr);
+      return AllocToken(src, p, 2, kTokenPunctuator);
     }
-    return AllocToken(src, p, 1, kTokenBitOr);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('<' == *p) {
     if (p[1] == '<') {
-      return AllocToken(src, p, 2, kTokenShiftLeft);
+      return AllocToken(src, p, 2, kTokenPunctuator);
     } else if (p[1] == '=') {
-      return AllocToken(src, p, 2, kTokenLessThanEq);
+      return AllocToken(src, p, 2, kTokenPunctuator);
     }
-    return AllocToken(src, p, 1, kTokenLessThan);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('>' == *p) {
     if (p[1] == '>') {
-      return AllocToken(src, p, 2, kTokenShiftRight);
+      return AllocToken(src, p, 2, kTokenPunctuator);
     } else if (p[1] == '=') {
-      return AllocToken(src, p, 2, kTokenGreaterThanEq);
+      return AllocToken(src, p, 2, kTokenPunctuator);
     }
-    return AllocToken(src, p, 1, kTokenGreaterThan);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('=' == *p) {
     if (p[1] == '=') {
-      return AllocToken(src, p, 2, kTokenEq);
+      return AllocToken(src, p, 2, kTokenPunctuator);
     }
-    return AllocToken(src, p, 1, kTokenAssign);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('!' == *p) {
     if (p[1] == '=') {
-      return AllocToken(src, p, 2, kTokenNotEq);
+      return AllocToken(src, p, 2, kTokenPunctuator);
     }
-    return AllocToken(src, p, 1, kTokenBoolNot);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('^' == *p) {
-    return AllocToken(src, p, 1, kTokenBitXor);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('+' == *p) {
-    return AllocToken(src, p, 1, kTokenPlus);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('-' == *p) {
-    return AllocToken(src, p, 1, kTokenMinus);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('*' == *p) {
-    return AllocToken(src, p, 1, kTokenStar);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('/' == *p) {
-    return AllocToken(src, p, 1, kTokenSlash);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('%' == *p) {
-    return AllocToken(src, p, 1, kTokenPercent);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('~' == *p) {
-    return AllocToken(src, p, 1, kTokenBitNot);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('?' == *p) {
-    return AllocToken(src, p, 1, kTokenConditional);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if (':' == *p) {
-    return AllocToken(src, p, 1, kTokenColon);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if (',' == *p) {
-    return AllocToken(src, p, 1, kTokenComma);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if (';' == *p) {
-    return AllocToken(src, p, 1, kTokenSemicolon);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('{' == *p) {
-    return AllocToken(src, p, 1, kTokenLBrace);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('}' == *p) {
-    return AllocToken(src, p, 1, kTokenRBrace);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if ('(' == *p) {
-    return AllocToken(src, p, 1, kTokenLParen);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   } else if (')' == *p) {
-    return AllocToken(src, p, 1, kTokenRParen);
+    return AllocToken(src, p, 1, kTokenPunctuator);
   }
   Error("Unexpected char %c", *p);
 }
@@ -330,12 +274,7 @@ void PrintToken(struct Token *t) {
 
 void PrintTokenBrief(struct Token *t) {
   assert(t);
-  fprintf(stderr, "(%s", GetTokenTypeName(t->type));
-  if (t->type == kTokenDecimalNumber || t->type == kTokenOctalNumber ||
-      t->type == kTokenIdent) {
-    fprintf(stderr, ":%.*s", t->length, t->begin);
-  }
-  fputc(')', stderr);
+  fprintf(stderr, "(%s<%.*s>)", GetTokenTypeName(t->type), t->length, t->begin);
 }
 
 void PrintTokenStrToFile(struct Token *t, FILE *fp) {
@@ -401,8 +340,24 @@ struct Token *ExpectToken(enum TokenTypes type) {
       tokens[token_stream_index]->type == type) {
     return tokens[token_stream_index++];
   }
-  ErrorWithToken(tokens[token_stream_index], "Expected %s here",
+  ErrorWithToken(tokens[token_stream_index], "Expected token %s here",
                  GetTokenTypeName(type));
+}
+
+struct Token *ConsumePunctuator(const char *s) {
+  if (token_stream_index < tokens_used &&
+      IsEqualTokenWithCStr(tokens[token_stream_index], s)) {
+    return tokens[token_stream_index++];
+  }
+  return NULL;
+}
+
+struct Token *ExpectPunctuator(const char *s) {
+  if (token_stream_index < tokens_used &&
+      IsEqualTokenWithCStr(tokens[token_stream_index], s)) {
+    return tokens[token_stream_index++];
+  }
+  ErrorWithToken(tokens[token_stream_index], "Expected token %s here", s);
 }
 
 struct Token *NextToken() {
@@ -732,12 +687,12 @@ struct ASTNode *ParsePrimaryExpr() {
     op->op = t;
     return op;
   }
-  if ((t = ConsumeToken(kTokenLParen))) {
+  if ((t = ConsumePunctuator("("))) {
     struct ASTNode *op = AllocASTNode(kASTTypeExpr);
     op->op = t;
     op->right = ParseExpr();
     if (!op->right) ErrorWithToken(t, "Expected expr after this token");
-    ExpectToken(kTokenRParen);
+    ExpectPunctuator(")");
     return op;
   }
   return NULL;
@@ -745,9 +700,9 @@ struct ASTNode *ParsePrimaryExpr() {
 
 struct ASTNode *ParseUnaryExpr() {
   struct Token *t;
-  if ((t = ConsumeToken(kTokenPlus)) || (t = ConsumeToken(kTokenMinus)) ||
-      (t = ConsumeToken(kTokenBitNot)) || (t = ConsumeToken(kTokenBoolNot)) ||
-      (t = ConsumeToken(kTokenBitAnd)) || (t = ConsumeToken(kTokenStar))) {
+  if ((t = ConsumePunctuator("+")) || (t = ConsumePunctuator("-")) ||
+      (t = ConsumePunctuator("~")) || (t = ConsumePunctuator("!")) ||
+      (t = ConsumePunctuator("&")) || (t = ConsumePunctuator("*"))) {
     return AllocAndInitASTNodeUnaryPrefixOp(t, ParseCastExpr());
   } else if ((t = ConsumeToken(kTokenKwSizeof))) {
     return AllocAndInitASTNodeUnaryPrefixOp(t, ParseUnaryExpr());
@@ -763,8 +718,8 @@ struct ASTNode *ParseMulExpr() {
   struct ASTNode *op = ParseCastExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenStar)) || (t = ConsumeToken(kTokenSlash)) ||
-         (t = ConsumeToken(kTokenPercent))) {
+  while ((t = ConsumePunctuator("*")) || (t = ConsumePunctuator("/")) ||
+         (t = ConsumePunctuator("%"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseCastExpr());
   }
   return op;
@@ -774,7 +729,7 @@ struct ASTNode *ParseAddExpr() {
   struct ASTNode *op = ParseMulExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenPlus)) || (t = ConsumeToken(kTokenMinus))) {
+  while ((t = ConsumePunctuator("+")) || (t = ConsumePunctuator("-"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseMulExpr());
   }
   return op;
@@ -784,8 +739,7 @@ struct ASTNode *ParseShiftExpr() {
   struct ASTNode *op = ParseAddExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenShiftLeft)) ||
-         (t = ConsumeToken(kTokenShiftRight))) {
+  while ((t = ConsumePunctuator("<<")) || (t = ConsumePunctuator(">>"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseAddExpr());
   }
   return op;
@@ -795,10 +749,8 @@ struct ASTNode *ParseRelExpr() {
   struct ASTNode *op = ParseShiftExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenLessThan)) ||
-         (t = ConsumeToken(kTokenGreaterThan)) ||
-         (t = ConsumeToken(kTokenLessThanEq)) ||
-         (t = ConsumeToken(kTokenGreaterThanEq))) {
+  while ((t = ConsumePunctuator("<")) || (t = ConsumePunctuator(">")) ||
+         (t = ConsumePunctuator("<=")) || (t = ConsumePunctuator(">="))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseShiftExpr());
   }
   return op;
@@ -808,7 +760,7 @@ struct ASTNode *ParseEqExpr() {
   struct ASTNode *op = ParseRelExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenEq)) || (t = ConsumeToken(kTokenNotEq))) {
+  while ((t = ConsumePunctuator("==")) || (t = ConsumePunctuator("!="))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseRelExpr());
   }
   return op;
@@ -818,7 +770,7 @@ struct ASTNode *ParseAndExpr() {
   struct ASTNode *op = ParseEqExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenBitAnd))) {
+  while ((t = ConsumePunctuator("&"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseEqExpr());
   }
   return op;
@@ -828,7 +780,7 @@ struct ASTNode *ParseXorExpr() {
   struct ASTNode *op = ParseAndExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenBitXor))) {
+  while ((t = ConsumePunctuator("^"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseAndExpr());
   }
   return op;
@@ -838,7 +790,7 @@ struct ASTNode *ParseOrExpr() {
   struct ASTNode *op = ParseXorExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenBitOr))) {
+  while ((t = ConsumePunctuator("|"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseXorExpr());
   }
   return op;
@@ -848,7 +800,7 @@ struct ASTNode *ParseBoolAndExpr() {
   struct ASTNode *op = ParseOrExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenBoolAnd))) {
+  while ((t = ConsumePunctuator("&&"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseOrExpr());
   }
   return op;
@@ -858,7 +810,7 @@ struct ASTNode *ParseBoolOrExpr() {
   struct ASTNode *op = ParseBoolAndExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenBoolOr))) {
+  while ((t = ConsumePunctuator("||"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseBoolAndExpr());
   }
   return op;
@@ -868,14 +820,14 @@ struct ASTNode *ParseConditionalExpr() {
   struct ASTNode *expr = ParseBoolOrExpr();
   if (!expr) return NULL;
   struct Token *t;
-  if ((t = ConsumeToken(kTokenConditional))) {
+  if ((t = ConsumePunctuator("?"))) {
     struct ASTNode *op = AllocASTNode(kASTTypeExpr);
     op->op = t;
     op->cond = expr;
     op->left = ParseConditionalExpr();
     if (!op->left)
       ErrorWithToken(t, "Expected true-expr for this conditional expr");
-    ExpectToken(kTokenColon);
+    ExpectPunctuator(":");
     op->right = ParseConditionalExpr();
     if (!op->right)
       ErrorWithToken(t, "Expected false-expr for this conditional expr");
@@ -888,7 +840,7 @@ struct ASTNode *ParseAssignExpr() {
   struct ASTNode *left = ParseConditionalExpr();
   if (!left) return NULL;
   struct Token *t;
-  if ((t = ConsumeToken(kTokenAssign))) {
+  if ((t = ConsumePunctuator("="))) {
     struct ASTNode *right = ParseAssignExpr();
     if (!right) ErrorWithToken(t, "Expected expr after this token");
     return AllocAndInitASTNodeBinOp(t, left, right);
@@ -900,7 +852,7 @@ struct ASTNode *ParseExpr() {
   struct ASTNode *op = ParseAssignExpr();
   if (!op) return NULL;
   struct Token *t;
-  while ((t = ConsumeToken(kTokenComma))) {
+  while ((t = ConsumePunctuator(","))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseAssignExpr());
   }
   return op;
@@ -909,10 +861,10 @@ struct ASTNode *ParseExpr() {
 struct ASTNode *ParseExprStmt() {
   struct ASTNode *expr = ParseExpr();
   struct Token *t;
-  if ((t = ConsumeToken(kTokenSemicolon))) {
+  if ((t = ConsumePunctuator(";"))) {
     return AllocAndInitASTNodeExprStmt(t, expr);
   } else if (expr) {
-    ExpectToken(kTokenSemicolon);
+    ExpectPunctuator(";");
   }
   return NULL;
 }
@@ -921,7 +873,7 @@ struct ASTNode *ParseJumpStmt() {
   struct Token *t;
   if ((t = ConsumeToken(kTokenKwReturn))) {
     struct ASTNode *expr = ParseExpr();
-    ExpectToken(kTokenSemicolon);
+    ExpectPunctuator(";");
     struct ASTNode *stmt = AllocASTNode(kASTTypeJumpStmt);
     stmt->op = t;
     stmt->right = expr;
@@ -943,25 +895,25 @@ struct ASTNode *ParseDecl() {
   struct ASTNode *n = AllocASTNode(kASTTypeDecl);
   n->op = t;
   struct ASTNode *type = AllocAndInitBaseType(t);
-  while ((t = ConsumeToken(kTokenStar))) {
+  while ((t = ConsumePunctuator("*"))) {
     type = AllocAndInitPointerOf(type);
   }
   n->right = AllocAndInitASTNodeIdent(ExpectToken(kTokenIdent));
   n->left = type;
-  ExpectToken(kTokenSemicolon);
+  ExpectPunctuator(";");
   return n;
 }
 
 struct ASTNode *ParseCompStmt() {
   struct Token *t;
-  if (!(t = ConsumeToken(kTokenLBrace))) return NULL;
+  if (!(t = ConsumePunctuator("{"))) return NULL;
   struct ASTNode *list = AllocList();
   list->op = t;
   struct ASTNode *stmt;
   while ((stmt = ParseDecl()) || (stmt = ParseStmt())) {
     PushToList(list, stmt);
   }
-  ExpectToken(kTokenRBrace);
+  ExpectPunctuator("}");
   return list;
 }
 
@@ -1046,7 +998,7 @@ void Analyze(struct ASTNode *node) {
       node->expr_type =
           AllocAndInitPointerOf(AllocAndInitBaseType(CreateToken("char")));
       return;
-    } else if (node->op->type == kTokenLParen) {
+    } else if (IsEqualTokenWithCStr(node->op, "(")) {
       Analyze(node->right);
       node->reg = node->right->reg;
       node->expr_type = node->right->expr_type;
@@ -1078,12 +1030,12 @@ void Analyze(struct ASTNode *node) {
         return;
       }
       node->reg = node->right->reg;
-      if (node->op->type == kTokenBitAnd) {
+      if (IsEqualTokenWithCStr(node->op, "&")) {
         node->expr_type =
             AllocAndInitPointerOf(GetRValueType(node->right->expr_type));
         return;
       }
-      if (node->op->type == kTokenStar) {
+      if (IsEqualTokenWithCStr(node->op, "*")) {
         struct ASTNode *rtype = GetRValueType(node->right->expr_type);
         assert(rtype && rtype->type == kASTTypePointerOf);
         node->expr_type = AllocAndInitLValueOf(rtype->right);
@@ -1094,7 +1046,8 @@ void Analyze(struct ASTNode *node) {
     } else if (node->left && node->right) {
       Analyze(node->left);
       Analyze(node->right);
-      if (node->op->type == kTokenAssign || node->op->type == kTokenComma) {
+      if (IsEqualTokenWithCStr(node->op, "=") ||
+          IsEqualTokenWithCStr(node->op, ",")) {
         FreeReg(node->left->reg);
         node->reg = node->right->reg;
         node->expr_type = GetRValueType(node->right->expr_type);
@@ -1144,7 +1097,7 @@ void Generate(struct ASTNode *node) {
         printf("mov %s, %d\n", reg_names_64[node->reg], node->op->begin[1]);
         return;
       }
-    } else if (node->op->type == kTokenLParen) {
+    } else if (IsEqualTokenWithCStr(node->op, "(")) {
       Generate(node->right);
       return;
     } else if (node->op->type == kTokenIdent) {
@@ -1179,33 +1132,33 @@ void Generate(struct ASTNode *node) {
                GetSizeOfType(node->right->expr_type));
         return;
       }
-      if (node->op->type == kTokenBitAnd) {
+      if (IsEqualTokenWithCStr(node->op, "&")) {
         Generate(node->right);
         return;
       }
       GenerateRValue(node->right);
-      if (node->op->type == kTokenPlus) {
+      if (IsEqualTokenWithCStr(node->op, "+")) {
         return;
       }
-      if (node->op->type == kTokenMinus) {
+      if (IsEqualTokenWithCStr(node->op, "-")) {
         printf("neg %s\n", reg_names_64[node->reg]);
         return;
       }
-      if (node->op->type == kTokenBitNot) {
+      if (IsEqualTokenWithCStr(node->op, "~")) {
         printf("not %s\n", reg_names_64[node->reg]);
         return;
       }
-      if (node->op->type == kTokenBoolNot) {
+      if (IsEqualTokenWithCStr(node->op, "!")) {
         EmitConvertToBool(node->reg, node->reg);
         printf("setz %s\n", reg_names_8[node->reg]);
         return;
       }
-      if (node->op->type == kTokenStar) {
+      if (IsEqualTokenWithCStr(node->op, "*")) {
         return;
       }
       ErrorWithToken(node->op, "Generate: Not implemented unary prefix op");
     } else if (node->left && node->right) {
-      if (node->op->type == kTokenBoolAnd) {
+      if (IsEqualTokenWithCStr(node->op, "&&")) {
         GenerateRValue(node->left);
         int skip_label = GetLabelNumber();
         EmitConvertToBool(node->reg, node->left->reg);
@@ -1214,7 +1167,7 @@ void Generate(struct ASTNode *node) {
         EmitConvertToBool(node->reg, node->right->reg);
         printf("L%d:\n", skip_label);
         return;
-      } else if (node->op->type == kTokenBoolOr) {
+      } else if (IsEqualTokenWithCStr(node->op, "||")) {
         GenerateRValue(node->left);
         int skip_label = GetLabelNumber();
         EmitConvertToBool(node->reg, node->left->reg);
@@ -1223,11 +1176,11 @@ void Generate(struct ASTNode *node) {
         EmitConvertToBool(node->reg, node->right->reg);
         printf("L%d:\n", skip_label);
         return;
-      } else if (node->op->type == kTokenComma) {
+      } else if (IsEqualTokenWithCStr(node->op, ",")) {
         Generate(node->left);
         GenerateRValue(node->right);
         return;
-      } else if (node->op->type == kTokenAssign) {
+      } else if (IsEqualTokenWithCStr(node->op, "=")) {
         Generate(node->left);
         GenerateRValue(node->right);
         int size = GetSizeOfType(node->right->expr_type);
@@ -1249,72 +1202,72 @@ void Generate(struct ASTNode *node) {
       }
       GenerateRValue(node->left);
       GenerateRValue(node->right);
-      if (node->op->type == kTokenPlus) {
+      if (IsEqualTokenWithCStr(node->op, "+")) {
         printf("add %s, %s\n", reg_names_64[node->reg],
                reg_names_64[node->right->reg]);
         return;
-      } else if (node->op->type == kTokenMinus) {
+      } else if (IsEqualTokenWithCStr(node->op, "-")) {
         printf("sub %s, %s\n", reg_names_64[node->reg],
                reg_names_64[node->right->reg]);
         return;
-      } else if (node->op->type == kTokenStar) {
+      } else if (IsEqualTokenWithCStr(node->op, "*")) {
         // rdx:rax <- rax * r/m
         printf("xor rdx, rdx\n");
         printf("mov rax, %s\n", reg_names_64[node->reg]);
         printf("imul %s\n", reg_names_64[node->right->reg]);
         printf("mov %s, rax\n", reg_names_64[node->reg]);
         return;
-      } else if (node->op->type == kTokenSlash) {
+      } else if (IsEqualTokenWithCStr(node->op, "/")) {
         // rax <- rdx:rax / r/m
         printf("xor rdx, rdx\n");
         printf("mov rax, %s\n", reg_names_64[node->reg]);
         printf("idiv %s\n", reg_names_64[node->right->reg]);
         printf("mov %s, rax\n", reg_names_64[node->reg]);
         return;
-      } else if (node->op->type == kTokenPercent) {
+      } else if (IsEqualTokenWithCStr(node->op, "%")) {
         // rdx <- rdx:rax / r/m
         printf("xor rdx, rdx\n");
         printf("mov rax, %s\n", reg_names_64[node->reg]);
         printf("idiv %s\n", reg_names_64[node->right->reg]);
         printf("mov %s, rdx\n", reg_names_64[node->reg]);
         return;
-      } else if (node->op->type == kTokenShiftLeft) {
+      } else if (IsEqualTokenWithCStr(node->op, "<<")) {
         // r/m <<= CL
         printf("mov rcx, %s\n", reg_names_64[node->right->reg]);
         printf("sal %s, cl\n", reg_names_64[node->reg]);
         return;
-      } else if (node->op->type == kTokenShiftRight) {
+      } else if (IsEqualTokenWithCStr(node->op, ">>")) {
         // r/m >>= CL
         printf("mov rcx, %s\n", reg_names_64[node->right->reg]);
         printf("sar %s, cl\n", reg_names_64[node->reg]);
         return;
-      } else if (node->op->type == kTokenLessThan) {
+      } else if (IsEqualTokenWithCStr(node->op, "<")) {
         EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "l");
         return;
-      } else if (node->op->type == kTokenGreaterThan) {
+      } else if (IsEqualTokenWithCStr(node->op, ">")) {
         EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "g");
         return;
-      } else if (node->op->type == kTokenLessThanEq) {
+      } else if (IsEqualTokenWithCStr(node->op, "<=")) {
         EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "le");
         return;
-      } else if (node->op->type == kTokenGreaterThanEq) {
+      } else if (IsEqualTokenWithCStr(node->op, ">=")) {
         EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "ge");
         return;
-      } else if (node->op->type == kTokenEq) {
+      } else if (IsEqualTokenWithCStr(node->op, "==")) {
         EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "e");
         return;
-      } else if (node->op->type == kTokenNotEq) {
+      } else if (IsEqualTokenWithCStr(node->op, "!=")) {
         EmitCompareIntegers(node->reg, node->left->reg, node->right->reg, "ne");
         return;
-      } else if (node->op->type == kTokenBitAnd) {
+      } else if (IsEqualTokenWithCStr(node->op, "&")) {
         printf("and %s, %s\n", reg_names_64[node->reg],
                reg_names_64[node->right->reg]);
         return;
-      } else if (node->op->type == kTokenBitXor) {
+      } else if (IsEqualTokenWithCStr(node->op, "^")) {
         printf("xor %s, %s\n", reg_names_64[node->reg],
                reg_names_64[node->right->reg]);
         return;
-      } else if (node->op->type == kTokenBitOr) {
+      } else if (IsEqualTokenWithCStr(node->op, "|")) {
         printf("or %s, %s\n", reg_names_64[node->reg],
                reg_names_64[node->right->reg]);
         return;
