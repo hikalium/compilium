@@ -638,7 +638,9 @@ void PrintASTNodeSub(struct ASTNode *n, int depth) {
       PrintPadding(depth + 1);
       PrintASTNodeSub(GetNodeAt(n, i), depth + 1);
     }
-    fprintf(stderr, "\n]");
+    fprintf(stderr, "\n");
+    PrintPadding(depth);
+    fprintf(stderr, "]");
     return;
   } else if (n->type == kASTTypeBaseType) {
     PrintTokenStr(n->op);
@@ -918,9 +920,13 @@ struct ASTNode *ParseCompStmt() {
 }
 
 struct ASTNode *Parse() {
-  struct ASTNode *ast = ParseCompStmt();
+  struct ASTNode *list = AllocList();
+  struct ASTNode *n;
+  while ((n = ParseCompStmt())) {
+    PushToList(list, n);
+  }
   struct Token *t;
-  if (!(t = NextToken())) return ast;
+  if (!(t = NextToken())) return list;
   ErrorWithToken(t, "Unexpected token");
 }
 
@@ -985,6 +991,12 @@ void GenerateRValue(struct ASTNode *node);
 
 struct ASTNode *var_context;
 void Analyze(struct ASTNode *node) {
+  if (node->type == kASTTypeList && !node->op) {
+    for (int i = 0; i < GetSizeOfList(node); i++) {
+      Analyze(GetNodeAt(node, i));
+    }
+    return;
+  }
   assert(node && node->op);
   if (node->type == kASTTypeExpr) {
     if (node->op->type == kTokenDecimalNumber ||
@@ -1085,6 +1097,12 @@ void Analyze(struct ASTNode *node) {
 
 struct ASTNode *str_list;
 void Generate(struct ASTNode *node) {
+  if (node->type == kASTTypeList && !node->op) {
+    for (int i = 0; i < GetSizeOfList(node); i++) {
+      Generate(GetNodeAt(node, i));
+    }
+    return;
+  }
   assert(node && node->op);
   if (node->type == kASTTypeExpr) {
     if (node->op->type == kTokenDecimalNumber ||
