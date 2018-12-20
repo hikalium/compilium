@@ -190,3 +190,5 @@ test_expr_result '-3 * -4 + -5' 7
 
 test_stmt_result '; ; return 0;' 0
 test_stmt_result '; return 2; return 0;' 2
+
+echo "All tests passed."
