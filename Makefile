@@ -8,7 +8,11 @@ compilium_dbg : $(SRCS) Makefile
 	cc $(CFLAGS) -g -o $@ $(SRCS)
 
 debug : compilium_dbg failcase.c
-	lldb -o 'process launch' -- ./compilium_dbg --target-os `uname` "`cat failcase.c`"
+	lldb \
+		-o 'settings set interpreter.prompt-on-quit false' \
+		-o 'b __assert' \
+		-o 'process launch' \
+		-- ./compilium_dbg --target-os `uname` "`cat failcase.c`"
 
 testall : unittest test
 
