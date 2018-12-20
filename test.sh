@@ -4,14 +4,17 @@ function test_result {
   input="$1"
   expected="$2"
   testname="$3"
-  ./compilium --target-os `uname` "$input" > out.S
+  ./compilium --target-os `uname` "$input" > out.S || { \
+    echo "$input" > failcase.c; \
+    echo "Compilation failed."; \
+    exit 1; }
   gcc out.S
   actual=0
   ./a.out || actual=$?
   if [ $expected = $actual ]; then
     echo "PASS $testname returns $expected";
   else
-    echo "FAIL $testname: expected $expected but got $actual"; exit 1; 
+    echo "FAIL $testname: expected $expected but got $actual"; echo $input > failcase.c; exit 1; 
   fi
 }
 
