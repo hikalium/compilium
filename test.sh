@@ -26,6 +26,12 @@ function test_stmt_result {
   test_result "{$1}" "$2" "$1"
 }
 
+function test_src_result {
+  test_result "$1" "$2" "$1"
+}
+
+test_src_result 'int putchar(int c); {return 0;}' 0
+exit
 test_stmt_result 'return *("compilium" + 1);' 111
 test_stmt_result 'return *"compilium";' 99
 test_stmt_result "return 'C';" 67

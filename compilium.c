@@ -372,12 +372,15 @@ enum ASTType {
   kASTTypeExprStmt,
   kASTTypeJumpStmt,
   kASTTypeIdent,
+  kASTTypeDirectDecltor,
+  kASTTypeDecltor,
   kASTTypeDecl,
   kASTTypeKeyValue,
   kASTTypeLocalVar,
   kASTTypeBaseType,
   kASTTypeLValueOf,
   kASTTypePointerOf,
+  kASTTypeFunctionType,
 };
 
 struct ASTNode {
@@ -471,6 +474,14 @@ struct ASTNode *AllocAndInitLValueOf(struct ASTNode *type) {
 struct ASTNode *AllocAndInitPointerOf(struct ASTNode *type) {
   struct ASTNode *n = AllocASTNode(kASTTypePointerOf);
   n->right = type;
+  return n;
+}
+
+struct ASTNode *AllocAndInitFunctionType(struct ASTNode *return_type,
+                                         struct ASTNode *arg_type_list) {
+  struct ASTNode *n = AllocASTNode(kASTTypeFunctionType);
+  n->left = return_type;
+  n->right = arg_type_list;
   return n;
 }
 
@@ -631,6 +642,10 @@ void PrintPadding(int depth) {
 }
 
 void PrintASTNodeSub(struct ASTNode *n, int depth) {
+  if (!n) {
+    fprintf(stderr, "(null)");
+    return;
+  }
   if (n->type == kASTTypeList) {
     fprintf(stderr, "[\n");
     for (int i = 0; i < GetSizeOfList(n); i++) {
@@ -654,20 +669,27 @@ void PrintASTNodeSub(struct ASTNode *n, int depth) {
     fprintf(stderr, "*");
     PrintASTNodeSub(n->right, depth + 1);
     return;
+  } else if (n->type == kASTTypeFunctionType) {
+    fprintf(stderr, "FuncType(returns: ");
+    PrintASTNodeSub(n->left, depth + 1);
+    fprintf(stderr, ", args: ");
+    PrintASTNodeSub(n->right, depth + 1);
+    fprintf(stderr, ")");
+    return;
   }
-  fprintf(stderr, "(");
-  PrintTokenBrief(n->op);
+  fprintf(stderr, "(op=");
+  if (n->op) PrintTokenBrief(n->op);
   if (n->expr_type) {
     fprintf(stderr, ":");
     PrintASTNodeSub(n->expr_type, depth + 1);
   }
   if (n->reg) fprintf(stderr, " reg: %d", n->reg);
   if (n->left) {
-    fprintf(stderr, " left: ");
+    fprintf(stderr, " L= ");
     PrintASTNodeSub(n->left, depth + 1);
   }
   if (n->right) {
-    fprintf(stderr, " right: ");
+    fprintf(stderr, " R= ");
     PrintASTNodeSub(n->right, depth + 1);
   }
   fprintf(stderr, ")");
@@ -890,18 +912,60 @@ struct ASTNode *ParseStmt() {
   return NULL;
 }
 
-struct ASTNode *ParseDecl() {
-  struct Token *t;
-  (t = ConsumeToken(kTokenKwInt)) || (t = ConsumeToken(kTokenKwChar));
-  if (!t) return NULL;
-  struct ASTNode *n = AllocASTNode(kASTTypeDecl);
-  n->op = t;
-  struct ASTNode *type = AllocAndInitBaseType(t);
-  while ((t = ConsumePunctuator("*"))) {
-    type = AllocAndInitPointerOf(type);
+struct Token *ParseDeclSpecs() {
+  struct Token *decl_spec;
+  (decl_spec = ConsumeToken(kTokenKwInt)) ||
+      (decl_spec = ConsumeToken(kTokenKwChar));
+  return decl_spec;
+}
+
+struct ASTNode *ParseParamDecl();
+struct ASTNode *ParseDirectDecltor() {
+  struct ASTNode *n = AllocASTNode(kASTTypeDirectDecltor);
+  n->op = ExpectToken(kTokenIdent);
+  while (true) {
+    struct Token *t;
+    if ((t = ConsumePunctuator("("))) {
+      struct ASTNode *arg = ParseParamDecl();
+      ExpectPunctuator(")");
+      struct ASTNode *nn = AllocASTNode(kASTTypeDirectDecltor);
+      nn->op = t;
+      nn->right = arg;
+      nn->left = n;
+      n = nn;
+    }
+    break;
   }
-  n->right = AllocAndInitASTNodeIdent(ExpectToken(kTokenIdent));
-  n->left = type;
+  return n;
+}
+
+struct ASTNode *ParseDecltor() {
+  struct ASTNode *n = AllocASTNode(kASTTypeDecltor);
+  struct ASTNode *pointer = NULL;
+  struct Token *t;
+  while ((t = ConsumePunctuator("*"))) {
+    pointer = AllocAndInitPointerOf(pointer);
+  }
+  n->left = pointer;
+  n->right = ParseDirectDecltor();
+  return n;
+}
+
+struct ASTNode *ParseParamDecl() {
+  struct Token *decl_spec = ParseDeclSpecs();
+  if (!decl_spec) return NULL;
+  struct ASTNode *n = AllocASTNode(kASTTypeDecl);
+  n->op = decl_spec;
+  n->right = ParseDecltor();
+  return n;
+}
+
+struct ASTNode *ParseDecl() {
+  struct Token *decl_spec = ParseDeclSpecs();
+  if (!decl_spec) return NULL;
+  struct ASTNode *n = AllocASTNode(kASTTypeDecl);
+  n->op = decl_spec;
+  n->right = ParseDecltor();
   ExpectPunctuator(";");
   return n;
 }
@@ -922,7 +986,10 @@ struct ASTNode *ParseCompStmt() {
 struct ASTNode *Parse() {
   struct ASTNode *list = AllocList();
   struct ASTNode *n;
-  while ((n = ParseCompStmt())) {
+  while ((n = ParseCompStmt()) || (n = ParseDecl())) {
+    if (n->type == kASTTypeDecl) {
+      continue;
+    }
     PushToList(list, n);
   }
   struct Token *t;
@@ -987,8 +1054,43 @@ void AddLocalVar(struct ASTNode *list, const char *key,
   PushKeyValueToList(list, key, local_var);
 }
 
-void GenerateRValue(struct ASTNode *node);
+struct ASTNode *CreateType(struct Token *decl_spec, struct ASTNode *decltor);
+struct ASTNode *CreateTypeFromDecltor(struct ASTNode *decltor,
+                                      struct ASTNode *type) {
+  assert(decltor);
+  struct ASTNode *pointer = decltor->left;
+  if (pointer) {
+    struct ASTNode *p = pointer;
+    while (p->right) {
+      p = p->right;
+    }
+    p->right = type;
+    type = pointer;
+  }
+  struct ASTNode *direct_decltor = decltor->right;
+  assert(direct_decltor->type == kASTTypeDirectDecltor);
+  if (IsEqualTokenWithCStr(direct_decltor->op, "(")) {
+    struct ASTNode *arg_type_list = AllocList();
+    if (direct_decltor->right) {
+      PushToList(arg_type_list, CreateType(direct_decltor->right->op,
+                                           direct_decltor->right->right));
+    }
+    return AllocAndInitFunctionType(type, arg_type_list);
+  }
+  if (direct_decltor->op) {
+    type->value = AllocAndInitASTNodeIdent(direct_decltor->op);
+    return type;
+  }
+  assert(false);
+}
 
+struct ASTNode *CreateType(struct Token *decl_spec, struct ASTNode *decltor) {
+  struct ASTNode *type = AllocAndInitBaseType(decl_spec);
+  if (!decltor) return type;
+  return CreateTypeFromDecltor(decltor, type);
+}
+
+void GenerateRValue(struct ASTNode *node);
 struct ASTNode *var_context;
 void Analyze(struct ASTNode *node) {
   if (node->type == kASTTypeList && !node->op) {
@@ -1083,7 +1185,14 @@ void Analyze(struct ASTNode *node) {
     }
     return;
   } else if (node->type == kASTTypeDecl) {
-    AddLocalVar(var_context, CreateTokenStr(node->right->op), node->left);
+    struct ASTNode *type = CreateType(node->op, node->right);
+    PrintASTNode(type);
+    fputc('\n', stderr);
+    if (type->type == kASTTypeFunctionType) {
+      Error("Func type!");
+    }
+    assert(type && type->value);
+    AddLocalVar(var_context, CreateTokenStr(type->value->op), type);
     return;
   } else if (node->type == kASTTypeJumpStmt) {
     if (node->op->type == kTokenKwReturn) {
