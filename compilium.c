@@ -54,19 +54,6 @@ void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
     Error("Usage: %s [--os_type=Linux|Darwin] src_string", argv[0]);
 }
 
-void InitTokenTypeNames() {
-  token_type_names[kTokenDecimalNumber] = "DecimalNumber";
-  token_type_names[kTokenOctalNumber] = "OctalNumber";
-  token_type_names[kTokenIdent] = "Ident";
-  token_type_names[kTokenKwReturn] = "`return`";
-  token_type_names[kTokenKwChar] = "`char`";
-  token_type_names[kTokenKwInt] = "`int`";
-  token_type_names[kTokenKwSizeof] = "`sizeof`";
-  token_type_names[kTokenCharLiteral] = "CharLiteral";
-  token_type_names[kTokenStringLiteral] = "StringLiteral";
-  token_type_names[kTokenPunctuator] = "Punctuator";
-}
-
 const char *GetTokenTypeName(enum TokenTypes type) {
   assert(0 <= type && type < kNumOfTokenTypeNames);
   assert(token_type_names[type]);
@@ -238,13 +225,16 @@ void Tokenize(const char *input) {
 }
 
 void PrintToken(struct Token *t) {
-  fprintf(stderr, "(Token %.*s type=%s)", t->length, t->begin,
-          GetTokenTypeName(t->type));
+  fprintf(stderr, "(Token %.*s type=%d)", t->length, t->begin, t->type);
 }
 
 void PrintTokenBrief(struct Token *t) {
   assert(t);
-  fprintf(stderr, "(%s<%.*s>)", GetTokenTypeName(t->type), t->length, t->begin);
+  if (t->type == kTokenStringLiteral || t->type == kTokenCharLiteral) {
+    fprintf(stderr, "%.*s", t->length, t->begin);
+    return;
+  }
+  fprintf(stderr, "<%.*s>", t->length, t->begin);
 }
 
 void PrintTokenStrToFile(struct Token *t, FILE *fp) {
@@ -998,8 +988,6 @@ void GenerateRValue(struct ASTNode *node) {
 int main(int argc, char *argv[]) {
   struct CompilerArgs args;
   ParseCompilerArgs(&args, argc, argv);
-
-  InitTokenTypeNames();
 
   fprintf(stderr, "input:\n%s\n", args.input);
   Tokenize(args.input);
