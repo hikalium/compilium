@@ -983,11 +983,17 @@ struct ASTNode *ParseCompStmt() {
   return list;
 }
 
+struct ASTNode *toplevel_names;
+
 struct ASTNode *Parse() {
   struct ASTNode *list = AllocList();
   struct ASTNode *n;
+  toplevel_names = AllocList();
   while ((n = ParseCompStmt()) || (n = ParseDecl())) {
     if (n->type == kASTTypeDecl) {
+      PrintASTNode(n);
+      putc('\n', stderr);
+      // PushKeyValueToList(toplevel_names, )
       continue;
     }
     PushToList(list, n);
@@ -1186,11 +1192,6 @@ void Analyze(struct ASTNode *node) {
     return;
   } else if (node->type == kASTTypeDecl) {
     struct ASTNode *type = CreateType(node->op, node->right);
-    PrintASTNode(type);
-    fputc('\n', stderr);
-    if (type->type == kASTTypeFunctionType) {
-      Error("Func type!");
-    }
     assert(type && type->value);
     AddLocalVar(var_context, CreateTokenStr(type->value->op), type);
     return;
