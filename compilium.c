@@ -7,7 +7,7 @@ struct CompilerArgs {
 const char *symbol_prefix;
 
 #define NUM_OF_TOKENS 32
-struct Token *tokens[NUM_OF_TOKENS];
+struct ASTNode *tokens[NUM_OF_TOKENS];
 int tokens_used;
 
 _Noreturn void Error(const char *fmt, ...) {
@@ -24,8 +24,6 @@ _Noreturn void Error(const char *fmt, ...) {
 _Noreturn void __assert(const char *expr_str, const char *file, int line) {
   Error("Assertion failed: %s at %s:%d\n", expr_str, file, line);
 }
-
-const char *token_type_names[kNumOfTokenTypeNames];
 
 void TestList(void);
 void TestType(void);
@@ -54,15 +52,9 @@ void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
     Error("Usage: %s [--os_type=Linux|Darwin] src_string", argv[0]);
 }
 
-const char *GetTokenTypeName(enum TokenTypes type) {
-  assert(0 <= type && type < kNumOfTokenTypeNames);
-  assert(token_type_names[type]);
-  return token_type_names[type];
-}
-
-struct Token *AllocToken(const char *src_str, const char *begin, int length,
-                         enum TokenTypes type) {
-  struct Token *t = calloc(1, sizeof(struct Token));
+struct ASTNode *AllocToken(const char *src_str, const char *begin, int length,
+                           enum ASTType type) {
+  struct ASTNode *t = AllocASTNode(type);
   t->begin = begin;
   t->length = length;
   t->type = type;
@@ -70,20 +62,20 @@ struct Token *AllocToken(const char *src_str, const char *begin, int length,
   return t;
 }
 
-void AddToken(struct Token *t) {
+void AddToken(struct ASTNode *t) {
   assert(tokens_used < NUM_OF_TOKENS);
   tokens[tokens_used++] = t;
 }
 
-const char *CreateTokenStr(struct Token *t) {
+const char *CreateTokenStr(struct ASTNode *t) {
   return strndup(t->begin, t->length);
 }
 
-int IsEqualTokenWithCStr(struct Token *t, const char *s) {
+int IsEqualTokenWithCStr(struct ASTNode *t, const char *s) {
   return strlen(s) == t->length && strncmp(t->begin, s, t->length) == 0;
 }
 
-struct Token *CreateNextToken(const char *p, const char *src) {
+struct ASTNode *CreateNextToken(const char *p, const char *src) {
   while (*p <= ' ') {
     if (!*p) return NULL;
     p++;
@@ -108,7 +100,7 @@ struct Token *CreateNextToken(const char *p, const char *src) {
            ('0' <= p[length] && p[length] <= '9')) {
       length++;
     }
-    struct Token *t = AllocToken(src, p, length, kTokenIdent);
+    struct ASTNode *t = AllocToken(src, p, length, kTokenIdent);
     if (IsEqualTokenWithCStr(t, "return")) t->type = kTokenKwReturn;
     if (IsEqualTokenWithCStr(t, "char")) t->type = kTokenKwChar;
     if (IsEqualTokenWithCStr(t, "int")) t->type = kTokenKwInt;
@@ -208,14 +200,14 @@ struct Token *CreateNextToken(const char *p, const char *src) {
   Error("Unexpected char %c", *p);
 }
 
-struct Token *CreateToken(const char *input) {
+struct ASTNode *CreateToken(const char *input) {
   return CreateNextToken(input, input);
 }
 
-void PrintToken(struct Token *t);
+void PrintToken(struct ASTNode *t);
 void Tokenize(const char *input) {
   const char *p = input;
-  struct Token *t;
+  struct ASTNode *t;
   while ((t = CreateNextToken(p, input))) {
     AddToken(t);
     PrintToken(t);
@@ -224,11 +216,11 @@ void Tokenize(const char *input) {
   }
 }
 
-void PrintToken(struct Token *t) {
+void PrintToken(struct ASTNode *t) {
   fprintf(stderr, "(Token %.*s type=%d)", t->length, t->begin, t->type);
 }
 
-void PrintTokenBrief(struct Token *t) {
+void PrintTokenBrief(struct ASTNode *t) {
   assert(t);
   if (t->type == kTokenStringLiteral || t->type == kTokenCharLiteral) {
     fprintf(stderr, "%.*s", t->length, t->begin);
@@ -237,21 +229,21 @@ void PrintTokenBrief(struct Token *t) {
   fprintf(stderr, "<%.*s>", t->length, t->begin);
 }
 
-void PrintTokenStrToFile(struct Token *t, FILE *fp) {
+void PrintTokenStrToFile(struct ASTNode *t, FILE *fp) {
   fprintf(fp, "%.*s", t->length, t->begin);
 }
 
-void PrintTokenStr(struct Token *t) { PrintTokenStrToFile(t, stderr); }
+void PrintTokenStr(struct ASTNode *t) { PrintTokenStrToFile(t, stderr); }
 
 void PrintTokens() {
   for (int i = 0; i < tokens_used; i++) {
-    struct Token *t = tokens[i];
+    struct ASTNode *t = tokens[i];
     PrintToken(t);
     fputc('\n', stderr);
   }
 }
 
-_Noreturn void ErrorWithToken(struct Token *t, const char *fmt, ...) {
+_Noreturn void ErrorWithToken(struct ASTNode *t, const char *fmt, ...) {
   assert(t);
   const char *line_begin = t->begin;
   while (t->src_str < line_begin) {
@@ -287,7 +279,7 @@ _Noreturn void ErrorWithToken(struct Token *t, const char *fmt, ...) {
 }
 
 int token_stream_index;
-struct Token *ConsumeToken(enum TokenTypes type) {
+struct ASTNode *ConsumeToken(enum ASTType type) {
   if (token_stream_index < tokens_used &&
       tokens[token_stream_index]->type == type) {
     return tokens[token_stream_index++];
@@ -295,16 +287,16 @@ struct Token *ConsumeToken(enum TokenTypes type) {
   return NULL;
 }
 
-struct Token *ExpectToken(enum TokenTypes type) {
+struct ASTNode *ExpectToken(enum ASTType type) {
   if (token_stream_index < tokens_used &&
       tokens[token_stream_index]->type == type) {
     return tokens[token_stream_index++];
   }
-  ErrorWithToken(tokens[token_stream_index], "Expected token %s here",
-                 GetTokenTypeName(type));
+  ErrorWithToken(tokens[token_stream_index], "Expected token type %d here",
+                 type);
 }
 
-struct Token *ConsumePunctuator(const char *s) {
+struct ASTNode *ConsumePunctuator(const char *s) {
   if (token_stream_index < tokens_used &&
       IsEqualTokenWithCStr(tokens[token_stream_index], s)) {
     return tokens[token_stream_index++];
@@ -312,7 +304,7 @@ struct Token *ConsumePunctuator(const char *s) {
   return NULL;
 }
 
-struct Token *ExpectPunctuator(const char *s) {
+struct ASTNode *ExpectPunctuator(const char *s) {
   if (token_stream_index < tokens_used &&
       IsEqualTokenWithCStr(tokens[token_stream_index], s)) {
     return tokens[token_stream_index++];
@@ -320,15 +312,9 @@ struct Token *ExpectPunctuator(const char *s) {
   ErrorWithToken(tokens[token_stream_index], "Expected token %s here", s);
 }
 
-struct Token *NextToken() {
+struct ASTNode *NextToken() {
   if (token_stream_index >= tokens_used) return NULL;
   return tokens[token_stream_index++];
-}
-
-struct ASTNode *AllocASTNode(enum ASTType type) {
-  struct ASTNode *node = calloc(1, sizeof(struct ASTNode));
-  node->type = type;
-  return node;
 }
 
 int IsSameType(struct ASTNode *a, struct ASTNode *b) {
@@ -426,7 +412,7 @@ struct ASTNode *GetNodeAt(struct ASTNode *list, int index) {
   return list->nodes[index];
 }
 
-struct ASTNode *GetNodeByTokenKey(struct ASTNode *list, struct Token *key) {
+struct ASTNode *GetNodeByTokenKey(struct ASTNode *list, struct ASTNode *key) {
   assert(list && list->type == kASTTypeList);
   for (int i = 0; i < list->size; i++) {
     struct ASTNode *n = list->nodes[i];
@@ -600,7 +586,7 @@ void AddLocalVar(struct ASTNode *list, const char *key,
   PushKeyValueToList(list, key, local_var);
 }
 
-struct ASTNode *CreateType(struct Token *decl_spec, struct ASTNode *decltor);
+struct ASTNode *CreateType(struct ASTNode *decl_spec, struct ASTNode *decltor);
 struct ASTNode *CreateTypeFromDecltor(struct ASTNode *decltor,
                                       struct ASTNode *type) {
   assert(decltor);
@@ -630,7 +616,7 @@ struct ASTNode *CreateTypeFromDecltor(struct ASTNode *decltor,
   assert(false);
 }
 
-struct ASTNode *CreateType(struct Token *decl_spec, struct ASTNode *decltor) {
+struct ASTNode *CreateType(struct ASTNode *decl_spec, struct ASTNode *decltor) {
   struct ASTNode *type = AllocAndInitBaseType(decl_spec);
   if (!decltor) return type;
   return CreateTypeFromDecltor(decltor, type);

@@ -33,3 +33,6 @@ commit:
 	git diff HEAD --color=always | less -R
 	make testall
 	git commit
+
+clean:
+	-rm compilium

@@ -1,6 +1,13 @@
 #include "compilium.h"
 
-struct ASTNode *AllocAndInitASTNodeBinOp(struct Token *t, struct ASTNode *left,
+struct ASTNode *AllocASTNode(enum ASTType type) {
+  struct ASTNode *node = calloc(1, sizeof(struct ASTNode));
+  node->type = type;
+  return node;
+}
+
+struct ASTNode *AllocAndInitASTNodeBinOp(struct ASTNode *t,
+                                         struct ASTNode *left,
                                          struct ASTNode *right) {
   if (!right) ErrorWithToken(t, "Expected expression after binary operator");
   struct ASTNode *op = AllocASTNode(kASTTypeExpr);
@@ -10,7 +17,7 @@ struct ASTNode *AllocAndInitASTNodeBinOp(struct Token *t, struct ASTNode *left,
   return op;
 }
 
-struct ASTNode *AllocAndInitASTNodeUnaryPrefixOp(struct Token *t,
+struct ASTNode *AllocAndInitASTNodeUnaryPrefixOp(struct ASTNode *t,
                                                  struct ASTNode *right) {
   if (!right) ErrorWithToken(t, "Expected expression after prefix operator");
   struct ASTNode *op = AllocASTNode(kASTTypeExpr);
@@ -19,7 +26,7 @@ struct ASTNode *AllocAndInitASTNodeUnaryPrefixOp(struct Token *t,
   return op;
 }
 
-struct ASTNode *AllocAndInitASTNodeExprStmt(struct Token *t,
+struct ASTNode *AllocAndInitASTNodeExprStmt(struct ASTNode *t,
                                             struct ASTNode *left) {
   struct ASTNode *op = AllocASTNode(kASTTypeExprStmt);
   op->op = t;
@@ -43,7 +50,7 @@ struct ASTNode *AllocAndInitASTNodeLocalVar(int byte_offset,
   return n;
 }
 
-struct ASTNode *AllocAndInitBaseType(struct Token *t) {
+struct ASTNode *AllocAndInitBaseType(struct ASTNode *t) {
   struct ASTNode *n = AllocASTNode(kASTTypeBaseType);
   n->op = t;
   return n;
@@ -69,7 +76,7 @@ struct ASTNode *AllocAndInitFunctionType(struct ASTNode *return_type,
   return n;
 }
 
-struct ASTNode *AllocAndInitASTNodeIdent(struct Token *ident) {
+struct ASTNode *AllocAndInitASTNodeIdent(struct ASTNode *ident) {
   struct ASTNode *n = AllocASTNode(kASTTypeIdent);
   n->op = ident;
   return n;
