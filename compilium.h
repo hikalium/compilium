@@ -79,7 +79,6 @@ _Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...);
 void PushToList(struct Node *list, struct Node *node);
 void PushKeyValueToList(struct Node *list, const char *key, struct Node *value);
 
-void PrintASTNode(struct Node *n);
 struct Node *AllocList();
 int GetSizeOfList(struct Node *list);
 struct Node *GetNodeAt(struct Node *list, int index);
@@ -111,6 +110,9 @@ struct Node *AllocAndInitPointerOf(struct Node *type);
 struct Node *AllocAndInitFunctionType(struct Node *return_type,
                                       struct Node *arg_type_list);
 struct Node *AllocAndInitASTNodeIdent(struct Node *ident);
+void PrintASTNode(struct Node *n);
+
+void PrintTokenStrToFile(struct Node *t, FILE *fp);
 
 // @parser.c
 struct Node *Parse();
