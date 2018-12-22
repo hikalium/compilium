@@ -6,9 +6,6 @@ struct CompilerArgs {
 
 const char *symbol_prefix;
 
-struct Node *tokens;
-int token_stream_index;
-
 _Noreturn void Error(const char *fmt, ...) {
   fflush(stdout);
   fprintf(stderr, "Error: ");
@@ -227,47 +224,6 @@ _Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...) {
   va_end(ap);
   fputc('\n', stderr);
   exit(EXIT_FAILURE);
-}
-
-int token_stream_index;
-struct Node *ConsumeToken(enum NodeType type) {
-  if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
-  struct Node *t = GetNodeAt(tokens, token_stream_index);
-  if (t->type != type) return NULL;
-  token_stream_index++;
-  return t;
-}
-
-struct Node *ExpectToken(enum NodeType type) {
-  if (token_stream_index >= GetSizeOfList(tokens))
-    Error("Expect token type %d but got EOF", type);
-  struct Node *t = GetNodeAt(tokens, token_stream_index);
-  if (t->type != type) ErrorWithToken(t, "Expected token type %d here", type);
-  token_stream_index++;
-  return t;
-}
-
-struct Node *ConsumePunctuator(const char *s) {
-  if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
-  struct Node *t = GetNodeAt(tokens, token_stream_index);
-  if (!IsEqualTokenWithCStr(t, s)) return NULL;
-  token_stream_index++;
-  return t;
-}
-
-struct Node *ExpectPunctuator(const char *s) {
-  if (token_stream_index >= GetSizeOfList(tokens))
-    Error("Expect token %s but got EOF", s);
-  struct Node *t = GetNodeAt(tokens, token_stream_index);
-  if (!IsEqualTokenWithCStr(t, s))
-    ErrorWithToken(t, "Expected token %s here", s);
-  token_stream_index++;
-  return t;
-}
-
-struct Node *NextToken() {
-  if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
-  return GetNodeAt(tokens, token_stream_index++);
 }
 
 struct Node *AllocList() {
@@ -769,10 +725,10 @@ int main(int argc, char *argv[]) {
   ParseCompilerArgs(&args, argc, argv);
 
   fprintf(stderr, "input:\n%s\n", args.input);
-  tokens = Tokenize(args.input);
+  struct Node *tokens = Tokenize(args.input);
   PrintASTNode(tokens);
 
-  struct Node *ast = Parse();
+  struct Node *ast = Parse(tokens);
   PrintASTNode(ast);
   fputc('\n', stderr);
 

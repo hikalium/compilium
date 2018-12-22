@@ -1,5 +1,48 @@
 #include "compilium.h"
 
+struct Node *tokens;
+int token_stream_index;
+
+struct Node *ConsumeToken(enum NodeType type) {
+  if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
+  struct Node *t = GetNodeAt(tokens, token_stream_index);
+  if (t->type != type) return NULL;
+  token_stream_index++;
+  return t;
+}
+
+struct Node *ExpectToken(enum NodeType type) {
+  if (token_stream_index >= GetSizeOfList(tokens))
+    Error("Expect token type %d but got EOF", type);
+  struct Node *t = GetNodeAt(tokens, token_stream_index);
+  if (t->type != type) ErrorWithToken(t, "Expected token type %d here", type);
+  token_stream_index++;
+  return t;
+}
+
+struct Node *ConsumePunctuator(const char *s) {
+  if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
+  struct Node *t = GetNodeAt(tokens, token_stream_index);
+  if (!IsEqualTokenWithCStr(t, s)) return NULL;
+  token_stream_index++;
+  return t;
+}
+
+struct Node *ExpectPunctuator(const char *s) {
+  if (token_stream_index >= GetSizeOfList(tokens))
+    Error("Expect token %s but got EOF", s);
+  struct Node *t = GetNodeAt(tokens, token_stream_index);
+  if (!IsEqualTokenWithCStr(t, s))
+    ErrorWithToken(t, "Expected token %s here", s);
+  token_stream_index++;
+  return t;
+}
+
+struct Node *NextToken() {
+  if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
+  return GetNodeAt(tokens, token_stream_index++);
+}
+
 struct Node *ParseCastExpr();
 struct Node *ParseExpr(void);
 
@@ -288,7 +331,9 @@ struct Node *ParseCompStmt() {
 
 struct Node *toplevel_names;
 
-struct Node *Parse() {
+struct Node *Parse(struct Node *passed_tokens) {
+  tokens = passed_tokens;
+  token_stream_index = 0;
   struct Node *list = AllocList();
   struct Node *n;
   toplevel_names = AllocList();
