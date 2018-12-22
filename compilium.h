@@ -83,12 +83,6 @@ struct Node *AllocList();
 int GetSizeOfList(struct Node *list);
 struct Node *GetNodeAt(struct Node *list, int index);
 
-struct Node *NextToken();
-struct Node *ConsumeToken(enum NodeType type);
-struct Node *ExpectToken(enum NodeType type);
-struct Node *ConsumePunctuator(const char *s);
-struct Node *ExpectPunctuator(const char *s);
-
 // @ast.c
 struct Node *AllocASTNode(enum NodeType type);
 struct Node *AllocAndInitASTNodeBinOp(struct Node *t, struct Node *left,

@@ -3,7 +3,7 @@
 struct Node *tokens;
 int token_stream_index;
 
-struct Node *ConsumeToken(enum NodeType type) {
+static struct Node *ConsumeToken(enum NodeType type) {
   if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
   struct Node *t = GetNodeAt(tokens, token_stream_index);
   if (t->type != type) return NULL;
@@ -11,7 +11,7 @@ struct Node *ConsumeToken(enum NodeType type) {
   return t;
 }
 
-struct Node *ExpectToken(enum NodeType type) {
+static struct Node *ExpectToken(enum NodeType type) {
   if (token_stream_index >= GetSizeOfList(tokens))
     Error("Expect token type %d but got EOF", type);
   struct Node *t = GetNodeAt(tokens, token_stream_index);
@@ -20,7 +20,7 @@ struct Node *ExpectToken(enum NodeType type) {
   return t;
 }
 
-struct Node *ConsumePunctuator(const char *s) {
+static struct Node *ConsumePunctuator(const char *s) {
   if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
   struct Node *t = GetNodeAt(tokens, token_stream_index);
   if (!IsEqualTokenWithCStr(t, s)) return NULL;
@@ -28,7 +28,7 @@ struct Node *ConsumePunctuator(const char *s) {
   return t;
 }
 
-struct Node *ExpectPunctuator(const char *s) {
+static struct Node *ExpectPunctuator(const char *s) {
   if (token_stream_index >= GetSizeOfList(tokens))
     Error("Expect token %s but got EOF", s);
   struct Node *t = GetNodeAt(tokens, token_stream_index);
@@ -38,7 +38,7 @@ struct Node *ExpectPunctuator(const char *s) {
   return t;
 }
 
-struct Node *NextToken() {
+static struct Node *NextToken() {
   if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
   return GetNodeAt(tokens, token_stream_index++);
 }
