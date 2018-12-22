@@ -6,9 +6,8 @@ struct CompilerArgs {
 
 const char *symbol_prefix;
 
-#define NUM_OF_TOKENS 32
-struct Node *tokens[NUM_OF_TOKENS];
-int tokens_used;
+struct Node *tokens;
+int token_stream_index;
 
 _Noreturn void Error(const char *fmt, ...) {
   fflush(stdout);
@@ -60,11 +59,6 @@ struct Node *AllocToken(const char *src_str, const char *begin, int length,
   t->type = type;
   t->src_str = src_str;
   return t;
-}
-
-void AddToken(struct Node *t) {
-  assert(tokens_used < NUM_OF_TOKENS);
-  tokens[tokens_used++] = t;
 }
 
 const char *CreateTokenStr(struct Node *t) {
@@ -205,15 +199,17 @@ struct Node *CreateToken(const char *input) {
 }
 
 void PrintToken(struct Node *t);
-void Tokenize(const char *input) {
+struct Node *Tokenize(const char *input) {
   const char *p = input;
   struct Node *t;
+  struct Node *tokens = AllocList();
   while ((t = CreateNextToken(p, input))) {
-    AddToken(t);
+    PushToList(tokens, t);
     PrintToken(t);
     fputc('\n', stderr);
     p = t->begin + t->length;
   }
+  return tokens;
 }
 
 void PrintToken(struct Node *t) {
@@ -234,14 +230,6 @@ void PrintTokenStrToFile(struct Node *t, FILE *fp) {
 }
 
 void PrintTokenStr(struct Node *t) { PrintTokenStrToFile(t, stderr); }
-
-void PrintTokens() {
-  for (int i = 0; i < tokens_used; i++) {
-    struct Node *t = tokens[i];
-    PrintToken(t);
-    fputc('\n', stderr);
-  }
-}
 
 _Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...) {
   assert(t);
@@ -280,41 +268,43 @@ _Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...) {
 
 int token_stream_index;
 struct Node *ConsumeToken(enum NodeType type) {
-  if (token_stream_index < tokens_used &&
-      tokens[token_stream_index]->type == type) {
-    return tokens[token_stream_index++];
-  }
-  return NULL;
+  if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
+  struct Node *t = GetNodeAt(tokens, token_stream_index);
+  if (t->type != type) return NULL;
+  token_stream_index++;
+  return t;
 }
 
 struct Node *ExpectToken(enum NodeType type) {
-  if (token_stream_index < tokens_used &&
-      tokens[token_stream_index]->type == type) {
-    return tokens[token_stream_index++];
-  }
-  ErrorWithToken(tokens[token_stream_index], "Expected token type %d here",
-                 type);
+  if (token_stream_index >= GetSizeOfList(tokens))
+    Error("Expect token type %d but got EOF", type);
+  struct Node *t = GetNodeAt(tokens, token_stream_index);
+  if (t->type != type) ErrorWithToken(t, "Expected token type %d here", type);
+  token_stream_index++;
+  return t;
 }
 
 struct Node *ConsumePunctuator(const char *s) {
-  if (token_stream_index < tokens_used &&
-      IsEqualTokenWithCStr(tokens[token_stream_index], s)) {
-    return tokens[token_stream_index++];
-  }
-  return NULL;
+  if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
+  struct Node *t = GetNodeAt(tokens, token_stream_index);
+  if (!IsEqualTokenWithCStr(t, s)) return NULL;
+  token_stream_index++;
+  return t;
 }
 
 struct Node *ExpectPunctuator(const char *s) {
-  if (token_stream_index < tokens_used &&
-      IsEqualTokenWithCStr(tokens[token_stream_index], s)) {
-    return tokens[token_stream_index++];
-  }
-  ErrorWithToken(tokens[token_stream_index], "Expected token %s here", s);
+  if (token_stream_index >= GetSizeOfList(tokens))
+    Error("Expect token %s but got EOF", s);
+  struct Node *t = GetNodeAt(tokens, token_stream_index);
+  if (!IsEqualTokenWithCStr(t, s))
+    ErrorWithToken(t, "Expected token %s here", s);
+  token_stream_index++;
+  return t;
 }
 
 struct Node *NextToken() {
-  if (token_stream_index >= tokens_used) return NULL;
-  return tokens[token_stream_index++];
+  if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
+  return GetNodeAt(tokens, token_stream_index++);
 }
 
 int IsSameType(struct Node *a, struct Node *b) {
@@ -476,6 +466,10 @@ void PrintPadding(int depth) {
 void PrintASTNodeSub(struct Node *n, int depth) {
   if (!n) {
     fprintf(stderr, "(null)");
+    return;
+  }
+  if (kTokenLowerBound < n->type && n->type < kTokenUpperBound) {
+    PrintTokenBrief(n);
     return;
   }
   if (n->type == kASTTypeList) {
@@ -974,8 +968,8 @@ int main(int argc, char *argv[]) {
   ParseCompilerArgs(&args, argc, argv);
 
   fprintf(stderr, "input:\n%s\n", args.input);
-  Tokenize(args.input);
-  PrintTokens();
+  tokens = Tokenize(args.input);
+  PrintASTNode(tokens);
 
   struct Node *ast = Parse();
   PrintASTNode(ast);

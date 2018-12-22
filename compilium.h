@@ -81,6 +81,8 @@ void PushKeyValueToList(struct Node *list, const char *key, struct Node *value);
 
 void PrintASTNode(struct Node *n);
 struct Node *AllocList();
+int GetSizeOfList(struct Node *list);
+struct Node *GetNodeAt(struct Node *list, int index);
 
 struct Node *NextToken();
 struct Node *ConsumeToken(enum NodeType type);
