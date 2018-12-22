@@ -79,6 +79,24 @@ struct Node *AllocAndInitASTNodeIdent(struct Node *ident) {
   return n;
 }
 
+struct Node *AllocToken(const char *src_str, const char *begin, int length,
+                        enum NodeType type) {
+  struct Node *t = AllocASTNode(type);
+  t->begin = begin;
+  t->length = length;
+  t->type = type;
+  t->src_str = src_str;
+  return t;
+}
+
+const char *CreateTokenStr(struct Node *t) {
+  return strndup(t->begin, t->length);
+}
+
+int IsEqualTokenWithCStr(struct Node *t, const char *s) {
+  return strlen(s) == t->length && strncmp(t->begin, s, t->length) == 0;
+}
+
 static void PrintPadding(int depth) {
   for (int i = 0; i < depth; i++) {
     fputc(' ', stderr);

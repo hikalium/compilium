@@ -1,5 +1,5 @@
 CFLAGS=-Wall -Wpedantic -std=c11
-SRCS=ast.c compilium.c parser.c
+SRCS=ast.c compilium.c parser.c type.c
 HEADERS=compilium.h
 
 compilium : $(SRCS) $(HEADERS) Makefile

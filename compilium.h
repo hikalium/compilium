@@ -110,9 +110,24 @@ struct Node *AllocAndInitPointerOf(struct Node *type);
 struct Node *AllocAndInitFunctionType(struct Node *return_type,
                                       struct Node *arg_type_list);
 struct Node *AllocAndInitASTNodeIdent(struct Node *ident);
-void PrintASTNode(struct Node *n);
 
+struct Node *AllocToken(const char *src_str, const char *begin, int length,
+                        enum NodeType type);
+
+const char *CreateTokenStr(struct Node *t);
+int IsEqualTokenWithCStr(struct Node *t, const char *s);
 void PrintTokenStrToFile(struct Node *t, FILE *fp);
+
+void PrintASTNode(struct Node *n);
 
 // @parser.c
 struct Node *Parse();
+
+// tokenizer.c
+struct Node *CreateToken(const char *input);
+
+// @type.c
+int IsSameType(struct Node *a, struct Node *b);
+struct Node *GetRValueType(struct Node *t);
+int GetSizeOfType(struct Node *t);
+struct Node *CreateType(struct Node *decl_spec, struct Node *decltor);
