@@ -1,10 +1,11 @@
 CFLAGS=-Wall -Wpedantic -std=c11
-SRCS=compilium.c
+SRCS=ast.c compilium.c parser.c
+HEADERS=compilium.h
 
-compilium : $(SRCS) Makefile
+compilium : $(SRCS) $(HEADERS) Makefile
 	cc $(CFLAGS) -o $@ $(SRCS) 
 
-compilium_dbg : $(SRCS) Makefile
+compilium_dbg : $(SRCS) $(HEADERS) Makefile
 	cc $(CFLAGS) -g -o $@ $(SRCS)
 
 debug : compilium_dbg failcase.c
@@ -24,7 +25,7 @@ unittest : compilium
 	@ ./compilium --run-unittest=Type
 
 format:
-	clang-format -i $(SRCS)
+	clang-format -i $(SRCS) $(HEADERS)
 
 commit:
 	make format
