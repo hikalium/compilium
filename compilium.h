@@ -9,7 +9,7 @@ char *strndup(const char *s, size_t n);
 #define assert(expr) \
   ((void)((expr) || (__assert(#expr, __FILE__, __LINE__), 0)))
 
-enum ASTType {
+enum NodeType {
   kTokenLowerBound,
   kTokenDecimalNumber,
   kTokenOctalNumber,
@@ -40,29 +40,30 @@ enum ASTType {
   kASTTypeFunctionType,
 };
 
-struct ASTNode {
-  enum ASTType type;
+struct Node {
+  enum NodeType type;
   union {
     struct {
       int reg;
-      struct ASTNode *expr_type;
-      struct ASTNode *op;
-      struct ASTNode *left;
-      struct ASTNode *right;
-      struct ASTNode *cond;
+      struct Node *expr_type;
+      struct Node *op;
+      struct Node *left;
+      struct Node *right;
+      struct Node *cond;
       // for list
       int capacity;
       int size;
-      struct ASTNode **nodes;
+      struct Node **nodes;
       // for key value
       const char *key;
-      struct ASTNode *value;
+      struct Node *value;
       // for local var
       int byte_offset;
       // for string literal
       int label_number;
     };
     struct {
+      // kToken...
       const char *begin;
       int length;
       const char *src_str;
@@ -73,45 +74,41 @@ struct ASTNode {
 _Noreturn void Error(const char *fmt, ...);
 _Noreturn void __assert(const char *expr_str, const char *file, int line);
 
-_Noreturn void ErrorWithToken(struct ASTNode *t, const char *fmt, ...);
+_Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...);
 
-void PushToList(struct ASTNode *list, struct ASTNode *node);
-void PushKeyValueToList(struct ASTNode *list, const char *key,
-                        struct ASTNode *value);
+void PushToList(struct Node *list, struct Node *node);
+void PushKeyValueToList(struct Node *list, const char *key, struct Node *value);
 
-void PrintASTNode(struct ASTNode *n);
-struct ASTNode *AllocList();
+void PrintASTNode(struct Node *n);
+struct Node *AllocList();
 
-struct ASTNode *NextToken();
-struct ASTNode *ConsumeToken(enum ASTType type);
-struct ASTNode *ExpectToken(enum ASTType type);
-struct ASTNode *ConsumePunctuator(const char *s);
-struct ASTNode *ExpectPunctuator(const char *s);
+struct Node *NextToken();
+struct Node *ConsumeToken(enum NodeType type);
+struct Node *ExpectToken(enum NodeType type);
+struct Node *ConsumePunctuator(const char *s);
+struct Node *ExpectPunctuator(const char *s);
 
 // @ast.c
-struct ASTNode *AllocASTNode(enum ASTType type);
-struct ASTNode *AllocAndInitASTNodeBinOp(struct ASTNode *t,
-                                         struct ASTNode *left,
-                                         struct ASTNode *right);
-struct ASTNode *AllocAndInitASTNodeUnaryPrefixOp(struct ASTNode *t,
-                                                 struct ASTNode *right);
-struct ASTNode *AllocAndInitASTNodeExprStmt(struct ASTNode *t,
-                                            struct ASTNode *left);
+struct Node *AllocASTNode(enum NodeType type);
+struct Node *AllocAndInitASTNodeBinOp(struct Node *t, struct Node *left,
+                                      struct Node *right);
+struct Node *AllocAndInitASTNodeUnaryPrefixOp(struct Node *t,
+                                              struct Node *right);
+struct Node *AllocAndInitASTNodeExprStmt(struct Node *t, struct Node *left);
 
-struct ASTNode *AllocAndInitASTNodeKeyValue(const char *key,
-                                            struct ASTNode *value);
+struct Node *AllocAndInitASTNodeKeyValue(const char *key, struct Node *value);
 
-struct ASTNode *AllocAndInitASTNodeLocalVar(int byte_offset,
-                                            struct ASTNode *var_type);
+struct Node *AllocAndInitASTNodeLocalVar(int byte_offset,
+                                         struct Node *var_type);
 
-struct ASTNode *AllocAndInitBaseType(struct ASTNode *t);
+struct Node *AllocAndInitBaseType(struct Node *t);
 
-struct ASTNode *AllocAndInitLValueOf(struct ASTNode *type);
+struct Node *AllocAndInitLValueOf(struct Node *type);
 
-struct ASTNode *AllocAndInitPointerOf(struct ASTNode *type);
-struct ASTNode *AllocAndInitFunctionType(struct ASTNode *return_type,
-                                         struct ASTNode *arg_type_list);
-struct ASTNode *AllocAndInitASTNodeIdent(struct ASTNode *ident);
+struct Node *AllocAndInitPointerOf(struct Node *type);
+struct Node *AllocAndInitFunctionType(struct Node *return_type,
+                                      struct Node *arg_type_list);
+struct Node *AllocAndInitASTNodeIdent(struct Node *ident);
 
 // @parser.c
-struct ASTNode *Parse();
+struct Node *Parse();

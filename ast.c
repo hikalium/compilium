@@ -1,83 +1,80 @@
 #include "compilium.h"
 
-struct ASTNode *AllocASTNode(enum ASTType type) {
-  struct ASTNode *node = calloc(1, sizeof(struct ASTNode));
+struct Node *AllocASTNode(enum NodeType type) {
+  struct Node *node = calloc(1, sizeof(struct Node));
   node->type = type;
   return node;
 }
 
-struct ASTNode *AllocAndInitASTNodeBinOp(struct ASTNode *t,
-                                         struct ASTNode *left,
-                                         struct ASTNode *right) {
+struct Node *AllocAndInitASTNodeBinOp(struct Node *t, struct Node *left,
+                                      struct Node *right) {
   if (!right) ErrorWithToken(t, "Expected expression after binary operator");
-  struct ASTNode *op = AllocASTNode(kASTTypeExpr);
+  struct Node *op = AllocASTNode(kASTTypeExpr);
   op->op = t;
   op->left = left;
   op->right = right;
   return op;
 }
 
-struct ASTNode *AllocAndInitASTNodeUnaryPrefixOp(struct ASTNode *t,
-                                                 struct ASTNode *right) {
+struct Node *AllocAndInitASTNodeUnaryPrefixOp(struct Node *t,
+                                              struct Node *right) {
   if (!right) ErrorWithToken(t, "Expected expression after prefix operator");
-  struct ASTNode *op = AllocASTNode(kASTTypeExpr);
+  struct Node *op = AllocASTNode(kASTTypeExpr);
   op->op = t;
   op->right = right;
   return op;
 }
 
-struct ASTNode *AllocAndInitASTNodeExprStmt(struct ASTNode *t,
-                                            struct ASTNode *left) {
-  struct ASTNode *op = AllocASTNode(kASTTypeExprStmt);
+struct Node *AllocAndInitASTNodeExprStmt(struct Node *t, struct Node *left) {
+  struct Node *op = AllocASTNode(kASTTypeExprStmt);
   op->op = t;
   op->left = left;
   return op;
 }
 
-struct ASTNode *AllocAndInitASTNodeKeyValue(const char *key,
-                                            struct ASTNode *value) {
-  struct ASTNode *n = AllocASTNode(kASTTypeKeyValue);
+struct Node *AllocAndInitASTNodeKeyValue(const char *key, struct Node *value) {
+  struct Node *n = AllocASTNode(kASTTypeKeyValue);
   n->key = key;
   n->value = value;
   return n;
 }
 
-struct ASTNode *AllocAndInitASTNodeLocalVar(int byte_offset,
-                                            struct ASTNode *var_type) {
-  struct ASTNode *n = AllocASTNode(kASTTypeLocalVar);
+struct Node *AllocAndInitASTNodeLocalVar(int byte_offset,
+                                         struct Node *var_type) {
+  struct Node *n = AllocASTNode(kASTTypeLocalVar);
   n->byte_offset = byte_offset;
   n->expr_type = var_type;
   return n;
 }
 
-struct ASTNode *AllocAndInitBaseType(struct ASTNode *t) {
-  struct ASTNode *n = AllocASTNode(kASTTypeBaseType);
+struct Node *AllocAndInitBaseType(struct Node *t) {
+  struct Node *n = AllocASTNode(kASTTypeBaseType);
   n->op = t;
   return n;
 }
 
-struct ASTNode *AllocAndInitLValueOf(struct ASTNode *type) {
-  struct ASTNode *n = AllocASTNode(kASTTypeLValueOf);
+struct Node *AllocAndInitLValueOf(struct Node *type) {
+  struct Node *n = AllocASTNode(kASTTypeLValueOf);
   n->right = type;
   return n;
 }
 
-struct ASTNode *AllocAndInitPointerOf(struct ASTNode *type) {
-  struct ASTNode *n = AllocASTNode(kASTTypePointerOf);
+struct Node *AllocAndInitPointerOf(struct Node *type) {
+  struct Node *n = AllocASTNode(kASTTypePointerOf);
   n->right = type;
   return n;
 }
 
-struct ASTNode *AllocAndInitFunctionType(struct ASTNode *return_type,
-                                         struct ASTNode *arg_type_list) {
-  struct ASTNode *n = AllocASTNode(kASTTypeFunctionType);
+struct Node *AllocAndInitFunctionType(struct Node *return_type,
+                                      struct Node *arg_type_list) {
+  struct Node *n = AllocASTNode(kASTTypeFunctionType);
   n->left = return_type;
   n->right = arg_type_list;
   return n;
 }
 
-struct ASTNode *AllocAndInitASTNodeIdent(struct ASTNode *ident) {
-  struct ASTNode *n = AllocASTNode(kASTTypeIdent);
+struct Node *AllocAndInitASTNodeIdent(struct Node *ident) {
+  struct Node *n = AllocASTNode(kASTTypeIdent);
   n->op = ident;
   return n;
 }

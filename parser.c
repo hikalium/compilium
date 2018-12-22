@@ -1,21 +1,21 @@
 #include "compilium.h"
 
-struct ASTNode *ParseCastExpr();
-struct ASTNode *ParseExpr(void);
+struct Node *ParseCastExpr();
+struct Node *ParseExpr(void);
 
-struct ASTNode *ParsePrimaryExpr() {
-  struct ASTNode *t;
+struct Node *ParsePrimaryExpr() {
+  struct Node *t;
   if ((t = ConsumeToken(kTokenDecimalNumber)) ||
       (t = ConsumeToken(kTokenOctalNumber)) ||
       (t = ConsumeToken(kTokenIdent)) ||
       (t = ConsumeToken(kTokenCharLiteral)) ||
       (t = ConsumeToken(kTokenStringLiteral))) {
-    struct ASTNode *op = AllocASTNode(kASTTypeExpr);
+    struct Node *op = AllocASTNode(kASTTypeExpr);
     op->op = t;
     return op;
   }
   if ((t = ConsumePunctuator("("))) {
-    struct ASTNode *op = AllocASTNode(kASTTypeExpr);
+    struct Node *op = AllocASTNode(kASTTypeExpr);
     op->op = t;
     op->right = ParseExpr();
     if (!op->right) ErrorWithToken(t, "Expected expr after this token");
@@ -25,8 +25,8 @@ struct ASTNode *ParsePrimaryExpr() {
   return NULL;
 }
 
-struct ASTNode *ParseUnaryExpr() {
-  struct ASTNode *t;
+struct Node *ParseUnaryExpr() {
+  struct Node *t;
   if ((t = ConsumePunctuator("+")) || (t = ConsumePunctuator("-")) ||
       (t = ConsumePunctuator("~")) || (t = ConsumePunctuator("!")) ||
       (t = ConsumePunctuator("&")) || (t = ConsumePunctuator("*"))) {
@@ -37,14 +37,14 @@ struct ASTNode *ParseUnaryExpr() {
   return ParsePrimaryExpr();
 }
 
-struct ASTNode *ParseCastExpr() {
+struct Node *ParseCastExpr() {
   return ParseUnaryExpr();
 }
 
-struct ASTNode *ParseMulExpr() {
-  struct ASTNode *op = ParseCastExpr();
+struct Node *ParseMulExpr() {
+  struct Node *op = ParseCastExpr();
   if (!op) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   while ((t = ConsumePunctuator("*")) || (t = ConsumePunctuator("/")) ||
          (t = ConsumePunctuator("%"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseCastExpr());
@@ -52,30 +52,30 @@ struct ASTNode *ParseMulExpr() {
   return op;
 }
 
-struct ASTNode *ParseAddExpr() {
-  struct ASTNode *op = ParseMulExpr();
+struct Node *ParseAddExpr() {
+  struct Node *op = ParseMulExpr();
   if (!op) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   while ((t = ConsumePunctuator("+")) || (t = ConsumePunctuator("-"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseMulExpr());
   }
   return op;
 }
 
-struct ASTNode *ParseShiftExpr() {
-  struct ASTNode *op = ParseAddExpr();
+struct Node *ParseShiftExpr() {
+  struct Node *op = ParseAddExpr();
   if (!op) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   while ((t = ConsumePunctuator("<<")) || (t = ConsumePunctuator(">>"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseAddExpr());
   }
   return op;
 }
 
-struct ASTNode *ParseRelExpr() {
-  struct ASTNode *op = ParseShiftExpr();
+struct Node *ParseRelExpr() {
+  struct Node *op = ParseShiftExpr();
   if (!op) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   while ((t = ConsumePunctuator("<")) || (t = ConsumePunctuator(">")) ||
          (t = ConsumePunctuator("<=")) || (t = ConsumePunctuator(">="))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseShiftExpr());
@@ -83,72 +83,72 @@ struct ASTNode *ParseRelExpr() {
   return op;
 }
 
-struct ASTNode *ParseEqExpr() {
-  struct ASTNode *op = ParseRelExpr();
+struct Node *ParseEqExpr() {
+  struct Node *op = ParseRelExpr();
   if (!op) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   while ((t = ConsumePunctuator("==")) || (t = ConsumePunctuator("!="))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseRelExpr());
   }
   return op;
 }
 
-struct ASTNode *ParseAndExpr() {
-  struct ASTNode *op = ParseEqExpr();
+struct Node *ParseAndExpr() {
+  struct Node *op = ParseEqExpr();
   if (!op) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   while ((t = ConsumePunctuator("&"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseEqExpr());
   }
   return op;
 }
 
-struct ASTNode *ParseXorExpr() {
-  struct ASTNode *op = ParseAndExpr();
+struct Node *ParseXorExpr() {
+  struct Node *op = ParseAndExpr();
   if (!op) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   while ((t = ConsumePunctuator("^"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseAndExpr());
   }
   return op;
 }
 
-struct ASTNode *ParseOrExpr() {
-  struct ASTNode *op = ParseXorExpr();
+struct Node *ParseOrExpr() {
+  struct Node *op = ParseXorExpr();
   if (!op) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   while ((t = ConsumePunctuator("|"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseXorExpr());
   }
   return op;
 }
 
-struct ASTNode *ParseBoolAndExpr() {
-  struct ASTNode *op = ParseOrExpr();
+struct Node *ParseBoolAndExpr() {
+  struct Node *op = ParseOrExpr();
   if (!op) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   while ((t = ConsumePunctuator("&&"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseOrExpr());
   }
   return op;
 }
 
-struct ASTNode *ParseBoolOrExpr() {
-  struct ASTNode *op = ParseBoolAndExpr();
+struct Node *ParseBoolOrExpr() {
+  struct Node *op = ParseBoolAndExpr();
   if (!op) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   while ((t = ConsumePunctuator("||"))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseBoolAndExpr());
   }
   return op;
 }
 
-struct ASTNode *ParseConditionalExpr() {
-  struct ASTNode *expr = ParseBoolOrExpr();
+struct Node *ParseConditionalExpr() {
+  struct Node *expr = ParseBoolOrExpr();
   if (!expr) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   if ((t = ConsumePunctuator("?"))) {
-    struct ASTNode *op = AllocASTNode(kASTTypeExpr);
+    struct Node *op = AllocASTNode(kASTTypeExpr);
     op->op = t;
     op->cond = expr;
     op->left = ParseConditionalExpr();
@@ -163,31 +163,31 @@ struct ASTNode *ParseConditionalExpr() {
   return expr;
 }
 
-struct ASTNode *ParseAssignExpr() {
-  struct ASTNode *left = ParseConditionalExpr();
+struct Node *ParseAssignExpr() {
+  struct Node *left = ParseConditionalExpr();
   if (!left) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   if ((t = ConsumePunctuator("="))) {
-    struct ASTNode *right = ParseAssignExpr();
+    struct Node *right = ParseAssignExpr();
     if (!right) ErrorWithToken(t, "Expected expr after this token");
     return AllocAndInitASTNodeBinOp(t, left, right);
   }
   return left;
 }
 
-struct ASTNode *ParseExpr() {
-  struct ASTNode *op = ParseAssignExpr();
+struct Node *ParseExpr() {
+  struct Node *op = ParseAssignExpr();
   if (!op) return NULL;
-  struct ASTNode *t;
+  struct Node *t;
   while ((t = ConsumePunctuator(","))) {
     op = AllocAndInitASTNodeBinOp(t, op, ParseAssignExpr());
   }
   return op;
 }
 
-struct ASTNode *ParseExprStmt() {
-  struct ASTNode *expr = ParseExpr();
-  struct ASTNode *t;
+struct Node *ParseExprStmt() {
+  struct Node *expr = ParseExpr();
+  struct Node *t;
   if ((t = ConsumePunctuator(";"))) {
     return AllocAndInitASTNodeExprStmt(t, expr);
   } else if (expr) {
@@ -196,12 +196,12 @@ struct ASTNode *ParseExprStmt() {
   return NULL;
 }
 
-struct ASTNode *ParseJumpStmt() {
-  struct ASTNode *t;
+struct Node *ParseJumpStmt() {
+  struct Node *t;
   if ((t = ConsumeToken(kTokenKwReturn))) {
-    struct ASTNode *expr = ParseExpr();
+    struct Node *expr = ParseExpr();
     ExpectPunctuator(";");
-    struct ASTNode *stmt = AllocASTNode(kASTTypeJumpStmt);
+    struct Node *stmt = AllocASTNode(kASTTypeJumpStmt);
     stmt->op = t;
     stmt->right = expr;
     return stmt;
@@ -209,29 +209,29 @@ struct ASTNode *ParseJumpStmt() {
   return NULL;
 }
 
-struct ASTNode *ParseStmt() {
-  struct ASTNode *stmt;
+struct Node *ParseStmt() {
+  struct Node *stmt;
   if ((stmt = ParseExprStmt()) || (stmt = ParseJumpStmt())) return stmt;
   return NULL;
 }
 
-struct ASTNode *ParseDeclSpecs() {
-  struct ASTNode *decl_spec;
+struct Node *ParseDeclSpecs() {
+  struct Node *decl_spec;
   (decl_spec = ConsumeToken(kTokenKwInt)) ||
       (decl_spec = ConsumeToken(kTokenKwChar));
   return decl_spec;
 }
 
-struct ASTNode *ParseParamDecl();
-struct ASTNode *ParseDirectDecltor() {
-  struct ASTNode *n = AllocASTNode(kASTTypeDirectDecltor);
+struct Node *ParseParamDecl();
+struct Node *ParseDirectDecltor() {
+  struct Node *n = AllocASTNode(kASTTypeDirectDecltor);
   n->op = ExpectToken(kTokenIdent);
   while (true) {
-    struct ASTNode *t;
+    struct Node *t;
     if ((t = ConsumePunctuator("("))) {
-      struct ASTNode *arg = ParseParamDecl();
+      struct Node *arg = ParseParamDecl();
       ExpectPunctuator(")");
-      struct ASTNode *nn = AllocASTNode(kASTTypeDirectDecltor);
+      struct Node *nn = AllocASTNode(kASTTypeDirectDecltor);
       nn->op = t;
       nn->right = arg;
       nn->left = n;
@@ -242,10 +242,10 @@ struct ASTNode *ParseDirectDecltor() {
   return n;
 }
 
-struct ASTNode *ParseDecltor() {
-  struct ASTNode *n = AllocASTNode(kASTTypeDecltor);
-  struct ASTNode *pointer = NULL;
-  struct ASTNode *t;
+struct Node *ParseDecltor() {
+  struct Node *n = AllocASTNode(kASTTypeDecltor);
+  struct Node *pointer = NULL;
+  struct Node *t;
   while ((t = ConsumePunctuator("*"))) {
     pointer = AllocAndInitPointerOf(pointer);
   }
@@ -254,31 +254,31 @@ struct ASTNode *ParseDecltor() {
   return n;
 }
 
-struct ASTNode *ParseParamDecl() {
-  struct ASTNode *decl_spec = ParseDeclSpecs();
+struct Node *ParseParamDecl() {
+  struct Node *decl_spec = ParseDeclSpecs();
   if (!decl_spec) return NULL;
-  struct ASTNode *n = AllocASTNode(kASTTypeDecl);
+  struct Node *n = AllocASTNode(kASTTypeDecl);
   n->op = decl_spec;
   n->right = ParseDecltor();
   return n;
 }
 
-struct ASTNode *ParseDecl() {
-  struct ASTNode *decl_spec = ParseDeclSpecs();
+struct Node *ParseDecl() {
+  struct Node *decl_spec = ParseDeclSpecs();
   if (!decl_spec) return NULL;
-  struct ASTNode *n = AllocASTNode(kASTTypeDecl);
+  struct Node *n = AllocASTNode(kASTTypeDecl);
   n->op = decl_spec;
   n->right = ParseDecltor();
   ExpectPunctuator(";");
   return n;
 }
 
-struct ASTNode *ParseCompStmt() {
-  struct ASTNode *t;
+struct Node *ParseCompStmt() {
+  struct Node *t;
   if (!(t = ConsumePunctuator("{"))) return NULL;
-  struct ASTNode *list = AllocList();
+  struct Node *list = AllocList();
   list->op = t;
-  struct ASTNode *stmt;
+  struct Node *stmt;
   while ((stmt = ParseDecl()) || (stmt = ParseStmt())) {
     PushToList(list, stmt);
   }
@@ -286,11 +286,11 @@ struct ASTNode *ParseCompStmt() {
   return list;
 }
 
-struct ASTNode *toplevel_names;
+struct Node *toplevel_names;
 
-struct ASTNode *Parse() {
-  struct ASTNode *list = AllocList();
-  struct ASTNode *n;
+struct Node *Parse() {
+  struct Node *list = AllocList();
+  struct Node *n;
   toplevel_names = AllocList();
   while ((n = ParseCompStmt()) || (n = ParseDecl())) {
     if (n->type == kASTTypeDecl) {
@@ -301,7 +301,7 @@ struct ASTNode *Parse() {
     }
     PushToList(list, n);
   }
-  struct ASTNode *t;
+  struct Node *t;
   if (!(t = NextToken())) return list;
   ErrorWithToken(t, "Unexpected token");
 }

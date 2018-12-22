@@ -7,7 +7,7 @@ struct CompilerArgs {
 const char *symbol_prefix;
 
 #define NUM_OF_TOKENS 32
-struct ASTNode *tokens[NUM_OF_TOKENS];
+struct Node *tokens[NUM_OF_TOKENS];
 int tokens_used;
 
 _Noreturn void Error(const char *fmt, ...) {
@@ -52,9 +52,9 @@ void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
     Error("Usage: %s [--os_type=Linux|Darwin] src_string", argv[0]);
 }
 
-struct ASTNode *AllocToken(const char *src_str, const char *begin, int length,
-                           enum ASTType type) {
-  struct ASTNode *t = AllocASTNode(type);
+struct Node *AllocToken(const char *src_str, const char *begin, int length,
+                        enum NodeType type) {
+  struct Node *t = AllocASTNode(type);
   t->begin = begin;
   t->length = length;
   t->type = type;
@@ -62,20 +62,20 @@ struct ASTNode *AllocToken(const char *src_str, const char *begin, int length,
   return t;
 }
 
-void AddToken(struct ASTNode *t) {
+void AddToken(struct Node *t) {
   assert(tokens_used < NUM_OF_TOKENS);
   tokens[tokens_used++] = t;
 }
 
-const char *CreateTokenStr(struct ASTNode *t) {
+const char *CreateTokenStr(struct Node *t) {
   return strndup(t->begin, t->length);
 }
 
-int IsEqualTokenWithCStr(struct ASTNode *t, const char *s) {
+int IsEqualTokenWithCStr(struct Node *t, const char *s) {
   return strlen(s) == t->length && strncmp(t->begin, s, t->length) == 0;
 }
 
-struct ASTNode *CreateNextToken(const char *p, const char *src) {
+struct Node *CreateNextToken(const char *p, const char *src) {
   while (*p <= ' ') {
     if (!*p) return NULL;
     p++;
@@ -100,7 +100,7 @@ struct ASTNode *CreateNextToken(const char *p, const char *src) {
            ('0' <= p[length] && p[length] <= '9')) {
       length++;
     }
-    struct ASTNode *t = AllocToken(src, p, length, kTokenIdent);
+    struct Node *t = AllocToken(src, p, length, kTokenIdent);
     if (IsEqualTokenWithCStr(t, "return")) t->type = kTokenKwReturn;
     if (IsEqualTokenWithCStr(t, "char")) t->type = kTokenKwChar;
     if (IsEqualTokenWithCStr(t, "int")) t->type = kTokenKwInt;
@@ -200,14 +200,14 @@ struct ASTNode *CreateNextToken(const char *p, const char *src) {
   Error("Unexpected char %c", *p);
 }
 
-struct ASTNode *CreateToken(const char *input) {
+struct Node *CreateToken(const char *input) {
   return CreateNextToken(input, input);
 }
 
-void PrintToken(struct ASTNode *t);
+void PrintToken(struct Node *t);
 void Tokenize(const char *input) {
   const char *p = input;
-  struct ASTNode *t;
+  struct Node *t;
   while ((t = CreateNextToken(p, input))) {
     AddToken(t);
     PrintToken(t);
@@ -216,11 +216,11 @@ void Tokenize(const char *input) {
   }
 }
 
-void PrintToken(struct ASTNode *t) {
+void PrintToken(struct Node *t) {
   fprintf(stderr, "(Token %.*s type=%d)", t->length, t->begin, t->type);
 }
 
-void PrintTokenBrief(struct ASTNode *t) {
+void PrintTokenBrief(struct Node *t) {
   assert(t);
   if (t->type == kTokenStringLiteral || t->type == kTokenCharLiteral) {
     fprintf(stderr, "%.*s", t->length, t->begin);
@@ -229,21 +229,21 @@ void PrintTokenBrief(struct ASTNode *t) {
   fprintf(stderr, "<%.*s>", t->length, t->begin);
 }
 
-void PrintTokenStrToFile(struct ASTNode *t, FILE *fp) {
+void PrintTokenStrToFile(struct Node *t, FILE *fp) {
   fprintf(fp, "%.*s", t->length, t->begin);
 }
 
-void PrintTokenStr(struct ASTNode *t) { PrintTokenStrToFile(t, stderr); }
+void PrintTokenStr(struct Node *t) { PrintTokenStrToFile(t, stderr); }
 
 void PrintTokens() {
   for (int i = 0; i < tokens_used; i++) {
-    struct ASTNode *t = tokens[i];
+    struct Node *t = tokens[i];
     PrintToken(t);
     fputc('\n', stderr);
   }
 }
 
-_Noreturn void ErrorWithToken(struct ASTNode *t, const char *fmt, ...) {
+_Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...) {
   assert(t);
   const char *line_begin = t->begin;
   while (t->src_str < line_begin) {
@@ -279,7 +279,7 @@ _Noreturn void ErrorWithToken(struct ASTNode *t, const char *fmt, ...) {
 }
 
 int token_stream_index;
-struct ASTNode *ConsumeToken(enum ASTType type) {
+struct Node *ConsumeToken(enum NodeType type) {
   if (token_stream_index < tokens_used &&
       tokens[token_stream_index]->type == type) {
     return tokens[token_stream_index++];
@@ -287,7 +287,7 @@ struct ASTNode *ConsumeToken(enum ASTType type) {
   return NULL;
 }
 
-struct ASTNode *ExpectToken(enum ASTType type) {
+struct Node *ExpectToken(enum NodeType type) {
   if (token_stream_index < tokens_used &&
       tokens[token_stream_index]->type == type) {
     return tokens[token_stream_index++];
@@ -296,7 +296,7 @@ struct ASTNode *ExpectToken(enum ASTType type) {
                  type);
 }
 
-struct ASTNode *ConsumePunctuator(const char *s) {
+struct Node *ConsumePunctuator(const char *s) {
   if (token_stream_index < tokens_used &&
       IsEqualTokenWithCStr(tokens[token_stream_index], s)) {
     return tokens[token_stream_index++];
@@ -304,7 +304,7 @@ struct ASTNode *ConsumePunctuator(const char *s) {
   return NULL;
 }
 
-struct ASTNode *ExpectPunctuator(const char *s) {
+struct Node *ExpectPunctuator(const char *s) {
   if (token_stream_index < tokens_used &&
       IsEqualTokenWithCStr(tokens[token_stream_index], s)) {
     return tokens[token_stream_index++];
@@ -312,12 +312,12 @@ struct ASTNode *ExpectPunctuator(const char *s) {
   ErrorWithToken(tokens[token_stream_index], "Expected token %s here", s);
 }
 
-struct ASTNode *NextToken() {
+struct Node *NextToken() {
   if (token_stream_index >= tokens_used) return NULL;
   return tokens[token_stream_index++];
 }
 
-int IsSameType(struct ASTNode *a, struct ASTNode *b) {
+int IsSameType(struct Node *a, struct Node *b) {
   assert(a && b);
   if (a->type != b->type) return 0;
   if (a->type == kASTTypeBaseType) {
@@ -329,19 +329,19 @@ int IsSameType(struct ASTNode *a, struct ASTNode *b) {
   Error("IsSameType: Comparing non-type nodes");
 }
 
-struct ASTNode *GetRValueType(struct ASTNode *t) {
+struct Node *GetRValueType(struct Node *t) {
   if (!t) return NULL;
   if (t->type != kASTTypeLValueOf) return t;
   return t->right;
 }
 
-int IsAssignable(struct ASTNode *dst, struct ASTNode *src) {
+int IsAssignable(struct Node *dst, struct Node *src) {
   assert(dst && src);
   if (dst->type != kASTTypeLValueOf) return 0;
   return IsSameType(GetRValueType(dst), src);
 }
 
-int GetSizeOfType(struct ASTNode *t) {
+int GetSizeOfType(struct Node *t) {
   t = GetRValueType(t);
   assert(t);
   if (t->type == kASTTypeBaseType) {
@@ -357,11 +357,11 @@ int GetSizeOfType(struct ASTNode *t) {
 void TestType() {
   fprintf(stderr, "Testing Type...");
 
-  struct ASTNode *int_type = AllocAndInitBaseType(CreateToken("int"));
-  struct ASTNode *another_int_type = AllocAndInitBaseType(CreateToken("int"));
-  struct ASTNode *lvalue_int_type = AllocAndInitLValueOf(int_type);
-  struct ASTNode *pointer_of_int_type = AllocAndInitPointerOf(int_type);
-  struct ASTNode *another_pointer_of_int_type =
+  struct Node *int_type = AllocAndInitBaseType(CreateToken("int"));
+  struct Node *another_int_type = AllocAndInitBaseType(CreateToken("int"));
+  struct Node *lvalue_int_type = AllocAndInitLValueOf(int_type);
+  struct Node *pointer_of_int_type = AllocAndInitPointerOf(int_type);
+  struct Node *another_pointer_of_int_type =
       AllocAndInitPointerOf(another_int_type);
 
   assert(IsSameType(int_type, int_type));
@@ -378,54 +378,54 @@ void TestType() {
   exit(EXIT_SUCCESS);
 }
 
-struct ASTNode *AllocList() {
+struct Node *AllocList() {
   return AllocASTNode(kASTTypeList);
 }
 
-void ExpandListSizeIfNeeded(struct ASTNode *list) {
+void ExpandListSizeIfNeeded(struct Node *list) {
   if (list->size < list->capacity) return;
   list->capacity = (list->capacity + 1) * 2;
-  list->nodes = realloc(list->nodes, sizeof(struct ASTNode *) * list->capacity);
+  list->nodes = realloc(list->nodes, sizeof(struct Node *) * list->capacity);
   assert(list->nodes);
   assert(list->size < list->capacity);
 }
 
-void PushToList(struct ASTNode *list, struct ASTNode *node) {
+void PushToList(struct Node *list, struct Node *node) {
   ExpandListSizeIfNeeded(list);
   list->nodes[list->size++] = node;
 }
 
-void PushKeyValueToList(struct ASTNode *list, const char *key,
-                        struct ASTNode *value) {
+void PushKeyValueToList(struct Node *list, const char *key,
+                        struct Node *value) {
   ExpandListSizeIfNeeded(list);
   list->nodes[list->size++] = AllocAndInitASTNodeKeyValue(key, value);
 }
 
-int GetSizeOfList(struct ASTNode *list) {
+int GetSizeOfList(struct Node *list) {
   assert(list && list->type == kASTTypeList);
   return list->size;
 }
 
-struct ASTNode *GetNodeAt(struct ASTNode *list, int index) {
+struct Node *GetNodeAt(struct Node *list, int index) {
   assert(list && list->type == kASTTypeList);
   assert(0 <= index && index < list->size);
   return list->nodes[index];
 }
 
-struct ASTNode *GetNodeByTokenKey(struct ASTNode *list, struct ASTNode *key) {
+struct Node *GetNodeByTokenKey(struct Node *list, struct Node *key) {
   assert(list && list->type == kASTTypeList);
   for (int i = 0; i < list->size; i++) {
-    struct ASTNode *n = list->nodes[i];
+    struct Node *n = list->nodes[i];
     if (n->type != kASTTypeKeyValue) continue;
     if (IsEqualTokenWithCStr(key, n->key)) return n->value;
   }
   return NULL;
 }
 
-struct ASTNode *GetNodeByKey(struct ASTNode *list, const char *key) {
+struct Node *GetNodeByKey(struct Node *list, const char *key) {
   assert(list && list->type == kASTTypeList);
   for (int i = 0; i < list->size; i++) {
-    struct ASTNode *n = list->nodes[i];
+    struct Node *n = list->nodes[i];
     if (n->type != kASTTypeKeyValue) continue;
     if (strcmp(n->key, key) == 0) return n->value;
   }
@@ -435,9 +435,9 @@ struct ASTNode *GetNodeByKey(struct ASTNode *list, const char *key) {
 void TestList() {
   fprintf(stderr, "Testing List...");
 
-  struct ASTNode *list = AllocList();
-  struct ASTNode *item1 = AllocASTNode(kASTTypeNone);
-  struct ASTNode *item2 = AllocASTNode(kASTTypeNone);
+  struct Node *list = AllocList();
+  struct Node *item1 = AllocASTNode(kASTTypeNone);
+  struct Node *item2 = AllocASTNode(kASTTypeNone);
   assert(list);
 
   PushToList(list, item1);
@@ -473,7 +473,7 @@ void PrintPadding(int depth) {
   }
 }
 
-void PrintASTNodeSub(struct ASTNode *n, int depth) {
+void PrintASTNodeSub(struct Node *n, int depth) {
   if (!n) {
     fprintf(stderr, "(null)");
     return;
@@ -527,7 +527,7 @@ void PrintASTNodeSub(struct ASTNode *n, int depth) {
   fprintf(stderr, ")");
 }
 
-void PrintASTNode(struct ASTNode *n) { PrintASTNodeSub(n, 0); }
+void PrintASTNode(struct Node *n) { PrintASTNodeSub(n, 0); }
 
 #define NUM_OF_SCRATCH_REGS 4
 const char *reg_names_64[NUM_OF_SCRATCH_REGS + 1] = {NULL, "rdi", "rsi", "r8",
@@ -569,40 +569,38 @@ void EmitCompareIntegers(int dst, int left, int right, const char *cc) {
   printf("movzx %s, %s\n", reg_names_64[dst], reg_names_8[dst]);
 }
 
-void AddLocalVar(struct ASTNode *list, const char *key,
-                 struct ASTNode *var_type) {
+void AddLocalVar(struct Node *list, const char *key, struct Node *var_type) {
   int ofs = 0;
   if (GetSizeOfList(list)) {
-    struct ASTNode *n = GetNodeAt(list, GetSizeOfList(list) - 1);
+    struct Node *n = GetNodeAt(list, GetSizeOfList(list) - 1);
     assert(n && n->type == kASTTypeKeyValue);
-    struct ASTNode *v = n->value;
+    struct Node *v = n->value;
     assert(v && v->type == kASTTypeLocalVar);
     ofs = v->byte_offset;
   }
   ofs += GetSizeOfType(var_type);
   int align = GetSizeOfType(var_type);
   ofs = (ofs + align - 1) / align * align;
-  struct ASTNode *local_var = AllocAndInitASTNodeLocalVar(ofs, var_type);
+  struct Node *local_var = AllocAndInitASTNodeLocalVar(ofs, var_type);
   PushKeyValueToList(list, key, local_var);
 }
 
-struct ASTNode *CreateType(struct ASTNode *decl_spec, struct ASTNode *decltor);
-struct ASTNode *CreateTypeFromDecltor(struct ASTNode *decltor,
-                                      struct ASTNode *type) {
+struct Node *CreateType(struct Node *decl_spec, struct Node *decltor);
+struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
   assert(decltor);
-  struct ASTNode *pointer = decltor->left;
+  struct Node *pointer = decltor->left;
   if (pointer) {
-    struct ASTNode *p = pointer;
+    struct Node *p = pointer;
     while (p->right) {
       p = p->right;
     }
     p->right = type;
     type = pointer;
   }
-  struct ASTNode *direct_decltor = decltor->right;
+  struct Node *direct_decltor = decltor->right;
   assert(direct_decltor->type == kASTTypeDirectDecltor);
   if (IsEqualTokenWithCStr(direct_decltor->op, "(")) {
-    struct ASTNode *arg_type_list = AllocList();
+    struct Node *arg_type_list = AllocList();
     if (direct_decltor->right) {
       PushToList(arg_type_list, CreateType(direct_decltor->right->op,
                                            direct_decltor->right->right));
@@ -616,15 +614,15 @@ struct ASTNode *CreateTypeFromDecltor(struct ASTNode *decltor,
   assert(false);
 }
 
-struct ASTNode *CreateType(struct ASTNode *decl_spec, struct ASTNode *decltor) {
-  struct ASTNode *type = AllocAndInitBaseType(decl_spec);
+struct Node *CreateType(struct Node *decl_spec, struct Node *decltor) {
+  struct Node *type = AllocAndInitBaseType(decl_spec);
   if (!decltor) return type;
   return CreateTypeFromDecltor(decltor, type);
 }
 
-void GenerateRValue(struct ASTNode *node);
-struct ASTNode *var_context;
-void Analyze(struct ASTNode *node) {
+void GenerateRValue(struct Node *node);
+struct Node *var_context;
+void Analyze(struct Node *node) {
   if (node->type == kASTTypeList && !node->op) {
     for (int i = 0; i < GetSizeOfList(node); i++) {
       Analyze(GetNodeAt(node, i));
@@ -650,7 +648,7 @@ void Analyze(struct ASTNode *node) {
       node->expr_type = node->right->expr_type;
       return;
     } else if (node->op->type == kTokenIdent) {
-      struct ASTNode *var_info = GetNodeByTokenKey(var_context, node->op);
+      struct Node *var_info = GetNodeByTokenKey(var_context, node->op);
       if (!var_info || var_info->type != kASTTypeLocalVar)
         ErrorWithToken(node->op, "Unknown identifier");
       node->byte_offset = var_info->byte_offset;
@@ -682,7 +680,7 @@ void Analyze(struct ASTNode *node) {
         return;
       }
       if (IsEqualTokenWithCStr(node->op, "*")) {
-        struct ASTNode *rtype = GetRValueType(node->right->expr_type);
+        struct Node *rtype = GetRValueType(node->right->expr_type);
         assert(rtype && rtype->type == kASTTypePointerOf);
         node->expr_type = AllocAndInitLValueOf(rtype->right);
         return;
@@ -717,7 +715,7 @@ void Analyze(struct ASTNode *node) {
     }
     return;
   } else if (node->type == kASTTypeDecl) {
-    struct ASTNode *type = CreateType(node->op, node->right);
+    struct Node *type = CreateType(node->op, node->right);
     assert(type && type->value);
     AddLocalVar(var_context, CreateTokenStr(type->value->op), type);
     return;
@@ -731,8 +729,8 @@ void Analyze(struct ASTNode *node) {
   ErrorWithToken(node->op, "Analyze: Not implemented");
 }
 
-struct ASTNode *str_list;
-void Generate(struct ASTNode *node) {
+struct Node *str_list;
+void Generate(struct Node *node) {
   if (node->type == kASTTypeList && !node->op) {
     for (int i = 0; i < GetSizeOfList(node); i++) {
       Generate(GetNodeAt(node, i));
@@ -952,7 +950,7 @@ void Generate(struct ASTNode *node) {
   ErrorWithToken(node->op, "Generate: Not implemented");
 }
 
-void GenerateRValue(struct ASTNode *node) {
+void GenerateRValue(struct Node *node) {
   Generate(node);
   if (!node->expr_type || node->expr_type->type != kASTTypeLValueOf) return;
   int size = GetSizeOfType(GetRValueType(node->expr_type));
@@ -979,7 +977,7 @@ int main(int argc, char *argv[]) {
   Tokenize(args.input);
   PrintTokens();
 
-  struct ASTNode *ast = Parse();
+  struct Node *ast = Parse();
   PrintASTNode(ast);
   fputc('\n', stderr);
 
@@ -1001,7 +999,7 @@ int main(int argc, char *argv[]) {
 
   printf(".data\n");
   for (int i = 0; i < GetSizeOfList(str_list); i++) {
-    struct ASTNode *n = GetNodeAt(str_list, i);
+    struct Node *n = GetNodeAt(str_list, i);
     printf("L%d: ", n->label_number);
     printf(".asciz ");
     PrintTokenStrToFile(n->op, stdout);
