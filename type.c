@@ -1,15 +1,31 @@
 #include "compilium.h"
 
-int IsSameType(struct Node *a, struct Node *b) {
+int IsSameTypeExceptAttr(struct Node *a, struct Node *b) {
   assert(a && b);
+  a = GetTypeWithoutAttr(a);
+  b = GetTypeWithoutAttr(b);
   if (a->type != b->type) return 0;
   if (a->type == kTypeBase) {
     assert(a->op && b->op);
     return a->op->type == b->op->type;
-  } else if (a->type == kTypeLValue || a->type == kTypePointer) {
-    return IsSameType(a->right, b->right);
+  } else if (a->type == kTypePointer) {
+    return IsSameTypeExceptAttr(a->right, b->right);
+  } else if (a->type == kTypeFunction) {
+    if (!IsSameTypeExceptAttr(a->left, b->left)) return 0;
+    if (GetSizeOfList(a->right) != GetSizeOfList(b->right)) return 0;
+    for (int i = 0; i < GetSizeOfList(a->right); i++) {
+      if (!IsSameTypeExceptAttr(GetNodeAt(a->right, i), GetNodeAt(b->right, i)))
+        return 0;
+    }
+    return 1;
   }
-  Error("IsSameType: Comparing non-type nodes");
+  Error("IsSameTypeExceptAttr: Comparing non-type nodes");
+}
+
+struct Node *GetTypeWithoutAttr(struct Node *t) {
+  if (!t) return NULL;
+  if (t->type != kTypeLValue && t->type != kTypeAttrIdent) return t;
+  return GetTypeWithoutAttr(t->right);
 }
 
 struct Node *GetRValueType(struct Node *t) {
@@ -21,7 +37,7 @@ struct Node *GetRValueType(struct Node *t) {
 int IsAssignable(struct Node *dst, struct Node *src) {
   assert(dst && src);
   if (dst->type != kTypeLValue) return 0;
-  return IsSameType(GetRValueType(dst), src);
+  return IsSameTypeExceptAttr(GetRValueType(dst), src);
 }
 
 int GetSizeOfType(struct Node *t) {
@@ -49,21 +65,20 @@ struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
     p->right = type;
     type = pointer;
   }
-  struct Node *direct_decltor = decltor->right;
-  assert(direct_decltor->type == kASTDirectDecltor);
-  if (IsEqualTokenWithCStr(direct_decltor->op, "(")) {
-    struct Node *arg_type_list = AllocList();
-    if (direct_decltor->right) {
-      PushToList(arg_type_list, CreateType(direct_decltor->right->op,
-                                           direct_decltor->right->right));
+  for (struct Node *dd = decltor->right; dd; dd = dd->left) {
+    assert(dd->type == kASTDirectDecltor);
+    if (IsEqualTokenWithCStr(dd->op, "(")) {
+      struct Node *arg_type_list = AllocList();
+      if (dd->right) {
+        PushToList(arg_type_list, CreateType(dd->right->op, dd->right->right));
+      }
+      type = CreateTypeFunction(type, arg_type_list);
+      continue;
     }
-    return CreateTypeFunction(type, arg_type_list);
+    assert(dd->op && dd->op->type == kTokenIdent);
+    type = CreateTypeAttrIdent(CreateASTIdent(dd->op), type);
   }
-  if (direct_decltor->op) {
-    type->value = CreateASTIdent(direct_decltor->op);
-    return type;
-  }
-  assert(false);
+  return type;
 }
 
 struct Node *CreateType(struct Node *decl_spec, struct Node *decltor) {
@@ -72,8 +87,22 @@ struct Node *CreateType(struct Node *decl_spec, struct Node *decltor) {
   return CreateTypeFromDecltor(decltor, type);
 }
 
+struct Node *CreateTypeFromDecl(struct Node *decl) {
+  assert(decl && decl->type == kASTDecl);
+  return CreateType(decl->op, decl->right);
+}
+
+struct Node *Tokenize(const char *input);
+extern struct Node *tokens;
+extern int token_stream_index;
+struct Node *ParseDecl(void);
+static struct Node *CreateTypeFromInput(const char *s) {
+  tokens = Tokenize(s);
+  token_stream_index = 0;
+  return CreateTypeFromDecl(ParseDecl());
+}
 void TestType() {
-  fprintf(stderr, "Testing Type...");
+  fprintf(stderr, "Testing Type...\n");
 
   struct Node *int_type = CreateTypeBase(CreateToken("int"));
   struct Node *another_int_type = CreateTypeBase(CreateToken("int"));
@@ -82,15 +111,60 @@ void TestType() {
   struct Node *another_pointer_of_int_type =
       CreateTypePointer(another_int_type);
 
-  assert(IsSameType(int_type, int_type));
-  assert(IsSameType(int_type, another_int_type));
-  assert(!IsSameType(int_type, lvalue_int_type));
-  assert(IsSameType(lvalue_int_type, lvalue_int_type));
-  assert(!IsSameType(int_type, pointer_of_int_type));
-  assert(IsSameType(pointer_of_int_type, another_pointer_of_int_type));
+  assert(IsSameTypeExceptAttr(int_type, int_type));
+  assert(IsSameTypeExceptAttr(int_type, another_int_type));
+  assert(IsSameTypeExceptAttr(int_type, lvalue_int_type));
+  assert(IsSameTypeExceptAttr(lvalue_int_type, lvalue_int_type));
+  assert(!IsSameTypeExceptAttr(int_type, pointer_of_int_type));
+  assert(
+      IsSameTypeExceptAttr(pointer_of_int_type, another_pointer_of_int_type));
 
   assert(GetSizeOfType(int_type) == 4);
   assert(GetSizeOfType(pointer_of_int_type) == 8);
+
+  struct Node *ppi_type = CreateTypePointer(pointer_of_int_type);
+
+  struct Node *args_i = AllocList();
+  PushToList(args_i, int_type);
+  struct Node *if_i_type = CreateTypeFunction(int_type, args_i);
+  struct Node *ppif_i_type = CreateTypeFunction(ppi_type, args_i);
+
+  struct Node *args_pi = AllocList();
+  PushToList(args_pi, pointer_of_int_type);
+  struct Node *if_pi_type = CreateTypeFunction(int_type, args_pi);
+  struct Node *ppif_pi_type = CreateTypeFunction(ppi_type, args_pi);
+
+  struct Node *type;
+
+  type = CreateTypeFromInput("int v;");
+  PrintASTNode(type);
+  assert(IsSameTypeExceptAttr(type, int_type));
+
+  type = CreateTypeFromInput("int *p;");
+  PrintASTNode(type);
+  assert(IsSameTypeExceptAttr(type, pointer_of_int_type));
+
+  type = CreateTypeFromInput("int **p;");
+  PrintASTNode(type);
+  assert(IsSameTypeExceptAttr(type, ppi_type));
+
+  type = CreateTypeFromInput("int f(int a);");
+  PrintASTNode(type);
+  assert(IsSameTypeExceptAttr(type, if_i_type));
+  assert(!IsSameTypeExceptAttr(type, if_pi_type));
+
+  type = CreateTypeFromInput("int f(int *a);");
+  PrintASTNode(type);
+  assert(!IsSameTypeExceptAttr(type, if_i_type));
+  assert(IsSameTypeExceptAttr(type, if_pi_type));
+
+  type = CreateTypeFromInput("int **f(int a);");
+  PrintASTNode(type);
+  assert(IsSameTypeExceptAttr(type, ppif_i_type));
+  assert(!IsSameTypeExceptAttr(type, ppif_pi_type));
+  PrintASTNode(if_i_type);
+  assert(!IsSameTypeExceptAttr(type, if_i_type));
+  assert(!IsSameTypeExceptAttr(type, if_pi_type));
 
   fprintf(stderr, "PASS\n");
   exit(EXIT_SUCCESS);

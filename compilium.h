@@ -40,6 +40,7 @@ enum NodeType {
   kTypeLValue,
   kTypePointer,
   kTypeFunction,
+  kTypeAttrIdent,
 };
 
 struct Node {
@@ -103,6 +104,7 @@ struct Node *CreateTypeLValue(struct Node *type);
 struct Node *CreateTypePointer(struct Node *type);
 struct Node *CreateTypeFunction(struct Node *return_type,
                                 struct Node *arg_type_list);
+struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type);
 struct Node *CreateASTIdent(struct Node *ident);
 
 struct Node *AllocToken(const char *src_str, const char *begin, int length,
@@ -121,7 +123,8 @@ struct Node *Parse();
 struct Node *CreateToken(const char *input);
 
 // @type.c
-int IsSameType(struct Node *a, struct Node *b);
+int IsSameTypeExceptAttr(struct Node *a, struct Node *b);
+struct Node *GetTypeWithoutAttr(struct Node *t);
 struct Node *GetRValueType(struct Node *t);
 int GetSizeOfType(struct Node *t);
 struct Node *CreateType(struct Node *decl_spec, struct Node *decltor);

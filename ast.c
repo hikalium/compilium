@@ -65,9 +65,18 @@ struct Node *CreateTypePointer(struct Node *type) {
 
 struct Node *CreateTypeFunction(struct Node *return_type,
                                 struct Node *arg_type_list) {
+  assert(arg_type_list && arg_type_list->type == kASTList);
   struct Node *n = AllocNode(kTypeFunction);
   n->left = return_type;
   n->right = arg_type_list;
+  return n;
+}
+
+struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type) {
+  assert(ident_token && ident_token->type == kASTIdent);
+  struct Node *n = AllocNode(kTypeAttrIdent);
+  n->left = ident_token;
+  n->right = type;
   return n;
 }
 
@@ -143,19 +152,27 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
     return;
   } else if (n->type == kTypeLValue) {
     fprintf(stderr, "lvalue<");
-    PrintASTNodeSub(n->right, depth + 1);
+    PrintASTNodeSub(n->right, depth);
     fprintf(stderr, ">");
     return;
   } else if (n->type == kTypePointer) {
-    fprintf(stderr, "*");
-    PrintASTNodeSub(n->right, depth + 1);
+    fprintf(stderr, "pointer_of<");
+    PrintASTNodeSub(n->right, depth);
+    fprintf(stderr, ">");
     return;
   } else if (n->type == kTypeFunction) {
-    fprintf(stderr, "FuncType(returns: ");
-    PrintASTNodeSub(n->left, depth + 1);
+    fprintf(stderr, "function<returns: ");
+    PrintASTNodeSub(n->left, depth);
     fprintf(stderr, ", args: ");
-    PrintASTNodeSub(n->right, depth + 1);
-    fprintf(stderr, ")");
+    PrintASTNodeSub(n->right, depth);
+    fprintf(stderr, ">");
+    return;
+  } else if (n->type == kTypeAttrIdent) {
+    fputc('`', stderr);
+    PrintTokenStrToFile(n->left->op, stderr);
+    fputc('`', stderr);
+    fprintf(stderr, " has a type: ");
+    PrintASTNodeSub(n->right, depth);
     return;
   }
   fprintf(stderr, "(op=");
@@ -176,4 +193,7 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
   fprintf(stderr, ")");
 }
 
-void PrintASTNode(struct Node *n) { PrintASTNodeSub(n, 0); }
+void PrintASTNode(struct Node *n) {
+  PrintASTNodeSub(n, 0);
+  fputc('\n', stderr);
+}

@@ -341,7 +341,6 @@ struct Node *Parse(struct Node *passed_tokens) {
     if (n->type == kASTDecl) {
       PrintASTNode(n);
       putc('\n', stderr);
-      // PushKeyValueToList(toplevel_names, )
       continue;
     }
     PushToList(list, n);

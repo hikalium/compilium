@@ -184,8 +184,6 @@ struct Node *Tokenize(const char *input) {
   struct Node *tokens = AllocList();
   while ((t = CreateNextToken(p, input))) {
     PushToList(tokens, t);
-    PrintToken(t);
-    fputc('\n', stderr);
     p = t->begin + t->length;
   }
   return tokens;
@@ -411,8 +409,8 @@ void Analyze(struct Node *node) {
       Analyze(node->right);
       FreeReg(node->left->reg);
       FreeReg(node->right->reg);
-      assert(IsSameType(GetRValueType(node->left->expr_type),
-                        GetRValueType(node->right->expr_type)));
+      assert(
+          IsSameTypeExceptAttr(node->left->expr_type, node->right->expr_type));
       node->reg = node->cond->reg;
       node->expr_type = GetRValueType(node->right->expr_type);
       return;
@@ -466,8 +464,8 @@ void Analyze(struct Node *node) {
     return;
   } else if (node->type == kASTDecl) {
     struct Node *type = CreateType(node->op, node->right);
-    assert(type && type->value);
-    AddLocalVar(var_context, CreateTokenStr(type->value->op), type);
+    assert(type && type->type == kTypeAttrIdent);
+    AddLocalVar(var_context, CreateTokenStr(type->left->op), type->right);
     return;
   } else if (node->type == kASTJumpStmt) {
     if (node->op->type == kTokenKwReturn) {
