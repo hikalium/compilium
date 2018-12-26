@@ -87,14 +87,14 @@ struct Node *GetNodeAt(struct Node *list, int index);
 
 // @ast.c
 struct Node *AllocASTNode(enum NodeType type);
-struct Node *CreateASTNodeBinOp(struct Node *t, struct Node *left,
-                                struct Node *right);
-struct Node *CreateASTNodeUnaryPrefixOp(struct Node *t, struct Node *right);
-struct Node *CreateASTNodeExprStmt(struct Node *t, struct Node *left);
+struct Node *CreateASTBinOp(struct Node *t, struct Node *left,
+                            struct Node *right);
+struct Node *CreateASTUnaryPrefixOp(struct Node *t, struct Node *right);
+struct Node *CreateASTExprStmt(struct Node *t, struct Node *left);
 
-struct Node *CreateASTNodeKeyValue(const char *key, struct Node *value);
+struct Node *CreateASTKeyValue(const char *key, struct Node *value);
 
-struct Node *CreateASTNodeLocalVar(int byte_offset, struct Node *var_type);
+struct Node *CreateASTLocalVar(int byte_offset, struct Node *var_type);
 
 struct Node *CreateTypeBase(struct Node *t);
 
@@ -103,7 +103,7 @@ struct Node *CreateTypeLValue(struct Node *type);
 struct Node *CreateTypePointer(struct Node *type);
 struct Node *CreateTypeFunction(struct Node *return_type,
                                 struct Node *arg_type_list);
-struct Node *CreateASTNodeIdent(struct Node *ident);
+struct Node *CreateASTIdent(struct Node *ident);
 
 struct Node *AllocToken(const char *src_str, const char *begin, int length,
                         enum NodeType type);

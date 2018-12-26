@@ -246,7 +246,7 @@ void PushToList(struct Node *list, struct Node *node) {
 void PushKeyValueToList(struct Node *list, const char *key,
                         struct Node *value) {
   ExpandListSizeIfNeeded(list);
-  list->nodes[list->size++] = CreateASTNodeKeyValue(key, value);
+  list->nodes[list->size++] = CreateASTKeyValue(key, value);
 }
 
 int GetSizeOfList(struct Node *list) {
@@ -367,7 +367,7 @@ void AddLocalVar(struct Node *list, const char *key, struct Node *var_type) {
   ofs += GetSizeOfType(var_type);
   int align = GetSizeOfType(var_type);
   ofs = (ofs + align - 1) / align * align;
-  struct Node *local_var = CreateASTNodeLocalVar(ofs, var_type);
+  struct Node *local_var = CreateASTLocalVar(ofs, var_type);
   PushKeyValueToList(list, key, local_var);
 }
 

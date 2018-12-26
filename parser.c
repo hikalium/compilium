@@ -73,9 +73,9 @@ struct Node *ParseUnaryExpr() {
   if ((t = ConsumePunctuator("+")) || (t = ConsumePunctuator("-")) ||
       (t = ConsumePunctuator("~")) || (t = ConsumePunctuator("!")) ||
       (t = ConsumePunctuator("&")) || (t = ConsumePunctuator("*"))) {
-    return CreateASTNodeUnaryPrefixOp(t, ParseCastExpr());
+    return CreateASTUnaryPrefixOp(t, ParseCastExpr());
   } else if ((t = ConsumeToken(kTokenKwSizeof))) {
-    return CreateASTNodeUnaryPrefixOp(t, ParseUnaryExpr());
+    return CreateASTUnaryPrefixOp(t, ParseUnaryExpr());
   }
   return ParsePrimaryExpr();
 }
@@ -90,7 +90,7 @@ struct Node *ParseMulExpr() {
   struct Node *t;
   while ((t = ConsumePunctuator("*")) || (t = ConsumePunctuator("/")) ||
          (t = ConsumePunctuator("%"))) {
-    op = CreateASTNodeBinOp(t, op, ParseCastExpr());
+    op = CreateASTBinOp(t, op, ParseCastExpr());
   }
   return op;
 }
@@ -100,7 +100,7 @@ struct Node *ParseAddExpr() {
   if (!op) return NULL;
   struct Node *t;
   while ((t = ConsumePunctuator("+")) || (t = ConsumePunctuator("-"))) {
-    op = CreateASTNodeBinOp(t, op, ParseMulExpr());
+    op = CreateASTBinOp(t, op, ParseMulExpr());
   }
   return op;
 }
@@ -110,7 +110,7 @@ struct Node *ParseShiftExpr() {
   if (!op) return NULL;
   struct Node *t;
   while ((t = ConsumePunctuator("<<")) || (t = ConsumePunctuator(">>"))) {
-    op = CreateASTNodeBinOp(t, op, ParseAddExpr());
+    op = CreateASTBinOp(t, op, ParseAddExpr());
   }
   return op;
 }
@@ -121,7 +121,7 @@ struct Node *ParseRelExpr() {
   struct Node *t;
   while ((t = ConsumePunctuator("<")) || (t = ConsumePunctuator(">")) ||
          (t = ConsumePunctuator("<=")) || (t = ConsumePunctuator(">="))) {
-    op = CreateASTNodeBinOp(t, op, ParseShiftExpr());
+    op = CreateASTBinOp(t, op, ParseShiftExpr());
   }
   return op;
 }
@@ -131,7 +131,7 @@ struct Node *ParseEqExpr() {
   if (!op) return NULL;
   struct Node *t;
   while ((t = ConsumePunctuator("==")) || (t = ConsumePunctuator("!="))) {
-    op = CreateASTNodeBinOp(t, op, ParseRelExpr());
+    op = CreateASTBinOp(t, op, ParseRelExpr());
   }
   return op;
 }
@@ -141,7 +141,7 @@ struct Node *ParseAndExpr() {
   if (!op) return NULL;
   struct Node *t;
   while ((t = ConsumePunctuator("&"))) {
-    op = CreateASTNodeBinOp(t, op, ParseEqExpr());
+    op = CreateASTBinOp(t, op, ParseEqExpr());
   }
   return op;
 }
@@ -151,7 +151,7 @@ struct Node *ParseXorExpr() {
   if (!op) return NULL;
   struct Node *t;
   while ((t = ConsumePunctuator("^"))) {
-    op = CreateASTNodeBinOp(t, op, ParseAndExpr());
+    op = CreateASTBinOp(t, op, ParseAndExpr());
   }
   return op;
 }
@@ -161,7 +161,7 @@ struct Node *ParseOrExpr() {
   if (!op) return NULL;
   struct Node *t;
   while ((t = ConsumePunctuator("|"))) {
-    op = CreateASTNodeBinOp(t, op, ParseXorExpr());
+    op = CreateASTBinOp(t, op, ParseXorExpr());
   }
   return op;
 }
@@ -171,7 +171,7 @@ struct Node *ParseBoolAndExpr() {
   if (!op) return NULL;
   struct Node *t;
   while ((t = ConsumePunctuator("&&"))) {
-    op = CreateASTNodeBinOp(t, op, ParseOrExpr());
+    op = CreateASTBinOp(t, op, ParseOrExpr());
   }
   return op;
 }
@@ -181,7 +181,7 @@ struct Node *ParseBoolOrExpr() {
   if (!op) return NULL;
   struct Node *t;
   while ((t = ConsumePunctuator("||"))) {
-    op = CreateASTNodeBinOp(t, op, ParseBoolAndExpr());
+    op = CreateASTBinOp(t, op, ParseBoolAndExpr());
   }
   return op;
 }
@@ -213,7 +213,7 @@ struct Node *ParseAssignExpr() {
   if ((t = ConsumePunctuator("="))) {
     struct Node *right = ParseAssignExpr();
     if (!right) ErrorWithToken(t, "Expected expr after this token");
-    return CreateASTNodeBinOp(t, left, right);
+    return CreateASTBinOp(t, left, right);
   }
   return left;
 }
@@ -223,7 +223,7 @@ struct Node *ParseExpr() {
   if (!op) return NULL;
   struct Node *t;
   while ((t = ConsumePunctuator(","))) {
-    op = CreateASTNodeBinOp(t, op, ParseAssignExpr());
+    op = CreateASTBinOp(t, op, ParseAssignExpr());
   }
   return op;
 }
@@ -232,7 +232,7 @@ struct Node *ParseExprStmt() {
   struct Node *expr = ParseExpr();
   struct Node *t;
   if ((t = ConsumePunctuator(";"))) {
-    return CreateASTNodeExprStmt(t, expr);
+    return CreateASTExprStmt(t, expr);
   } else if (expr) {
     ExpectPunctuator(";");
   }

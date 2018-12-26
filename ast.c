@@ -6,8 +6,8 @@ struct Node *AllocASTNode(enum NodeType type) {
   return node;
 }
 
-struct Node *CreateASTNodeBinOp(struct Node *t, struct Node *left,
-                                struct Node *right) {
+struct Node *CreateASTBinOp(struct Node *t, struct Node *left,
+                            struct Node *right) {
   if (!right) ErrorWithToken(t, "Expected expression after binary operator");
   struct Node *op = AllocASTNode(kASTExpr);
   op->op = t;
@@ -16,7 +16,7 @@ struct Node *CreateASTNodeBinOp(struct Node *t, struct Node *left,
   return op;
 }
 
-struct Node *CreateASTNodeUnaryPrefixOp(struct Node *t, struct Node *right) {
+struct Node *CreateASTUnaryPrefixOp(struct Node *t, struct Node *right) {
   if (!right) ErrorWithToken(t, "Expected expression after prefix operator");
   struct Node *op = AllocASTNode(kASTExpr);
   op->op = t;
@@ -24,21 +24,21 @@ struct Node *CreateASTNodeUnaryPrefixOp(struct Node *t, struct Node *right) {
   return op;
 }
 
-struct Node *CreateASTNodeExprStmt(struct Node *t, struct Node *left) {
+struct Node *CreateASTExprStmt(struct Node *t, struct Node *left) {
   struct Node *op = AllocASTNode(kASTExprStmt);
   op->op = t;
   op->left = left;
   return op;
 }
 
-struct Node *CreateASTNodeKeyValue(const char *key, struct Node *value) {
+struct Node *CreateASTKeyValue(const char *key, struct Node *value) {
   struct Node *n = AllocASTNode(kASTKeyValue);
   n->key = key;
   n->value = value;
   return n;
 }
 
-struct Node *CreateASTNodeLocalVar(int byte_offset, struct Node *var_type) {
+struct Node *CreateASTLocalVar(int byte_offset, struct Node *var_type) {
   struct Node *n = AllocASTNode(kASTLocalVar);
   n->byte_offset = byte_offset;
   n->expr_type = var_type;
@@ -71,7 +71,7 @@ struct Node *CreateTypeFunction(struct Node *return_type,
   return n;
 }
 
-struct Node *CreateASTNodeIdent(struct Node *ident) {
+struct Node *CreateASTIdent(struct Node *ident) {
   struct Node *n = AllocASTNode(kASTIdent);
   n->op = ident;
   return n;

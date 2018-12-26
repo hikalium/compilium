@@ -60,7 +60,7 @@ struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
     return CreateTypeFunction(type, arg_type_list);
   }
   if (direct_decltor->op) {
-    type->value = CreateASTNodeIdent(direct_decltor->op);
+    type->value = CreateASTIdent(direct_decltor->op);
     return type;
   }
   assert(false);
