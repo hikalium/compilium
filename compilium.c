@@ -227,7 +227,7 @@ _Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...) {
 }
 
 struct Node *AllocList() {
-  return AllocASTNode(kASTTypeList);
+  return AllocASTNode(kASTList);
 }
 
 void ExpandListSizeIfNeeded(struct Node *list) {
@@ -250,31 +250,31 @@ void PushKeyValueToList(struct Node *list, const char *key,
 }
 
 int GetSizeOfList(struct Node *list) {
-  assert(list && list->type == kASTTypeList);
+  assert(list && list->type == kASTList);
   return list->size;
 }
 
 struct Node *GetNodeAt(struct Node *list, int index) {
-  assert(list && list->type == kASTTypeList);
+  assert(list && list->type == kASTList);
   assert(0 <= index && index < list->size);
   return list->nodes[index];
 }
 
 struct Node *GetNodeByTokenKey(struct Node *list, struct Node *key) {
-  assert(list && list->type == kASTTypeList);
+  assert(list && list->type == kASTList);
   for (int i = 0; i < list->size; i++) {
     struct Node *n = list->nodes[i];
-    if (n->type != kASTTypeKeyValue) continue;
+    if (n->type != kASTKeyValue) continue;
     if (IsEqualTokenWithCStr(key, n->key)) return n->value;
   }
   return NULL;
 }
 
 struct Node *GetNodeByKey(struct Node *list, const char *key) {
-  assert(list && list->type == kASTTypeList);
+  assert(list && list->type == kASTList);
   for (int i = 0; i < list->size; i++) {
     struct Node *n = list->nodes[i];
-    if (n->type != kASTTypeKeyValue) continue;
+    if (n->type != kASTKeyValue) continue;
     if (strcmp(n->key, key) == 0) return n->value;
   }
   return NULL;
@@ -284,8 +284,8 @@ void TestList() {
   fprintf(stderr, "Testing List...");
 
   struct Node *list = AllocList();
-  struct Node *item1 = AllocASTNode(kASTTypeNone);
-  struct Node *item2 = AllocASTNode(kASTTypeNone);
+  struct Node *item1 = AllocASTNode(kNodeNone);
+  struct Node *item2 = AllocASTNode(kNodeNone);
   assert(list);
 
   PushToList(list, item1);
@@ -359,9 +359,9 @@ void AddLocalVar(struct Node *list, const char *key, struct Node *var_type) {
   int ofs = 0;
   if (GetSizeOfList(list)) {
     struct Node *n = GetNodeAt(list, GetSizeOfList(list) - 1);
-    assert(n && n->type == kASTTypeKeyValue);
+    assert(n && n->type == kASTKeyValue);
     struct Node *v = n->value;
-    assert(v && v->type == kASTTypeLocalVar);
+    assert(v && v->type == kASTLocalVar);
     ofs = v->byte_offset;
   }
   ofs += GetSizeOfType(var_type);
@@ -374,24 +374,23 @@ void AddLocalVar(struct Node *list, const char *key, struct Node *var_type) {
 void GenerateRValue(struct Node *node);
 struct Node *var_context;
 void Analyze(struct Node *node) {
-  if (node->type == kASTTypeList && !node->op) {
+  if (node->type == kASTList && !node->op) {
     for (int i = 0; i < GetSizeOfList(node); i++) {
       Analyze(GetNodeAt(node, i));
     }
     return;
   }
   assert(node && node->op);
-  if (node->type == kASTTypeExpr) {
+  if (node->type == kASTExpr) {
     if (node->op->type == kTokenDecimalNumber ||
         node->op->type == kTokenOctalNumber ||
         node->op->type == kTokenCharLiteral) {
       node->reg = AllocReg();
-      node->expr_type = AllocAndInitBaseType(CreateToken("int"));
+      node->expr_type = CreateTypeBase(CreateToken("int"));
       return;
     } else if (node->op->type == kTokenStringLiteral) {
       node->reg = AllocReg();
-      node->expr_type =
-          AllocAndInitPointerOf(AllocAndInitBaseType(CreateToken("char")));
+      node->expr_type = CreateTypePointer(CreateTypeBase(CreateToken("char")));
       return;
     } else if (IsEqualTokenWithCStr(node->op, "(")) {
       Analyze(node->right);
@@ -400,11 +399,11 @@ void Analyze(struct Node *node) {
       return;
     } else if (node->op->type == kTokenIdent) {
       struct Node *var_info = GetNodeByTokenKey(var_context, node->op);
-      if (!var_info || var_info->type != kASTTypeLocalVar)
+      if (!var_info || var_info->type != kASTLocalVar)
         ErrorWithToken(node->op, "Unknown identifier");
       node->byte_offset = var_info->byte_offset;
       node->reg = AllocReg();
-      node->expr_type = AllocAndInitLValueOf(var_info->expr_type);
+      node->expr_type = CreateTypeLValue(var_info->expr_type);
       return;
     } else if (node->cond) {
       Analyze(node->cond);
@@ -421,19 +420,19 @@ void Analyze(struct Node *node) {
       Analyze(node->right);
       if (node->op->type == kTokenKwSizeof) {
         node->reg = AllocReg();
-        node->expr_type = AllocAndInitBaseType(CreateToken("int"));
+        node->expr_type = CreateTypeBase(CreateToken("int"));
         return;
       }
       node->reg = node->right->reg;
       if (IsEqualTokenWithCStr(node->op, "&")) {
         node->expr_type =
-            AllocAndInitPointerOf(GetRValueType(node->right->expr_type));
+            CreateTypePointer(GetRValueType(node->right->expr_type));
         return;
       }
       if (IsEqualTokenWithCStr(node->op, "*")) {
         struct Node *rtype = GetRValueType(node->right->expr_type);
-        assert(rtype && rtype->type == kASTTypePointerOf);
-        node->expr_type = AllocAndInitLValueOf(rtype->right);
+        assert(rtype && rtype->type == kTypePointer);
+        node->expr_type = CreateTypeLValue(rtype->right);
         return;
       }
       node->expr_type = GetRValueType(node->right->expr_type);
@@ -454,23 +453,23 @@ void Analyze(struct Node *node) {
       return;
     }
   }
-  if (node->type == kASTTypeExprStmt) {
+  if (node->type == kASTExprStmt) {
     if (!node->left) return;
     Analyze(node->left);
     if (node->left->reg) FreeReg(node->left->reg);
     return;
-  } else if (node->type == kASTTypeList) {
+  } else if (node->type == kASTList) {
     var_context = AllocList();
     for (int i = 0; i < GetSizeOfList(node); i++) {
       Analyze(GetNodeAt(node, i));
     }
     return;
-  } else if (node->type == kASTTypeDecl) {
+  } else if (node->type == kASTDecl) {
     struct Node *type = CreateType(node->op, node->right);
     assert(type && type->value);
     AddLocalVar(var_context, CreateTokenStr(type->value->op), type);
     return;
-  } else if (node->type == kASTTypeJumpStmt) {
+  } else if (node->type == kASTJumpStmt) {
     if (node->op->type == kTokenKwReturn) {
       Analyze(node->right);
       FreeReg(node->right->reg);
@@ -482,14 +481,14 @@ void Analyze(struct Node *node) {
 
 struct Node *str_list;
 void Generate(struct Node *node) {
-  if (node->type == kASTTypeList && !node->op) {
+  if (node->type == kASTList && !node->op) {
     for (int i = 0; i < GetSizeOfList(node); i++) {
       Generate(GetNodeAt(node, i));
     }
     return;
   }
   assert(node && node->op);
-  if (node->type == kASTTypeExpr) {
+  if (node->type == kASTExpr) {
     if (node->op->type == kTokenDecimalNumber ||
         node->op->type == kTokenOctalNumber) {
       printf("mov %s, %ld\n", reg_names_64[node->reg],
@@ -677,17 +676,17 @@ void Generate(struct Node *node) {
       }
     }
   }
-  if (node->type == kASTTypeExprStmt) {
+  if (node->type == kASTExprStmt) {
     if (node->left) Generate(node->left);
     return;
-  } else if (node->type == kASTTypeList) {
+  } else if (node->type == kASTList) {
     for (int i = 0; i < GetSizeOfList(node); i++) {
       Generate(GetNodeAt(node, i));
     }
     return;
-  } else if (node->type == kASTTypeDecl) {
+  } else if (node->type == kASTDecl) {
     return;
-  } else if (node->type == kASTTypeJumpStmt) {
+  } else if (node->type == kASTJumpStmt) {
     if (node->op->type == kTokenKwReturn) {
       GenerateRValue(node->right);
       printf("mov rax, %s\n", reg_names_64[node->right->reg]);
@@ -703,7 +702,7 @@ void Generate(struct Node *node) {
 
 void GenerateRValue(struct Node *node) {
   Generate(node);
-  if (!node->expr_type || node->expr_type->type != kASTTypeLValueOf) return;
+  if (!node->expr_type || node->expr_type->type != kTypeLValue) return;
   int size = GetSizeOfType(GetRValueType(node->expr_type));
   if (size == 8) {
     printf("mov %s, [%s]\n", reg_names_64[node->reg], reg_names_64[node->reg]);

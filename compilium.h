@@ -10,6 +10,8 @@ char *strndup(const char *s, size_t n);
   ((void)((expr) || (__assert(#expr, __FILE__, __LINE__), 0)))
 
 enum NodeType {
+  kNodeNone,
+  //
   kTokenLowerBound,
   kTokenDecimalNumber,
   kTokenOctalNumber,
@@ -23,21 +25,21 @@ enum NodeType {
   kTokenPunctuator,
   kTokenUpperBound,
   //
-  kASTTypeNone,
-  kASTTypeExpr,
-  kASTTypeList,
-  kASTTypeExprStmt,
-  kASTTypeJumpStmt,
-  kASTTypeIdent,
-  kASTTypeDirectDecltor,
-  kASTTypeDecltor,
-  kASTTypeDecl,
-  kASTTypeKeyValue,
-  kASTTypeLocalVar,
-  kASTTypeBaseType,
-  kASTTypeLValueOf,
-  kASTTypePointerOf,
-  kASTTypeFunctionType,
+  kASTExpr,
+  kASTList,
+  kASTExprStmt,
+  kASTJumpStmt,
+  kASTIdent,
+  kASTDirectDecltor,
+  kASTDecltor,
+  kASTDecl,
+  kASTKeyValue,
+  kASTLocalVar,
+  //
+  kTypeBase,
+  kTypeLValue,
+  kTypePointer,
+  kTypeFunction,
 };
 
 struct Node {
@@ -96,13 +98,13 @@ struct Node *AllocAndInitASTNodeKeyValue(const char *key, struct Node *value);
 struct Node *AllocAndInitASTNodeLocalVar(int byte_offset,
                                          struct Node *var_type);
 
-struct Node *AllocAndInitBaseType(struct Node *t);
+struct Node *CreateTypeBase(struct Node *t);
 
-struct Node *AllocAndInitLValueOf(struct Node *type);
+struct Node *CreateTypeLValue(struct Node *type);
 
-struct Node *AllocAndInitPointerOf(struct Node *type);
-struct Node *AllocAndInitFunctionType(struct Node *return_type,
-                                      struct Node *arg_type_list);
+struct Node *CreateTypePointer(struct Node *type);
+struct Node *CreateTypeFunction(struct Node *return_type,
+                                struct Node *arg_type_list);
 struct Node *AllocAndInitASTNodeIdent(struct Node *ident);
 
 struct Node *AllocToken(const char *src_str, const char *begin, int length,

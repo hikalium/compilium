@@ -9,7 +9,7 @@ struct Node *AllocASTNode(enum NodeType type) {
 struct Node *AllocAndInitASTNodeBinOp(struct Node *t, struct Node *left,
                                       struct Node *right) {
   if (!right) ErrorWithToken(t, "Expected expression after binary operator");
-  struct Node *op = AllocASTNode(kASTTypeExpr);
+  struct Node *op = AllocASTNode(kASTExpr);
   op->op = t;
   op->left = left;
   op->right = right;
@@ -19,21 +19,21 @@ struct Node *AllocAndInitASTNodeBinOp(struct Node *t, struct Node *left,
 struct Node *AllocAndInitASTNodeUnaryPrefixOp(struct Node *t,
                                               struct Node *right) {
   if (!right) ErrorWithToken(t, "Expected expression after prefix operator");
-  struct Node *op = AllocASTNode(kASTTypeExpr);
+  struct Node *op = AllocASTNode(kASTExpr);
   op->op = t;
   op->right = right;
   return op;
 }
 
 struct Node *AllocAndInitASTNodeExprStmt(struct Node *t, struct Node *left) {
-  struct Node *op = AllocASTNode(kASTTypeExprStmt);
+  struct Node *op = AllocASTNode(kASTExprStmt);
   op->op = t;
   op->left = left;
   return op;
 }
 
 struct Node *AllocAndInitASTNodeKeyValue(const char *key, struct Node *value) {
-  struct Node *n = AllocASTNode(kASTTypeKeyValue);
+  struct Node *n = AllocASTNode(kASTKeyValue);
   n->key = key;
   n->value = value;
   return n;
@@ -41,40 +41,40 @@ struct Node *AllocAndInitASTNodeKeyValue(const char *key, struct Node *value) {
 
 struct Node *AllocAndInitASTNodeLocalVar(int byte_offset,
                                          struct Node *var_type) {
-  struct Node *n = AllocASTNode(kASTTypeLocalVar);
+  struct Node *n = AllocASTNode(kASTLocalVar);
   n->byte_offset = byte_offset;
   n->expr_type = var_type;
   return n;
 }
 
-struct Node *AllocAndInitBaseType(struct Node *t) {
-  struct Node *n = AllocASTNode(kASTTypeBaseType);
+struct Node *CreateTypeBase(struct Node *t) {
+  struct Node *n = AllocASTNode(kTypeBase);
   n->op = t;
   return n;
 }
 
-struct Node *AllocAndInitLValueOf(struct Node *type) {
-  struct Node *n = AllocASTNode(kASTTypeLValueOf);
+struct Node *CreateTypeLValue(struct Node *type) {
+  struct Node *n = AllocASTNode(kTypeLValue);
   n->right = type;
   return n;
 }
 
-struct Node *AllocAndInitPointerOf(struct Node *type) {
-  struct Node *n = AllocASTNode(kASTTypePointerOf);
+struct Node *CreateTypePointer(struct Node *type) {
+  struct Node *n = AllocASTNode(kTypePointer);
   n->right = type;
   return n;
 }
 
-struct Node *AllocAndInitFunctionType(struct Node *return_type,
-                                      struct Node *arg_type_list) {
-  struct Node *n = AllocASTNode(kASTTypeFunctionType);
+struct Node *CreateTypeFunction(struct Node *return_type,
+                                struct Node *arg_type_list) {
+  struct Node *n = AllocASTNode(kTypeFunction);
   n->left = return_type;
   n->right = arg_type_list;
   return n;
 }
 
 struct Node *AllocAndInitASTNodeIdent(struct Node *ident) {
-  struct Node *n = AllocASTNode(kASTTypeIdent);
+  struct Node *n = AllocASTNode(kASTIdent);
   n->op = ident;
   return n;
 }
@@ -129,7 +129,7 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
     PrintTokenBrief(n);
     return;
   }
-  if (n->type == kASTTypeList) {
+  if (n->type == kASTList) {
     fprintf(stderr, "[\n");
     for (int i = 0; i < GetSizeOfList(n); i++) {
       if (i) fprintf(stderr, ",\n");
@@ -140,19 +140,19 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
     PrintPadding(depth);
     fprintf(stderr, "]");
     return;
-  } else if (n->type == kASTTypeBaseType) {
+  } else if (n->type == kTypeBase) {
     PrintTokenStrToFile(n->op, stderr);
     return;
-  } else if (n->type == kASTTypeLValueOf) {
+  } else if (n->type == kTypeLValue) {
     fprintf(stderr, "lvalue<");
     PrintASTNodeSub(n->right, depth + 1);
     fprintf(stderr, ">");
     return;
-  } else if (n->type == kASTTypePointerOf) {
+  } else if (n->type == kTypePointer) {
     fprintf(stderr, "*");
     PrintASTNodeSub(n->right, depth + 1);
     return;
-  } else if (n->type == kASTTypeFunctionType) {
+  } else if (n->type == kTypeFunction) {
     fprintf(stderr, "FuncType(returns: ");
     PrintASTNodeSub(n->left, depth + 1);
     fprintf(stderr, ", args: ");

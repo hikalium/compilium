@@ -53,12 +53,12 @@ struct Node *ParsePrimaryExpr() {
       (t = ConsumeToken(kTokenIdent)) ||
       (t = ConsumeToken(kTokenCharLiteral)) ||
       (t = ConsumeToken(kTokenStringLiteral))) {
-    struct Node *op = AllocASTNode(kASTTypeExpr);
+    struct Node *op = AllocASTNode(kASTExpr);
     op->op = t;
     return op;
   }
   if ((t = ConsumePunctuator("("))) {
-    struct Node *op = AllocASTNode(kASTTypeExpr);
+    struct Node *op = AllocASTNode(kASTExpr);
     op->op = t;
     op->right = ParseExpr();
     if (!op->right) ErrorWithToken(t, "Expected expr after this token");
@@ -191,7 +191,7 @@ struct Node *ParseConditionalExpr() {
   if (!expr) return NULL;
   struct Node *t;
   if ((t = ConsumePunctuator("?"))) {
-    struct Node *op = AllocASTNode(kASTTypeExpr);
+    struct Node *op = AllocASTNode(kASTExpr);
     op->op = t;
     op->cond = expr;
     op->left = ParseConditionalExpr();
@@ -244,7 +244,7 @@ struct Node *ParseJumpStmt() {
   if ((t = ConsumeToken(kTokenKwReturn))) {
     struct Node *expr = ParseExpr();
     ExpectPunctuator(";");
-    struct Node *stmt = AllocASTNode(kASTTypeJumpStmt);
+    struct Node *stmt = AllocASTNode(kASTJumpStmt);
     stmt->op = t;
     stmt->right = expr;
     return stmt;
@@ -267,14 +267,14 @@ struct Node *ParseDeclSpecs() {
 
 struct Node *ParseParamDecl();
 struct Node *ParseDirectDecltor() {
-  struct Node *n = AllocASTNode(kASTTypeDirectDecltor);
+  struct Node *n = AllocASTNode(kASTDirectDecltor);
   n->op = ExpectToken(kTokenIdent);
   while (true) {
     struct Node *t;
     if ((t = ConsumePunctuator("("))) {
       struct Node *arg = ParseParamDecl();
       ExpectPunctuator(")");
-      struct Node *nn = AllocASTNode(kASTTypeDirectDecltor);
+      struct Node *nn = AllocASTNode(kASTDirectDecltor);
       nn->op = t;
       nn->right = arg;
       nn->left = n;
@@ -286,11 +286,11 @@ struct Node *ParseDirectDecltor() {
 }
 
 struct Node *ParseDecltor() {
-  struct Node *n = AllocASTNode(kASTTypeDecltor);
+  struct Node *n = AllocASTNode(kASTDecltor);
   struct Node *pointer = NULL;
   struct Node *t;
   while ((t = ConsumePunctuator("*"))) {
-    pointer = AllocAndInitPointerOf(pointer);
+    pointer = CreateTypePointer(pointer);
   }
   n->left = pointer;
   n->right = ParseDirectDecltor();
@@ -300,7 +300,7 @@ struct Node *ParseDecltor() {
 struct Node *ParseParamDecl() {
   struct Node *decl_spec = ParseDeclSpecs();
   if (!decl_spec) return NULL;
-  struct Node *n = AllocASTNode(kASTTypeDecl);
+  struct Node *n = AllocASTNode(kASTDecl);
   n->op = decl_spec;
   n->right = ParseDecltor();
   return n;
@@ -309,7 +309,7 @@ struct Node *ParseParamDecl() {
 struct Node *ParseDecl() {
   struct Node *decl_spec = ParseDeclSpecs();
   if (!decl_spec) return NULL;
-  struct Node *n = AllocASTNode(kASTTypeDecl);
+  struct Node *n = AllocASTNode(kASTDecl);
   n->op = decl_spec;
   n->right = ParseDecltor();
   ExpectPunctuator(";");
@@ -338,7 +338,7 @@ struct Node *Parse(struct Node *passed_tokens) {
   struct Node *n;
   toplevel_names = AllocList();
   while ((n = ParseCompStmt()) || (n = ParseDecl())) {
-    if (n->type == kASTTypeDecl) {
+    if (n->type == kASTDecl) {
       PrintASTNode(n);
       putc('\n', stderr);
       // PushKeyValueToList(toplevel_names, )
