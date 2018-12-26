@@ -1,6 +1,6 @@
 #include "compilium.h"
 
-struct Node *AllocASTNode(enum NodeType type) {
+struct Node *AllocNode(enum NodeType type) {
   struct Node *node = calloc(1, sizeof(struct Node));
   node->type = type;
   return node;
@@ -9,7 +9,7 @@ struct Node *AllocASTNode(enum NodeType type) {
 struct Node *CreateASTBinOp(struct Node *t, struct Node *left,
                             struct Node *right) {
   if (!right) ErrorWithToken(t, "Expected expression after binary operator");
-  struct Node *op = AllocASTNode(kASTExpr);
+  struct Node *op = AllocNode(kASTExpr);
   op->op = t;
   op->left = left;
   op->right = right;
@@ -18,68 +18,68 @@ struct Node *CreateASTBinOp(struct Node *t, struct Node *left,
 
 struct Node *CreateASTUnaryPrefixOp(struct Node *t, struct Node *right) {
   if (!right) ErrorWithToken(t, "Expected expression after prefix operator");
-  struct Node *op = AllocASTNode(kASTExpr);
+  struct Node *op = AllocNode(kASTExpr);
   op->op = t;
   op->right = right;
   return op;
 }
 
 struct Node *CreateASTExprStmt(struct Node *t, struct Node *left) {
-  struct Node *op = AllocASTNode(kASTExprStmt);
+  struct Node *op = AllocNode(kASTExprStmt);
   op->op = t;
   op->left = left;
   return op;
 }
 
 struct Node *CreateASTKeyValue(const char *key, struct Node *value) {
-  struct Node *n = AllocASTNode(kASTKeyValue);
+  struct Node *n = AllocNode(kASTKeyValue);
   n->key = key;
   n->value = value;
   return n;
 }
 
 struct Node *CreateASTLocalVar(int byte_offset, struct Node *var_type) {
-  struct Node *n = AllocASTNode(kASTLocalVar);
+  struct Node *n = AllocNode(kASTLocalVar);
   n->byte_offset = byte_offset;
   n->expr_type = var_type;
   return n;
 }
 
 struct Node *CreateTypeBase(struct Node *t) {
-  struct Node *n = AllocASTNode(kTypeBase);
+  struct Node *n = AllocNode(kTypeBase);
   n->op = t;
   return n;
 }
 
 struct Node *CreateTypeLValue(struct Node *type) {
-  struct Node *n = AllocASTNode(kTypeLValue);
+  struct Node *n = AllocNode(kTypeLValue);
   n->right = type;
   return n;
 }
 
 struct Node *CreateTypePointer(struct Node *type) {
-  struct Node *n = AllocASTNode(kTypePointer);
+  struct Node *n = AllocNode(kTypePointer);
   n->right = type;
   return n;
 }
 
 struct Node *CreateTypeFunction(struct Node *return_type,
                                 struct Node *arg_type_list) {
-  struct Node *n = AllocASTNode(kTypeFunction);
+  struct Node *n = AllocNode(kTypeFunction);
   n->left = return_type;
   n->right = arg_type_list;
   return n;
 }
 
 struct Node *CreateASTIdent(struct Node *ident) {
-  struct Node *n = AllocASTNode(kASTIdent);
+  struct Node *n = AllocNode(kASTIdent);
   n->op = ident;
   return n;
 }
 
 struct Node *AllocToken(const char *src_str, const char *begin, int length,
                         enum NodeType type) {
-  struct Node *t = AllocASTNode(type);
+  struct Node *t = AllocNode(type);
   t->begin = begin;
   t->length = length;
   t->type = type;

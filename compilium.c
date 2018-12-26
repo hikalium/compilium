@@ -227,7 +227,7 @@ _Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...) {
 }
 
 struct Node *AllocList() {
-  return AllocASTNode(kASTList);
+  return AllocNode(kASTList);
 }
 
 void ExpandListSizeIfNeeded(struct Node *list) {
@@ -284,8 +284,8 @@ void TestList() {
   fprintf(stderr, "Testing List...");
 
   struct Node *list = AllocList();
-  struct Node *item1 = AllocASTNode(kNodeNone);
-  struct Node *item2 = AllocASTNode(kNodeNone);
+  struct Node *item1 = AllocNode(kNodeNone);
+  struct Node *item2 = AllocNode(kNodeNone);
   assert(list);
 
   PushToList(list, item1);

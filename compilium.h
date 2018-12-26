@@ -86,7 +86,7 @@ int GetSizeOfList(struct Node *list);
 struct Node *GetNodeAt(struct Node *list, int index);
 
 // @ast.c
-struct Node *AllocASTNode(enum NodeType type);
+struct Node *AllocNode(enum NodeType type);
 struct Node *CreateASTBinOp(struct Node *t, struct Node *left,
                             struct Node *right);
 struct Node *CreateASTUnaryPrefixOp(struct Node *t, struct Node *right);
