@@ -53,6 +53,7 @@ int GetSizeOfType(struct Node *t) {
   assert(false);
 }
 
+struct Node *CreateTypeFromDecl(struct Node *decl);
 struct Node *CreateType(struct Node *decl_spec, struct Node *decltor);
 struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
   assert(decltor);
@@ -67,12 +68,21 @@ struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
   }
   for (struct Node *dd = decltor->right; dd; dd = dd->left) {
     assert(dd->type == kASTDirectDecltor);
-    if (IsEqualTokenWithCStr(dd->op, "(")) {
-      struct Node *arg_type_list = AllocList();
-      if (dd->right) {
-        PushToList(arg_type_list, CreateType(dd->right->op, dd->right->right));
+    if (dd->left) {
+      if (IsEqualTokenWithCStr(dd->op, "(")) {
+        struct Node *arg_type_list = AllocList();
+        for (int i = 0; i < GetSizeOfList(dd->right); i++) {
+          PushToList(arg_type_list,
+                     CreateTypeFromDecl(GetNodeAt(dd->right, i)));
+        }
+        type = CreateTypeFunction(type, arg_type_list);
+        continue;
       }
-      type = CreateTypeFunction(type, arg_type_list);
+    }
+    assert(!dd->left);
+    if (IsEqualTokenWithCStr(dd->op, "(")) {
+      assert(dd->value && dd->value->type == kASTDecltor);
+      type = CreateTypeFromDecltor(dd->value, type);
       continue;
     }
     assert(dd->op && dd->op->type == kTokenIdent);
@@ -97,6 +107,7 @@ extern struct Node *tokens;
 extern int token_stream_index;
 struct Node *ParseDecl(void);
 static struct Node *CreateTypeFromInput(const char *s) {
+  fprintf(stderr, "CreateTypeFromInput: %s\n", s);
   tokens = Tokenize(s);
   token_stream_index = 0;
   return CreateTypeFromDecl(ParseDecl());
@@ -165,6 +176,10 @@ void TestType() {
   PrintASTNode(if_i_type);
   assert(!IsSameTypeExceptAttr(type, if_i_type));
   assert(!IsSameTypeExceptAttr(type, if_pi_type));
+
+  type =
+      CreateTypeFromInput("void (*signal(int sig, void (*func)(int)))(int);");
+  PrintASTNode(type);
 
   fprintf(stderr, "PASS\n");
   exit(EXIT_SUCCESS);

@@ -10,7 +10,7 @@ static struct Node *ConsumeToken(enum NodeType type) {
   token_stream_index++;
   return t;
 }
-
+/*
 static struct Node *ExpectToken(enum NodeType type) {
   if (token_stream_index >= GetSizeOfList(tokens))
     Error("Expect token type %d but got EOF", type);
@@ -19,7 +19,7 @@ static struct Node *ExpectToken(enum NodeType type) {
   token_stream_index++;
   return t;
 }
-
+*/
 static struct Node *ConsumePunctuator(const char *s) {
   if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
   struct Node *t = GetNodeAt(tokens, token_stream_index);
@@ -261,22 +261,40 @@ struct Node *ParseStmt() {
 struct Node *ParseDeclSpecs() {
   struct Node *decl_spec;
   (decl_spec = ConsumeToken(kTokenKwInt)) ||
-      (decl_spec = ConsumeToken(kTokenKwChar));
+      (decl_spec = ConsumeToken(kTokenKwChar)) ||
+      (decl_spec = ConsumeToken(kTokenKwVoid));
   return decl_spec;
 }
 
 struct Node *ParseParamDecl();
+struct Node *ParseDecltor();
 struct Node *ParseDirectDecltor() {
-  struct Node *n = AllocNode(kASTDirectDecltor);
-  n->op = ExpectToken(kTokenIdent);
+  // always allow abstract decltors
+  struct Node *n;
+  struct Node *t;
+  if ((t = ConsumePunctuator("("))) {
+    n = AllocNode(kASTDirectDecltor);
+    n->op = t;
+    n->value = ParseDecltor();
+    assert(n->value);
+    ExpectPunctuator(")");
+  } else if ((t = ConsumeToken(kTokenIdent))) {
+    n = AllocNode(kASTDirectDecltor);
+    n->op = t;
+  }
   while (true) {
-    struct Node *t;
     if ((t = ConsumePunctuator("("))) {
-      struct Node *arg = ParseParamDecl();
+      struct Node *args = AllocList();
+      while (1) {
+        struct Node *arg = ParseParamDecl();
+        if (!arg) ErrorWithToken(NextToken(), "Expected ParamDecl here");
+        PushToList(args, arg);
+        if (!ConsumePunctuator(",")) break;
+      }
       ExpectPunctuator(")");
       struct Node *nn = AllocNode(kASTDirectDecltor);
       nn->op = t;
-      nn->right = arg;
+      nn->right = args;
       nn->left = n;
       n = nn;
     }

@@ -19,6 +19,7 @@ enum NodeType {
   kTokenKwReturn,
   kTokenKwChar,
   kTokenKwInt,
+  kTokenKwVoid,
   kTokenKwSizeof,
   kTokenCharLiteral,
   kTokenStringLiteral,
