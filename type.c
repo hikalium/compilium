@@ -56,7 +56,7 @@ int GetSizeOfType(struct Node *t) {
 struct Node *CreateTypeFromDecl(struct Node *decl);
 struct Node *CreateType(struct Node *decl_spec, struct Node *decltor);
 struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
-  assert(decltor);
+  assert(decltor && decltor->type == kASTDecltor);
   struct Node *pointer = decltor->left;
   if (pointer) {
     struct Node *p = pointer;

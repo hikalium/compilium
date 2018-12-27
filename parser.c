@@ -270,7 +270,7 @@ struct Node *ParseParamDecl();
 struct Node *ParseDecltor();
 struct Node *ParseDirectDecltor() {
   // always allow abstract decltors
-  struct Node *n;
+  struct Node *n = NULL;
   struct Node *t;
   if ((t = ConsumePunctuator("("))) {
     n = AllocNode(kASTDirectDecltor);
