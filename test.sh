@@ -1,16 +1,19 @@
 #!/bin/bash -e
 
+compilium=${COMPILER_BINARY:-./compilium}
+host_cc=${HOST_CC:-cc}
+target_os=$(uname)
 function test_result {
   input="$1"
   expected="$2"
   expected_stdout="$3"
   testname="$4"
   printf "$expected_stdout" > expected.stdout
-  ./compilium --target-os `uname` "$input" > out.S || { \
+  ${compilium} --target-os ${target_os} "$input" > out.S || { \
     echo "$input" > failcase.c; \
     echo "Compilation failed."; \
     exit 1; }
-  gcc out.S
+  ${host_cc} out.S
   actual=0
   ./a.out > out.stdout || actual=$?
   if [ $expected = $actual ]; then
@@ -18,7 +21,7 @@ function test_result {
         && echo "PASS $testname returns $expected" \
         || { echo "FAIL $testname: stdout diff"; exit 1; }
   else
-    echo "FAIL $testname: expected $expected but got $actual"; echo $input > failcase.c; exit 1; 
+    echo "FAIL $testname: expected $expected but got $actual"; echo $input > failcase.c; exit 1;
   fi
 }
 
