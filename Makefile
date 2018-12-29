@@ -1,12 +1,13 @@
-CFLAGS=-Wall -Wpedantic -std=c11
+CFLAGS=-Wall -Wpedantic -Wextra -Wconditional-uninitialized -std=c11
 SRCS=ast.c compilium.c parser.c type.c
 HEADERS=compilium.h
+CC=clang
 
 compilium : $(SRCS) $(HEADERS) Makefile
-	cc $(CFLAGS) -o $@ $(SRCS) 
+	$(CC) $(CFLAGS) -o $@ $(SRCS) 
 
 compilium_dbg : $(SRCS) $(HEADERS) Makefile
-	cc $(CFLAGS) -g -o $@ $(SRCS)
+	$(CC) $(CFLAGS) -g -o $@ $(SRCS)
 
 debug : compilium_dbg failcase.c
 	lldb \

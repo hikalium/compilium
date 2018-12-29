@@ -101,7 +101,7 @@ const char *CreateTokenStr(struct Node *t) {
 }
 
 int IsEqualTokenWithCStr(struct Node *t, const char *s) {
-  return strlen(s) == t->length && strncmp(t->begin, s, t->length) == 0;
+  return strlen(s) == (unsigned)t->length && strncmp(t->begin, s, t->length) == 0;
 }
 
 static void PrintPadding(int depth) {

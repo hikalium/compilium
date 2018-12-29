@@ -112,7 +112,7 @@ static struct Node *CreateTypeFromInput(const char *s) {
   token_stream_index = 0;
   return CreateTypeFromDecl(ParseDecl());
 }
-void TestType() {
+_Noreturn void TestType() {
   fprintf(stderr, "Testing Type...\n");
 
   struct Node *int_type = CreateTypeBase(CreateToken("int"));
