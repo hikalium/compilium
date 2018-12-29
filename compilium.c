@@ -812,4 +812,5 @@ int main(int argc, char *argv[]) {
     PrintTokenStrToFile(n->op, stdout);
     putchar('\n');
   }
+  return 0;
 }
