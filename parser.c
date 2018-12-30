@@ -68,6 +68,26 @@ struct Node *ParsePrimaryExpr() {
   return NULL;
 }
 
+struct Node *ParseAssignExpr();
+struct Node *ParsePostfixExpr() {
+  struct Node *n = ParsePrimaryExpr();
+  if (!n) return NULL;
+  if (ConsumePunctuator("(")) {
+    struct Node *args = AllocList();
+    do {
+      struct Node *arg_expr = ParseAssignExpr();
+      if (!arg_expr) ErrorWithToken(NextToken(), "Expected expression here");
+      PushToList(args, arg_expr);
+    } while (ConsumePunctuator(","));
+    ExpectPunctuator(")");
+    struct Node *nn = AllocNode(kASTExprFuncCall);
+    nn->func_expr = n;
+    nn->arg_expr_list = args;
+    n = nn;
+  }
+  return n;
+}
+
 struct Node *ParseUnaryExpr() {
   struct Node *t;
   if ((t = ConsumePunctuator("+")) || (t = ConsumePunctuator("-")) ||
@@ -77,7 +97,7 @@ struct Node *ParseUnaryExpr() {
   } else if ((t = ConsumeToken(kTokenKwSizeof))) {
     return CreateASTUnaryPrefixOp(t, ParseUnaryExpr());
   }
-  return ParsePrimaryExpr();
+  return ParsePostfixExpr();
 }
 
 struct Node *ParseCastExpr() {
@@ -357,8 +377,9 @@ struct Node *Parse(struct Node *passed_tokens) {
   toplevel_names = AllocList();
   while ((n = ParseCompStmt()) || (n = ParseDecl())) {
     if (n->type == kASTDecl) {
-      PrintASTNode(n);
-      putc('\n', stderr);
+      struct Node *type = CreateTypeFromDecl(n);
+      PushKeyValueToList(toplevel_names, CreateTokenStr(type->left->op),
+                         GetTypeWithoutAttr(type));
       continue;
     }
     PushToList(list, n);

@@ -27,6 +27,7 @@ enum NodeType {
   kTokenUpperBound,
   //
   kASTExpr,
+  kASTExprFuncCall,
   kASTList,
   kASTExprStmt,
   kASTJumpStmt,
@@ -65,6 +66,13 @@ struct Node {
       int byte_offset;
       // for string literal
       int label_number;
+      union {
+        struct {
+          // kASTExprFuncCall
+          struct Node *func_expr;
+          struct Node *arg_expr_list;
+        };
+      };
     };
     struct {
       // kToken...
@@ -129,3 +137,4 @@ struct Node *GetTypeWithoutAttr(struct Node *t);
 struct Node *GetRValueType(struct Node *t);
 int GetSizeOfType(struct Node *t);
 struct Node *CreateType(struct Node *decl_spec, struct Node *decltor);
+struct Node *CreateTypeFromDecl(struct Node *decl);

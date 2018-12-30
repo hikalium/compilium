@@ -3,34 +3,38 @@
 function test_result {
   input="$1"
   expected="$2"
-  testname="$3"
+  expected_stdout="$3"
+  testname="$4"
+  printf "$expected_stdout" > expected.stdout
   ./compilium --target-os `uname` "$input" > out.S || { \
     echo "$input" > failcase.c; \
     echo "Compilation failed."; \
     exit 1; }
   gcc out.S
   actual=0
-  ./a.out || actual=$?
+  ./a.out > out.stdout || actual=$?
   if [ $expected = $actual ]; then
-    echo "PASS $testname returns $expected";
+      diff -u expected.stdout out.stdout \
+        && echo "PASS $testname returns $expected" \
+        || echo "FAIL $testname: stdout diff";
   else
     echo "FAIL $testname: expected $expected but got $actual"; echo $input > failcase.c; exit 1; 
   fi
 }
 
 function test_expr_result {
-  test_result "{return $1;}" "$2" "$1"
+  test_result "{return $1;}" "$2" "" "$1"
 }
 
 function test_stmt_result {
-  test_result "{$1}" "$2" "$1"
+  test_result "{$1}" "$2" "" "$1"
 }
 
 function test_src_result {
-  test_result "$1" "$2" "$1"
+  test_result "$1" "$2" "$3" "$1"
 }
 
-test_src_result 'int putchar(int c); {return 0;}' 0
+test_src_result "int putchar(int c); { putchar('C'); return 0;}" 0 'C'
 test_stmt_result 'return *("compilium" + 1);' 111
 test_stmt_result 'return *"compilium";' 99
 test_stmt_result "return 'C';" 67

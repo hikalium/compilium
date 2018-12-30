@@ -97,11 +97,13 @@ struct Node *AllocToken(const char *src_str, const char *begin, int length,
 }
 
 const char *CreateTokenStr(struct Node *t) {
+  assert(t && kTokenLowerBound < t->type && t->type < kTokenUpperBound);
   return strndup(t->begin, t->length);
 }
 
 int IsEqualTokenWithCStr(struct Node *t, const char *s) {
-  return strlen(s) == (unsigned)t->length && strncmp(t->begin, s, t->length) == 0;
+  return strlen(s) == (unsigned)t->length &&
+         strncmp(t->begin, s, t->length) == 0;
 }
 
 static void PrintPadding(int depth) {

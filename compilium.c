@@ -244,6 +244,7 @@ void PushToList(struct Node *list, struct Node *node) {
 
 void PushKeyValueToList(struct Node *list, const char *key,
                         struct Node *value) {
+  assert(key && value);
   ExpandListSizeIfNeeded(list);
   list->nodes[list->size++] = CreateASTKeyValue(key, value);
 }
@@ -322,6 +323,10 @@ const char *reg_names_32[NUM_OF_SCRATCH_REGS + 1] = {NULL, "edi", "esi", "r8d",
 const char *reg_names_8[NUM_OF_SCRATCH_REGS + 1] = {NULL, "dil", "sil", "r8b",
                                                     "r9b"};
 
+#define NUM_OF_PARAM_REGISTERS 6
+const char *param_reg_names_64[NUM_OF_PARAM_REGISTERS] = {"rdi", "rsi", "rdx",
+                                                          "rcx", "r8",  "r9"};
+
 int reg_used_table[NUM_OF_SCRATCH_REGS];
 
 int AllocReg() {
@@ -372,14 +377,26 @@ void AddLocalVar(struct Node *list, const char *key, struct Node *var_type) {
 
 void GenerateRValue(struct Node *node);
 struct Node *var_context;
+extern struct Node *toplevel_names;
 void Analyze(struct Node *node) {
+  assert(node);
   if (node->type == kASTList && !node->op) {
     for (int i = 0; i < GetSizeOfList(node); i++) {
       Analyze(GetNodeAt(node, i));
     }
     return;
   }
-  assert(node && node->op);
+  if (node->type == kASTExprFuncCall) {
+    Analyze(node->func_expr);
+    FreeReg(node->func_expr->reg);
+    for (int i = 0; i < GetSizeOfList(node->arg_expr_list); i++) {
+      struct Node *n = GetNodeAt(node->arg_expr_list, i);
+      Analyze(n);
+      FreeReg(n->reg);
+    }
+    return;
+  }
+  assert(node->op);
   if (node->type == kASTExpr) {
     if (node->op->type == kTokenDecimalNumber ||
         node->op->type == kTokenOctalNumber ||
@@ -397,13 +414,24 @@ void Analyze(struct Node *node) {
       node->expr_type = node->right->expr_type;
       return;
     } else if (node->op->type == kTokenIdent) {
-      struct Node *var_info = GetNodeByTokenKey(var_context, node->op);
-      if (!var_info || var_info->type != kASTLocalVar)
-        ErrorWithToken(node->op, "Unknown identifier");
-      node->byte_offset = var_info->byte_offset;
-      node->reg = AllocReg();
-      node->expr_type = CreateTypeLValue(var_info->expr_type);
-      return;
+      struct Node *ident_info = GetNodeByTokenKey(var_context, node->op);
+      if (ident_info) {
+        if (ident_info->type == kASTLocalVar) {
+          node->byte_offset = ident_info->byte_offset;
+          node->reg = AllocReg();
+          node->expr_type = CreateTypeLValue(ident_info->expr_type);
+          return;
+        }
+      }
+      ident_info = GetNodeByTokenKey(toplevel_names, node->op);
+      if (ident_info) {
+        if (ident_info->type == kTypeFunction) {
+          node->reg = AllocReg();
+          node->expr_type = ident_info;
+          return;
+        }
+      }
+      ErrorWithToken(node->op, "Unknown identifier");
     } else if (node->cond) {
       Analyze(node->cond);
       Analyze(node->left);
@@ -486,6 +514,23 @@ void Generate(struct Node *node) {
     }
     return;
   }
+  if (node->type == kASTExprFuncCall) {
+    GenerateRValue(node->func_expr);
+    printf("push %s\n", reg_names_64[node->func_expr->reg]);
+    int i;
+    assert(GetSizeOfList(node->arg_expr_list) <= NUM_OF_PARAM_REGISTERS);
+    for (i = 0; i < GetSizeOfList(node->arg_expr_list); i++) {
+      struct Node *n = GetNodeAt(node->arg_expr_list, i);
+      GenerateRValue(n);
+      printf("push %s\n", reg_names_64[n->reg]);
+    }
+    for (i--; i >= 0; i--) {
+      printf("pop %s\n", param_reg_names_64[i]);
+    }
+    printf("pop rax\n");
+    printf("call rax\n");
+    return;
+  }
   assert(node && node->op);
   if (node->type == kASTExpr) {
     if (node->op->type == kTokenDecimalNumber ||
@@ -502,6 +547,13 @@ void Generate(struct Node *node) {
       Generate(node->right);
       return;
     } else if (node->op->type == kTokenIdent) {
+      if (node->expr_type->type == kTypeFunction) {
+        const char *label_name = CreateTokenStr(node->op);
+        printf(".global %s%s\n", symbol_prefix, label_name);
+        printf("mov %s, [rip + %s%s@GOTPCREL]\n", reg_names_64[node->reg],
+               symbol_prefix, label_name);
+        return;
+      }
       printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg],
              node->byte_offset);
       return;
