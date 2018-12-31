@@ -22,7 +22,7 @@ test : compilium
 	./test.sh
 
 run_unittest_% : compilium
-	./compilium --run-unittest=$* || { echo "FAIL unittest.$*: Run 'make dbg_unittest_$*' to rerun this testcase with debugger"; exit 1; }
+	@ ./compilium --run-unittest=$* || { echo "FAIL unittest.$*: Run 'make dbg_unittest_$*' to rerun this testcase with debugger"; exit 1; }
 
 dbg_unittest_% : compilium_dbg
 	lldb $(LLDB_ARGS)\
