@@ -135,7 +135,7 @@ void PrintTokenStrToFile(struct Node *t, FILE *fp);
 void PrintASTNode(struct Node *n);
 
 // @parser.c
-struct Node *Parse();
+struct Node *Parse(struct Node *passed_tokens);
 
 // tokenizer.c
 struct Node *CreateToken(const char *input);
