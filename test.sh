@@ -23,19 +23,19 @@ function test_result {
 }
 
 function test_expr_result {
-  test_result "{return $1;}" "$2" "" "$1"
+  test_result "int main(){return $1;}" "$2" "" "$1"
 }
 
 function test_stmt_result {
-  test_result "{$1}" "$2" "" "$1"
+  test_result "int main(){$1}" "$2" "" "$1"
 }
 
 function test_src_result {
   test_result "$1" "$2" "$3" "$1"
 }
 
-test_src_result 'int puts(char *s); { puts("Hello, world!"); return 0;}' 0 'Hello, world!\n'
-test_src_result "int putchar(int c); { putchar('C'); return 0;}" 0 'C'
+test_src_result 'int puts(char *s); int main() { puts("Hello, world!"); return 0;}' 0 'Hello, world!\n'
+test_src_result "int putchar(int c); int main() { putchar('C'); return 0;}" 0 'C'
 test_stmt_result 'return *("compilium" + 1);' 111
 test_stmt_result 'return *"compilium";' 99
 test_stmt_result "return 'C';" 67

@@ -305,13 +305,15 @@ struct Node *ParseDirectDecltor() {
   while (true) {
     if ((t = ConsumePunctuator("("))) {
       struct Node *args = AllocList();
-      while (1) {
-        struct Node *arg = ParseParamDecl();
-        if (!arg) ErrorWithToken(NextToken(), "Expected ParamDecl here");
-        PushToList(args, arg);
-        if (!ConsumePunctuator(",")) break;
+      if (!ConsumePunctuator(")")) {
+        while (1) {
+          struct Node *arg = ParseParamDecl();
+          if (!arg) ErrorWithToken(NextToken(), "Expected ParamDecl here");
+          PushToList(args, arg);
+          if (!ConsumePunctuator(",")) break;
+        }
+        ExpectPunctuator(")");
       }
-      ExpectPunctuator(")");
       struct Node *nn = AllocNode(kASTDirectDecltor);
       nn->op = t;
       nn->right = args;
@@ -354,10 +356,10 @@ struct Node *ParseDeclBody() {
 }
 
 struct Node *ParseDecl() {
-  struct Node *decl = ParseDeclBody();
-  if (!decl) return NULL;
+  struct Node *decl_body = ParseDeclBody();
+  if (!decl_body) return NULL;
   ExpectPunctuator(";");
-  return decl;
+  return decl_body;
 }
 
 struct Node *ParseCompStmt() {
@@ -373,22 +375,32 @@ struct Node *ParseCompStmt() {
   return list;
 }
 
+struct Node *ParseFuncDef(struct Node *decl_body) {
+  struct Node *comp_stmt = ParseCompStmt();
+  if (!comp_stmt) return NULL;
+  return comp_stmt;
+}
+
 struct Node *toplevel_names;
 
 struct Node *Parse(struct Node *passed_tokens) {
   tokens = passed_tokens;
   token_stream_index = 0;
   struct Node *list = AllocList();
-  struct Node *n;
+  struct Node *decl_body;
   toplevel_names = AllocList();
-  while ((n = ParseCompStmt()) || (n = ParseDecl())) {
-    if (n->type == kASTDecl) {
-      struct Node *type = CreateTypeFromDecl(n);
+  while ((decl_body = ParseDeclBody())) {
+    if (ConsumePunctuator(";")) {
+      struct Node *type = CreateTypeFromDecl(decl_body);
       PushKeyValueToList(toplevel_names, CreateTokenStr(type->left->op),
                          GetTypeWithoutAttr(type));
       continue;
     }
-    PushToList(list, n);
+    struct Node *comp_stmt = ParseCompStmt();
+    if (!comp_stmt) {
+      ErrorWithToken(NextToken(), "Unexpected token");
+    }
+    PushToList(list, comp_stmt);
   }
   struct Node *t;
   if (!(t = NextToken())) return list;
