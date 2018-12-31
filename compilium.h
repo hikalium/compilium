@@ -35,6 +35,7 @@ enum NodeType {
   kASTDirectDecltor,
   kASTDecltor,
   kASTDecl,
+  kASTFuncDef,
   kASTKeyValue,
   kASTLocalVar,
   //
@@ -75,6 +76,13 @@ struct Node {
       };
     };
     struct {
+      // kASTFuncDef
+      struct Node *func_decl;
+      struct Node *func_body;
+      struct Node *func_type;
+      struct Node *func_name_token;
+    };
+    struct {
       // kToken...
       const char *begin;
       int length;
@@ -101,6 +109,7 @@ struct Node *CreateASTBinOp(struct Node *t, struct Node *left,
                             struct Node *right);
 struct Node *CreateASTUnaryPrefixOp(struct Node *t, struct Node *right);
 struct Node *CreateASTExprStmt(struct Node *t, struct Node *left);
+struct Node *CreateASTFuncDef(struct Node *func_decl, struct Node *func_body);
 
 struct Node *CreateASTKeyValue(const char *key, struct Node *value);
 

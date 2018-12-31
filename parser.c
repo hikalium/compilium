@@ -378,7 +378,7 @@ struct Node *ParseCompStmt() {
 struct Node *ParseFuncDef(struct Node *decl_body) {
   struct Node *comp_stmt = ParseCompStmt();
   if (!comp_stmt) return NULL;
-  return comp_stmt;
+  return CreateASTFuncDef(decl_body, comp_stmt);
 }
 
 struct Node *toplevel_names;
@@ -392,15 +392,15 @@ struct Node *Parse(struct Node *passed_tokens) {
   while ((decl_body = ParseDeclBody())) {
     if (ConsumePunctuator(";")) {
       struct Node *type = CreateTypeFromDecl(decl_body);
-      PushKeyValueToList(toplevel_names, CreateTokenStr(type->left->op),
+      PushKeyValueToList(toplevel_names, CreateTokenStr(type->left),
                          GetTypeWithoutAttr(type));
       continue;
     }
-    struct Node *comp_stmt = ParseCompStmt();
-    if (!comp_stmt) {
+    struct Node *func_def = ParseFuncDef(decl_body);
+    if (!func_def) {
       ErrorWithToken(NextToken(), "Unexpected token");
     }
-    PushToList(list, comp_stmt);
+    PushToList(list, func_def);
   }
   struct Node *t;
   if (!(t = NextToken())) return list;

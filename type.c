@@ -28,6 +28,11 @@ struct Node *GetTypeWithoutAttr(struct Node *t) {
   return GetTypeWithoutAttr(t->right);
 }
 
+struct Node *GetIdentifierTokenFromTypeAttr(struct Node *t) {
+  if (!t || t->type != kTypeAttrIdent) return NULL;
+  return t->left;
+}
+
 struct Node *GetRValueType(struct Node *t) {
   if (!t) return NULL;
   if (t->type != kTypeLValue) return t;
@@ -86,7 +91,7 @@ struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
       continue;
     }
     assert(dd->op && dd->op->type == kTokenIdent);
-    type = CreateTypeAttrIdent(CreateASTIdent(dd->op), type);
+    type = CreateTypeAttrIdent(dd->op, type);
   }
   return type;
 }

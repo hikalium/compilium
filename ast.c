@@ -1,5 +1,9 @@
 #include "compilium.h"
 
+static bool IsToken(struct Node *n) {
+  return n && kTokenLowerBound < n->type && n->type < kTokenUpperBound;
+}
+
 struct Node *AllocNode(enum NodeType type) {
   struct Node *node = calloc(1, sizeof(struct Node));
   node->type = type;
@@ -29,6 +33,21 @@ struct Node *CreateASTExprStmt(struct Node *t, struct Node *left) {
   op->op = t;
   op->left = left;
   return op;
+}
+
+struct Node *CreateASTFuncDef(struct Node *func_decl, struct Node *func_body) {
+  assert(func_decl && func_decl->type == kASTDecl);
+  assert(func_body && func_body->type == kASTList);
+  struct Node *n = AllocNode(kASTFuncDef);
+  n->func_decl = func_decl;
+  n->func_body = func_body;
+  struct Node *type = CreateTypeFromDecl(func_decl);
+  assert(type);
+  n->func_name_token = type->left;
+  assert(IsToken(n->func_name_token));
+  n->func_type = GetTypeWithoutAttr(type);
+  assert(n->func_type && n->func_type->type == kTypeFunction);
+  return n;
 }
 
 struct Node *CreateASTKeyValue(const char *key, struct Node *value) {
@@ -73,7 +92,7 @@ struct Node *CreateTypeFunction(struct Node *return_type,
 }
 
 struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type) {
-  assert(ident_token && ident_token->type == kASTIdent);
+  assert(ident_token && IsToken(ident_token));
   struct Node *n = AllocNode(kTypeAttrIdent);
   n->left = ident_token;
   n->right = type;
@@ -97,7 +116,7 @@ struct Node *AllocToken(const char *src_str, const char *begin, int length,
 }
 
 const char *CreateTokenStr(struct Node *t) {
-  assert(t && kTokenLowerBound < t->type && t->type < kTokenUpperBound);
+  assert(IsToken(t));
   return strndup(t->begin, t->length);
 }
 
@@ -134,14 +153,18 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
     fprintf(stderr, "(null)");
     return;
   }
-  if (kTokenLowerBound < n->type && n->type < kTokenUpperBound) {
+  if (IsToken(n)) {
     PrintTokenBrief(n);
     return;
   }
   if (n->type == kASTList) {
-    fprintf(stderr, "[\n");
+    fprintf(stderr, "[");
+    if (GetSizeOfList(n) == 0) {
+      fprintf(stderr, "]");
+      return;
+    }
     for (int i = 0; i < GetSizeOfList(n); i++) {
-      if (i) fprintf(stderr, ",\n");
+      fprintf(stderr, "%s\n", i ? "," : "");
       PrintPadding(depth + 1);
       PrintASTNodeSub(GetNodeAt(n, i), depth + 1);
     }
@@ -171,10 +194,22 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
     return;
   } else if (n->type == kTypeAttrIdent) {
     fputc('`', stderr);
-    PrintTokenStrToFile(n->left->op, stderr);
+    PrintTokenStrToFile(n->left, stderr);
     fputc('`', stderr);
     fprintf(stderr, " has a type: ");
     PrintASTNodeSub(n->right, depth);
+    return;
+  } else if (n->type == kASTFuncDef) {
+    fprintf(stderr, "FuncDef ");
+    PrintASTNodeSub(n->func_name_token, depth);
+    fprintf(stderr, " : ");
+    PrintASTNodeSub(n->func_type, depth);
+    fprintf(stderr, "{\n");
+    PrintPadding(depth + 1);
+    PrintASTNodeSub(n->func_body, depth + 1);
+    fprintf(stderr, "\n");
+    PrintPadding(depth);
+    fprintf(stderr, "}");
     return;
   }
   fprintf(stderr, "(op=");

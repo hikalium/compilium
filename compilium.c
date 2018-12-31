@@ -395,6 +395,9 @@ void Analyze(struct Node *node) {
       FreeReg(n->reg);
     }
     return;
+  } else if (node->type == kASTFuncDef) {
+    Analyze(node->func_body);
+    return;
   }
   assert(node->op);
   if (node->type == kASTExpr) {
@@ -494,7 +497,7 @@ void Analyze(struct Node *node) {
   } else if (node->type == kASTDecl) {
     struct Node *type = CreateType(node->op, node->right);
     assert(type && type->type == kTypeAttrIdent);
-    AddLocalVar(var_context, CreateTokenStr(type->left->op), type->right);
+    AddLocalVar(var_context, CreateTokenStr(type->left), type->right);
     return;
   } else if (node->type == kASTJumpStmt) {
     if (node->op->type == kTokenKwReturn) {
@@ -529,6 +532,9 @@ void Generate(struct Node *node) {
     }
     printf("pop rax\n");
     printf("call rax\n");
+    return;
+  } else if (node->type == kASTFuncDef) {
+    Generate(node->func_body);
     return;
   }
   assert(node && node->op);
