@@ -16,7 +16,7 @@ function test_result {
   if [ $expected = $actual ]; then
       diff -u expected.stdout out.stdout \
         && echo "PASS $testname returns $expected" \
-        || echo "FAIL $testname: stdout diff";
+        || { echo "FAIL $testname: stdout diff"; exit 1; }
   else
     echo "FAIL $testname: expected $expected but got $actual"; echo $input > failcase.c; exit 1; 
   fi
@@ -34,6 +34,7 @@ function test_src_result {
   test_result "$1" "$2" "$3" "$1"
 }
 
+test_src_result 'int puts(char *s); { puts("Hello, world!"); return 0;}' 0 'Hello, world!\n'
 test_src_result "int putchar(int c); { putchar('C'); return 0;}" 0 'C'
 test_stmt_result 'return *("compilium" + 1);' 111
 test_stmt_result 'return *"compilium";' 99
