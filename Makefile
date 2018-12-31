@@ -1,4 +1,5 @@
 CFLAGS=-Wall -Wpedantic -Wextra -Wconditional-uninitialized -std=c11
+SANITIZERS=-fsanitize=address -fsanitize=undefined
 SRCS=ast.c compilium.c parser.c type.c
 HEADERS=compilium.h
 CC=clang
@@ -7,10 +8,10 @@ LLDB_ARGS = -o 'settings set interpreter.prompt-on-quit false' \
 			-o 'process launch'
 
 compilium : $(SRCS) $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -o $@ $(SRCS) 
+	$(CC) $(CFLAGS) $(SANITIZERS) -o $@ $(SRCS)
 
 compilium_dbg : $(SRCS) $(HEADERS) Makefile
-	$(CC) $(CFLAGS) -g -o $@ $(SRCS)
+	$(CC) $(CFLAGS) $(SANITIZERS) -g -o $@ $(SRCS)
 
 debug : compilium_dbg failcase.c
 	lldb $(LLDB_ARGS)\
