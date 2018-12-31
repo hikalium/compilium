@@ -344,14 +344,20 @@ struct Node *ParseParamDecl() {
   return n;
 }
 
-struct Node *ParseDecl() {
+struct Node *ParseDeclBody() {
   struct Node *decl_spec = ParseDeclSpecs();
   if (!decl_spec) return NULL;
   struct Node *n = AllocNode(kASTDecl);
   n->op = decl_spec;
   n->right = ParseDecltor();
-  ExpectPunctuator(";");
   return n;
+}
+
+struct Node *ParseDecl() {
+  struct Node *decl = ParseDeclBody();
+  if (!decl) return NULL;
+  ExpectPunctuator(";");
+  return decl;
 }
 
 struct Node *ParseCompStmt() {
