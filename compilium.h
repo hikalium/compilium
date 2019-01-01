@@ -77,7 +77,6 @@ struct Node {
     };
     struct {
       // kASTFuncDef
-      struct Node *func_decl;
       struct Node *func_body;
       struct Node *func_type;
       struct Node *func_name_token;

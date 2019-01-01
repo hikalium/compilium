@@ -39,7 +39,6 @@ struct Node *CreateASTFuncDef(struct Node *func_decl, struct Node *func_body) {
   assert(func_decl && func_decl->type == kASTDecl);
   assert(func_body && func_body->type == kASTList);
   struct Node *n = AllocNode(kASTFuncDef);
-  n->func_decl = func_decl;
   n->func_body = func_body;
   struct Node *type = CreateTypeFromDecl(func_decl);
   assert(type);
