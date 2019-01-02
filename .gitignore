@@ -65,3 +65,6 @@ failcase.c
 *.S
 *.log
 *.preprocess.c
+a.out*
+expected.*
+out.*

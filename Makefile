@@ -41,4 +41,4 @@ commit:
 	git commit
 
 clean:
-	-rm compilium
+	-rm -r compilium compilium_dbg
