@@ -74,12 +74,14 @@ struct Node *ParsePostfixExpr() {
   if (!n) return NULL;
   if (ConsumePunctuator("(")) {
     struct Node *args = AllocList();
-    do {
-      struct Node *arg_expr = ParseAssignExpr();
-      if (!arg_expr) ErrorWithToken(NextToken(), "Expected expression here");
-      PushToList(args, arg_expr);
-    } while (ConsumePunctuator(","));
-    ExpectPunctuator(")");
+    if (!ConsumePunctuator(")")) {
+      do {
+        struct Node *arg_expr = ParseAssignExpr();
+        if (!arg_expr) ErrorWithToken(NextToken(), "Expected expression here");
+        PushToList(args, arg_expr);
+      } while (ConsumePunctuator(","));
+      ExpectPunctuator(")");
+    }
     struct Node *nn = AllocNode(kASTExprFuncCall);
     nn->func_expr = n;
     nn->arg_expr_list = args;
@@ -401,6 +403,9 @@ struct Node *Parse(struct Node *passed_tokens) {
       ErrorWithToken(NextToken(), "Unexpected token");
     }
     PushToList(list, func_def);
+    PushKeyValueToList(toplevel_names,
+                       CreateTokenStr(func_def->func_name_token),
+                       func_def->func_type);
   }
   struct Node *t;
   if (!(t = NextToken())) return list;

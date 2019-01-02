@@ -387,6 +387,9 @@ void Analyze(struct Node *node) {
     return;
   }
   if (node->type == kASTExprFuncCall) {
+    node->reg = AllocReg();
+    // TODO: support expe_type other than int
+    node->expr_type = CreateTypeBase(CreateToken("int"));
     Analyze(node->func_expr);
     FreeReg(node->func_expr->reg);
     for (int i = 0; i < GetSizeOfList(node->arg_expr_list); i++) {
@@ -532,6 +535,7 @@ void Generate(struct Node *node) {
     }
     printf("pop rax\n");
     printf("call rax\n");
+    printf("mov %s, rax\n", reg_names_64[node->reg]);
     return;
   } else if (node->type == kASTFuncDef) {
     const char *func_name = CreateTokenStr(node->func_name_token);
