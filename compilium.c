@@ -534,7 +534,15 @@ void Generate(struct Node *node) {
     printf("call rax\n");
     return;
   } else if (node->type == kASTFuncDef) {
+    const char *func_name = CreateTokenStr(node->func_name_token);
+    printf(".global %s%s\n", symbol_prefix, func_name);
+    printf("%s%s:\n", symbol_prefix, func_name);
+    printf("push rbp\n");
+    printf("mov rbp, rsp\n");
     Generate(node->func_body);
+    printf("mov rsp, rbp\n");
+    printf("pop rbp\n");
+    printf("ret\n");
     return;
   }
   assert(node && node->op);
@@ -795,14 +803,7 @@ int main(int argc, char *argv[]) {
   str_list = AllocList();
   printf(".intel_syntax noprefix\n");
   printf(".text\n");
-  printf(".global %smain\n", symbol_prefix);
-  printf("%smain:\n", symbol_prefix);
-  printf("push rbp\n");
-  printf("mov rbp, rsp\n");
   Generate(ast);
-  printf("mov rsp, rbp\n");
-  printf("pop rbp\n");
-  printf("ret\n");
 
   printf(".data\n");
   for (int i = 0; i < GetSizeOfList(str_list); i++) {
