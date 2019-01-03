@@ -34,9 +34,34 @@ function test_src_result {
   test_result "$1" "$2" "$3" "$1"
 }
 
-test_src_result 'int three(){return 3;}int main() { return three();}' 3 ''
-test_src_result 'int puts(char *s); int main() { puts("Hello, world!"); return 0;}' 0 'Hello, world!\n'
-test_src_result "int putchar(int c); int main() { putchar('C'); return 0;}" 0 'C'
+test_src_result "`cat << EOS
+int three() {
+  return 3;
+}
+int main() {
+  return three();
+}
+EOS
+`" 3 ''
+
+test_src_result "`cat << EOS
+int puts(char *s);
+int main() {
+  puts("Hello, world!");
+  return 0;
+}
+EOS
+`" 0 'Hello, world!\n'
+
+test_src_result "`cat << EOS
+int putchar(int c);
+int main() {
+  putchar('C');
+  return 0;
+}
+EOS
+`" 0 'C'
+
 test_stmt_result 'return *("compilium" + 1);' 111
 test_stmt_result 'return *"compilium";' 99
 test_stmt_result "return 'C';" 67
