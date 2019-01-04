@@ -6,7 +6,7 @@ function test_result {
   expected_stdout="$3"
   testname="$4"
   printf "$expected_stdout" > expected.stdout
-  ./compilium --target-os `uname` "$input" > out.S || { \
+  ./compilium --target-os `uname` <<< "$input" > out.S || { \
     echo "$input" > failcase.c; \
     echo "Compilation failed."; \
     exit 1; }

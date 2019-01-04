@@ -1,9 +1,5 @@
 #include "compilium.h"
 
-struct CompilerArgs {
-  const char *input;
-};
-
 const char *symbol_prefix;
 
 _Noreturn void Error(const char *fmt, ...) {
@@ -23,8 +19,7 @@ _Noreturn void __assert(const char *expr_str, const char *file, int line) {
 
 void TestList(void);
 void TestType(void);
-void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
-  args->input = NULL;
+void ParseCompilerArgs(int argc, char **argv) {
   symbol_prefix = "_";
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--target-os") == 0) {
@@ -41,11 +36,9 @@ void ParseCompilerArgs(struct CompilerArgs *args, int argc, char **argv) {
     } else if (strcmp(argv[i], "--run-unittest=Type") == 0) {
       TestType();
     } else {
-      args->input = argv[i];
+      Error("Unknown argument: %s", argv[i]);
     }
   }
-  if (!args->input)
-    Error("Usage: %s [--os_type=Linux|Darwin] src_string", argv[0]);
 }
 
 struct Node *CreateNextToken(const char *p, const char *src) {
@@ -788,12 +781,19 @@ void GenerateRValue(struct Node *node) {
   ErrorWithToken(node->op, "Dereferencing %d bytes is not implemented.", size);
 }
 
+#define MAX_INPUT_SIZE 4096
 int main(int argc, char *argv[]) {
-  struct CompilerArgs args;
-  ParseCompilerArgs(&args, argc, argv);
+  ParseCompilerArgs(argc, argv);
+  char *input = malloc(MAX_INPUT_SIZE);
+  int input_size;
+  for (input_size = 0;
+       input_size < MAX_INPUT_SIZE && (input[input_size] = getchar()) != EOF;
+       input_size++)
+    ;
+  assert(input_size < MAX_INPUT_SIZE);
 
-  fprintf(stderr, "input:\n%s\n", args.input);
-  struct Node *tokens = Tokenize(args.input);
+  fprintf(stderr, "input:\n%s\n", input);
+  struct Node *tokens = Tokenize(input);
   PrintASTNode(tokens);
 
   struct Node *ast = Parse(tokens);

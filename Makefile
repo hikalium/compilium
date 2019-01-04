@@ -13,8 +13,9 @@ compilium_dbg : $(SRCS) $(HEADERS) Makefile
 	$(CC) $(CFLAGS) -g -o $@ $(SRCS)
 
 debug : compilium_dbg failcase.c
-	lldb $(LLDB_ARGS)\
-		-- ./compilium_dbg --target-os `uname` "`cat failcase.c`"
+	lldb \
+		-o 'settings set target.input-path failcase.c' $(LLDB_ARGS) \
+		-- ./compilium_dbg --target-os `uname`
 
 testall : unittest test
 
