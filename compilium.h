@@ -101,6 +101,7 @@ void PushKeyValueToList(struct Node *list, const char *key, struct Node *value);
 struct Node *AllocList();
 int GetSizeOfList(struct Node *list);
 struct Node *GetNodeAt(struct Node *list, int index);
+struct Node *CreateToken(const char *input);
 
 // @ast.c
 struct Node *AllocNode(enum NodeType type);
@@ -123,21 +124,20 @@ struct Node *CreateTypeFunction(struct Node *return_type,
                                 struct Node *arg_type_list);
 struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type);
 struct Node *CreateASTIdent(struct Node *ident);
-
-struct Node *AllocToken(const char *src_str, const char *begin, int length,
-                        enum NodeType type);
-
-const char *CreateTokenStr(struct Node *t);
-int IsEqualTokenWithCStr(struct Node *t, const char *s);
-void PrintTokenStrToFile(struct Node *t, FILE *fp);
-
 void PrintASTNode(struct Node *n);
 
 // @parser.c
 struct Node *Parse();
 
-// tokenizer.c
-struct Node *CreateToken(const char *input);
+// @token.c
+bool IsToken(struct Node *n);
+struct Node *AllocToken(const char *src_str, const char *begin, int length,
+                        enum NodeType type);
+const char *CreateTokenStr(struct Node *t);
+int IsEqualTokenWithCStr(struct Node *t, const char *s);
+void PrintToken(struct Node *t);
+void PrintTokenBrief(struct Node *t);
+void PrintTokenStrToFile(struct Node *t, FILE *fp);
 
 // @type.c
 int IsSameTypeExceptAttr(struct Node *a, struct Node *b);

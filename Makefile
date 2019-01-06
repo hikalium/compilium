@@ -1,5 +1,5 @@
 CFLAGS=-Wall -Wpedantic -Wextra -Wconditional-uninitialized -std=c11
-SRCS=ast.c compilium.c parser.c type.c
+SRCS=ast.c compilium.c parser.c token.c type.c
 HEADERS=compilium.h
 CC=clang
 LLDB_ARGS = -o 'settings set interpreter.prompt-on-quit false' \
