@@ -9,6 +9,16 @@
 make
 ```
 
+## Usage
+```
+./compilium [--os_type=Linux|Darwin]
+```
+
+compilium takes stdin as an input, so you can compile your code like this (in bash):
+```
+./compilium <<< "int main(){ return 0; }"
+```
+
 ## Test
 ```
 make testall
