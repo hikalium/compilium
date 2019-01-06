@@ -10,16 +10,7 @@ static struct Node *ConsumeToken(enum NodeType type) {
   token_stream_index++;
   return t;
 }
-/*
-static struct Node *ExpectToken(enum NodeType type) {
-  if (token_stream_index >= GetSizeOfList(tokens))
-    Error("Expect token type %d but got EOF", type);
-  struct Node *t = GetNodeAt(tokens, token_stream_index);
-  if (t->type != type) ErrorWithToken(t, "Expected token type %d here", type);
-  token_stream_index++;
-  return t;
-}
-*/
+
 static struct Node *ConsumePunctuator(const char *s) {
   if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
   struct Node *t = GetNodeAt(tokens, token_stream_index);
