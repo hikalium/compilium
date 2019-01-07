@@ -20,6 +20,7 @@ enum NodeType {
   kTokenKwChar,
   kTokenKwInt,
   kTokenKwVoid,
+  kTokenKwStruct,
   kTokenKwSizeof,
   kTokenCharLiteral,
   kTokenStringLiteral,
@@ -38,12 +39,14 @@ enum NodeType {
   kASTFuncDef,
   kASTKeyValue,
   kASTLocalVar,
+  kASTStructSpec,
   //
   kTypeBase,
   kTypeLValue,
   kTypePointer,
   kTypeFunction,
   kTypeAttrIdent,
+  kTypeStruct,
 };
 
 struct Node {
@@ -82,6 +85,10 @@ struct Node {
       struct Node *func_name_token;
     };
     struct {
+      // kASTStruct, kTypeStruct
+      struct Node *tag;
+    };
+    struct {
       // kToken...
       const char *begin;
       int length;
@@ -104,6 +111,7 @@ struct Node *GetNodeAt(struct Node *list, int index);
 struct Node *CreateToken(const char *input);
 
 // @ast.c
+bool IsToken(struct Node *n);
 struct Node *AllocNode(enum NodeType type);
 struct Node *CreateASTBinOp(struct Node *t, struct Node *left,
                             struct Node *right);
@@ -122,6 +130,7 @@ struct Node *CreateTypeLValue(struct Node *type);
 struct Node *CreateTypePointer(struct Node *type);
 struct Node *CreateTypeFunction(struct Node *return_type,
                                 struct Node *arg_type_list);
+struct Node *CreateTypeStruct(struct Node *tag_token);
 struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type);
 struct Node *CreateASTIdent(struct Node *ident);
 void PrintASTNode(struct Node *n);

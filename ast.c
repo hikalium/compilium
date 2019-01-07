@@ -86,6 +86,13 @@ struct Node *CreateTypeFunction(struct Node *return_type,
   return n;
 }
 
+struct Node *CreateTypeStruct(struct Node *tag_token) {
+  assert(IsToken(tag_token));
+  struct Node *n = AllocNode(kTypeStruct);
+  n->tag = tag_token;
+  return n;
+}
+
 struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type) {
   assert(ident_token && IsToken(ident_token));
   struct Node *n = AllocNode(kTypeAttrIdent);
@@ -150,6 +157,11 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
     PrintASTNodeSub(n->right, depth);
     fprintf(stderr, ">");
     return;
+  } else if (n->type == kTypeStruct) {
+    fprintf(stderr, "struct<tag: ");
+    PrintASTNodeSub(n->tag, depth);
+    fprintf(stderr, ">");
+    return;
   } else if (n->type == kTypeAttrIdent) {
     fputc('`', stderr);
     PrintTokenStrToFile(n->left, stderr);
@@ -168,6 +180,10 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
     fprintf(stderr, "\n");
     PrintPadding(depth);
     fprintf(stderr, "}");
+    return;
+  } else if (n->type == kASTExprStmt) {
+    PrintASTNodeSub(n->right, depth);
+    fprintf(stderr, ";");
     return;
   }
   fprintf(stderr, "(op=");

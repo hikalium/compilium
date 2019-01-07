@@ -96,8 +96,16 @@ struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
   return type;
 }
 
+struct Node *CreateBaseTypeFromDeclSpec(struct Node *decl_spec) {
+  assert(decl_spec);
+  if (IsToken(decl_spec)) return CreateTypeBase(decl_spec);
+  if (decl_spec->type == kASTStructSpec)
+    return CreateTypeStruct(decl_spec->tag);
+  assert(false);
+}
+
 struct Node *CreateType(struct Node *decl_spec, struct Node *decltor) {
-  struct Node *type = CreateTypeBase(decl_spec);
+  struct Node *type = CreateBaseTypeFromDeclSpec(decl_spec);
   if (!decltor) return type;
   return CreateTypeFromDecltor(decltor, type);
 }
@@ -184,6 +192,12 @@ _Noreturn void TestType() {
 
   type =
       CreateTypeFromInput("void (*signal(int sig, void (*func)(int)))(int);");
+  assert(type && GetTypeWithoutAttr(type) &&
+         GetTypeWithoutAttr(type)->type == kTypeFunction);
+  PrintASTNode(type);
+
+  type = CreateTypeFromInput("struct IncompleteStruct;");
+  assert(type);
   PrintASTNode(type);
 
   fprintf(stderr, "PASS\n");

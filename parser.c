@@ -276,7 +276,14 @@ struct Node *ParseDeclSpecs() {
   (decl_spec = ConsumeToken(kTokenKwInt)) ||
       (decl_spec = ConsumeToken(kTokenKwChar)) ||
       (decl_spec = ConsumeToken(kTokenKwVoid));
-  return decl_spec;
+  if (decl_spec) return decl_spec;
+  if (ConsumeToken(kTokenKwStruct)) {
+    struct Node *struct_spec = AllocNode(kASTStructSpec);
+    struct_spec->tag = ConsumeToken(kTokenIdent);
+    assert(struct_spec->tag);
+    return struct_spec;
+  }
+  return NULL;
 }
 
 struct Node *ParseParamDecl();

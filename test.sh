@@ -35,6 +35,14 @@ function test_src_result {
 }
 
 test_src_result "`cat << EOS
+int main() {
+  struct IncompleteStruct *incomplete_struct;
+  return sizeof(incomplete_struct);
+}
+EOS
+`" 8 ''
+
+test_src_result "`cat << EOS
 int three() {
   return 3;
 }

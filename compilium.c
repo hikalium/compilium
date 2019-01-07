@@ -71,6 +71,7 @@ struct Node *CreateNextToken(const char *p, const char *src) {
     if (IsEqualTokenWithCStr(t, "char")) t->type = kTokenKwChar;
     if (IsEqualTokenWithCStr(t, "int")) t->type = kTokenKwInt;
     if (IsEqualTokenWithCStr(t, "void")) t->type = kTokenKwVoid;
+    if (IsEqualTokenWithCStr(t, "struct")) t->type = kTokenKwStruct;
     if (IsEqualTokenWithCStr(t, "sizeof")) t->type = kTokenKwSizeof;
     return t;
   } else if ('\'' == *p) {
