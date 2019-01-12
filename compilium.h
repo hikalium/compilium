@@ -136,7 +136,7 @@ struct Node *CreateASTIdent(struct Node *ident);
 void PrintASTNode(struct Node *n);
 
 // @parser.c
-struct Node *Parse();
+struct Node *Parse(struct Node *passed_tokens);
 
 // @token.c
 bool IsToken(struct Node *n);
