@@ -1,3 +1,6 @@
 int puts(char *s);
 
-int main() { return puts("Hello compilium world!"); }
+int main(int argc, char **argv) {
+  puts("Hello compilium world!");
+  return 0;
+}
