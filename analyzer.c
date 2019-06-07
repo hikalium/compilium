@@ -17,11 +17,24 @@ static void FreeReg(int reg) {
   reg_used_table[reg] = 0;
 }
 
-static void AddLocalVar(struct Node *list, const char *key,
+struct VarContext {
+  struct VarContext *parent;
+  struct Node *list;
+};
+
+struct VarContext *AllocVarContext(struct VarContext *parent) {
+  struct VarContext *ctx = calloc(1, sizeof(struct VarContext));
+  ctx->parent = parent;
+  ctx->list = AllocList();
+  return ctx;
+}
+
+static void AddLocalVar(struct VarContext *ctx, const char *key,
                         struct Node *var_type) {
+  assert(ctx);
   int ofs = 0;
-  if (GetSizeOfList(list)) {
-    struct Node *n = GetNodeAt(list, GetSizeOfList(list) - 1);
+  if (GetSizeOfList(ctx->list)) {
+    struct Node *n = GetNodeAt(ctx->list, GetSizeOfList(ctx->list) - 1);
     assert(n && n->type == kASTKeyValue);
     struct Node *v = n->value;
     assert(v && v->type == kASTLocalVar);
@@ -31,16 +44,23 @@ static void AddLocalVar(struct Node *list, const char *key,
   int align = GetSizeOfType(var_type);
   ofs = (ofs + align - 1) / align * align;
   struct Node *local_var = CreateASTLocalVar(ofs, var_type);
-  PushKeyValueToList(list, key, local_var);
+  PushKeyValueToList(ctx->list, key, local_var);
 }
 
-static struct Node *var_context;
+static struct Node *FindLocalVar(struct VarContext *ctx,
+                                 struct Node *key_token) {
+  struct Node *n = GetNodeByTokenKey(ctx->list, key_token);
+  if (!n || n->type != kASTLocalVar) return NULL;
+  return n;
+}
 
-void Analyze(struct Node *node) {
+static struct VarContext *var_context;
+
+static void AnalyzeNode(struct Node *node) {
   assert(node);
   if (node->type == kASTList && !node->op) {
     for (int i = 0; i < GetSizeOfList(node); i++) {
-      Analyze(GetNodeAt(node, i));
+      AnalyzeNode(GetNodeAt(node, i));
     }
     return;
   }
@@ -48,16 +68,16 @@ void Analyze(struct Node *node) {
     node->reg = AllocReg();
     // TODO: support expe_type other than int
     node->expr_type = CreateTypeBase(CreateToken("int"));
-    Analyze(node->func_expr);
+    AnalyzeNode(node->func_expr);
     FreeReg(node->func_expr->reg);
     for (int i = 0; i < GetSizeOfList(node->arg_expr_list); i++) {
       struct Node *n = GetNodeAt(node->arg_expr_list, i);
-      Analyze(n);
+      AnalyzeNode(n);
       FreeReg(n->reg);
     }
     return;
   } else if (node->type == kASTFuncDef) {
-    Analyze(node->func_body);
+    AnalyzeNode(node->func_body);
     return;
   }
   assert(node->op);
@@ -73,19 +93,17 @@ void Analyze(struct Node *node) {
       node->expr_type = CreateTypePointer(CreateTypeBase(CreateToken("char")));
       return;
     } else if (IsEqualTokenWithCStr(node->op, "(")) {
-      Analyze(node->right);
+      AnalyzeNode(node->right);
       node->reg = node->right->reg;
       node->expr_type = node->right->expr_type;
       return;
     } else if (node->op->type == kTokenIdent) {
-      struct Node *ident_info = GetNodeByTokenKey(var_context, node->op);
+      struct Node *ident_info = FindLocalVar(var_context, node->op);
       if (ident_info) {
-        if (ident_info->type == kASTLocalVar) {
-          node->byte_offset = ident_info->byte_offset;
-          node->reg = AllocReg();
-          node->expr_type = CreateTypeLValue(ident_info->expr_type);
-          return;
-        }
+        node->byte_offset = ident_info->byte_offset;
+        node->reg = AllocReg();
+        node->expr_type = CreateTypeLValue(ident_info->expr_type);
+        return;
       }
       ident_info = GetNodeByTokenKey(toplevel_names, node->op);
       if (ident_info) {
@@ -97,9 +115,9 @@ void Analyze(struct Node *node) {
       }
       ErrorWithToken(node->op, "Unknown identifier");
     } else if (node->cond) {
-      Analyze(node->cond);
-      Analyze(node->left);
-      Analyze(node->right);
+      AnalyzeNode(node->cond);
+      AnalyzeNode(node->left);
+      AnalyzeNode(node->right);
       FreeReg(node->left->reg);
       FreeReg(node->right->reg);
       assert(
@@ -108,7 +126,7 @@ void Analyze(struct Node *node) {
       node->expr_type = GetRValueType(node->right->expr_type);
       return;
     } else if (!node->left && node->right) {
-      Analyze(node->right);
+      AnalyzeNode(node->right);
       if (node->op->type == kTokenKwSizeof) {
         node->reg = AllocReg();
         node->expr_type = CreateTypeBase(CreateToken("int"));
@@ -129,8 +147,8 @@ void Analyze(struct Node *node) {
       node->expr_type = GetRValueType(node->right->expr_type);
       return;
     } else if (node->left && node->right) {
-      Analyze(node->left);
-      Analyze(node->right);
+      AnalyzeNode(node->left);
+      AnalyzeNode(node->right);
       if (IsEqualTokenWithCStr(node->op, "=") ||
           IsEqualTokenWithCStr(node->op, ",")) {
         FreeReg(node->left->reg);
@@ -146,13 +164,13 @@ void Analyze(struct Node *node) {
   }
   if (node->type == kASTExprStmt) {
     if (!node->left) return;
-    Analyze(node->left);
+    AnalyzeNode(node->left);
     if (node->left->reg) FreeReg(node->left->reg);
     return;
   } else if (node->type == kASTList) {
-    var_context = AllocList();
+    var_context = AllocVarContext(NULL);
     for (int i = 0; i < GetSizeOfList(node); i++) {
-      Analyze(GetNodeAt(node, i));
+      AnalyzeNode(GetNodeAt(node, i));
     }
     return;
   } else if (node->type == kASTDecl) {
@@ -163,18 +181,20 @@ void Analyze(struct Node *node) {
   } else if (node->type == kASTJumpStmt) {
     if (node->op->type == kTokenKwReturn) {
       if (!node->right) return;
-      Analyze(node->right);
+      AnalyzeNode(node->right);
       FreeReg(node->right->reg);
       return;
     }
   } else if (node->type == kASTSelectionStmt) {
     if (node->op->type == kTokenKwIf) {
-      Analyze(node->cond);
+      AnalyzeNode(node->cond);
       FreeReg(node->cond->reg);
-      Analyze(node->left);
+      AnalyzeNode(node->left);
       assert(!node->right);
       return;
     }
   }
-  ErrorWithToken(node->op, "Analyze: Not implemented");
+  ErrorWithToken(node->op, "AnalyzeNode: Not implemented");
 }
+
+void Analyze(struct Node *ast) { AnalyzeNode(ast); }
