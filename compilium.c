@@ -67,12 +67,13 @@ struct Node *CreateNextToken(const char *p, const char *src) {
       length++;
     }
     struct Node *t = AllocToken(src, p, length, kTokenIdent);
-    if (IsEqualTokenWithCStr(t, "return")) t->type = kTokenKwReturn;
     if (IsEqualTokenWithCStr(t, "char")) t->type = kTokenKwChar;
+    if (IsEqualTokenWithCStr(t, "if")) t->type = kTokenKwIf;
     if (IsEqualTokenWithCStr(t, "int")) t->type = kTokenKwInt;
-    if (IsEqualTokenWithCStr(t, "void")) t->type = kTokenKwVoid;
-    if (IsEqualTokenWithCStr(t, "struct")) t->type = kTokenKwStruct;
+    if (IsEqualTokenWithCStr(t, "return")) t->type = kTokenKwReturn;
     if (IsEqualTokenWithCStr(t, "sizeof")) t->type = kTokenKwSizeof;
+    if (IsEqualTokenWithCStr(t, "struct")) t->type = kTokenKwStruct;
+    if (IsEqualTokenWithCStr(t, "void")) t->type = kTokenKwVoid;
     return t;
   } else if ('\'' == *p) {
     int length = 1;
@@ -503,6 +504,14 @@ void Analyze(struct Node *node) {
       FreeReg(node->right->reg);
       return;
     }
+  } else if (node->type == kASTSelectionStmt) {
+    if (node->op->type == kTokenKwIf) {
+      Analyze(node->cond);
+      FreeReg(node->cond->reg);
+      Analyze(node->left);
+      assert(!node->right);
+      return;
+    }
   }
   ErrorWithToken(node->op, "Analyze: Not implemented");
 }
@@ -759,6 +768,23 @@ void Generate(struct Node *node) {
       printf("mov rsp, rbp\n");
       printf("pop rbp\n");
       printf("ret\n");
+      return;
+    }
+    ErrorWithToken(node->op, "Generate: Not implemented jump stmt");
+  } else if (node->type == kASTSelectionStmt) {
+    if (node->op->type == kTokenKwIf) {
+      GenerateRValue(node->cond);
+      int false_label = GetLabelNumber();
+      int end_label = GetLabelNumber();
+      EmitConvertToBool(node->cond->reg, node->cond->reg);
+      printf("jz L%d\n", false_label);
+      GenerateRValue(node->left);
+      printf("jmp L%d\n", end_label);
+      printf("L%d:\n", false_label);
+      if (node->right) {
+        GenerateRValue(node->right);
+      }
+      printf("L%d:\n", end_label);
       return;
     }
     ErrorWithToken(node->op, "Generate: Not implemented jump stmt");

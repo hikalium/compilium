@@ -1,5 +1,7 @@
 #include "compilium.h"
 
+struct Node *ParseStmt();
+
 struct Node *tokens;
 int token_stream_index;
 
@@ -252,6 +254,24 @@ struct Node *ParseExprStmt() {
   return NULL;
 }
 
+struct Node *ParseSelectionStmt() {
+  struct Node *t;
+  if ((t = ConsumeToken(kTokenKwIf))) {
+    ExpectPunctuator("(");
+    struct Node *expr = ParseExpr();
+    assert(expr);
+    ExpectPunctuator(")");
+    struct Node *stmt_true = ParseStmt();
+    assert(stmt_true);
+    struct Node *stmt = AllocNode(kASTSelectionStmt);
+    stmt->op = t;
+    stmt->cond = expr;
+    stmt->left = stmt_true;
+    return stmt;
+  }
+  return NULL;
+}
+
 struct Node *ParseJumpStmt() {
   struct Node *t;
   if ((t = ConsumeToken(kTokenKwReturn))) {
@@ -267,7 +287,9 @@ struct Node *ParseJumpStmt() {
 
 struct Node *ParseStmt() {
   struct Node *stmt;
-  if ((stmt = ParseExprStmt()) || (stmt = ParseJumpStmt())) return stmt;
+  if ((stmt = ParseExprStmt()) || (stmt = ParseJumpStmt()) ||
+      (stmt = ParseSelectionStmt()))
+    return stmt;
   return NULL;
 }
 

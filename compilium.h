@@ -16,12 +16,13 @@ enum NodeType {
   kTokenDecimalNumber,
   kTokenOctalNumber,
   kTokenIdent,
-  kTokenKwReturn,
   kTokenKwChar,
+  kTokenKwIf,
   kTokenKwInt,
-  kTokenKwVoid,
-  kTokenKwStruct,
+  kTokenKwReturn,
   kTokenKwSizeof,
+  kTokenKwStruct,
+  kTokenKwVoid,
   kTokenCharLiteral,
   kTokenStringLiteral,
   kTokenPunctuator,
@@ -32,6 +33,7 @@ enum NodeType {
   kASTList,
   kASTExprStmt,
   kASTJumpStmt,
+  kASTSelectionStmt,
   kASTIdent,
   kASTDirectDecltor,
   kASTDecltor,
@@ -48,6 +50,13 @@ enum NodeType {
   kTypeAttrIdent,
   kTypeStruct,
 };
+
+/*
+Node if-stmt:
+  stmt->cond = cond-expr
+  stmt->left = true-stmt
+  stmt->right = false-stmt or null
+*/
 
 struct Node {
   enum NodeType type;

@@ -193,12 +193,16 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
     PrintASTNodeSub(n->expr_type, depth + 1);
   }
   if (n->reg) fprintf(stderr, " reg: %d", n->reg);
+  if (n->cond) {
+    fprintf(stderr, " cond=");
+    PrintASTNodeSub(n->cond, depth + 1);
+  }
   if (n->left) {
-    fprintf(stderr, " L= ");
+    fprintf(stderr, " L=");
     PrintASTNodeSub(n->left, depth + 1);
   }
   if (n->right) {
-    fprintf(stderr, " R= ");
+    fprintf(stderr, " R=");
     PrintASTNodeSub(n->right, depth + 1);
   }
   fprintf(stderr, ")");
