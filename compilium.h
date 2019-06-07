@@ -119,6 +119,16 @@ int GetSizeOfList(struct Node *list);
 struct Node *GetNodeAt(struct Node *list, int index);
 struct Node *CreateToken(const char *input);
 
+extern const char *symbol_prefix;
+
+#define NUM_OF_SCRATCH_REGS 4
+extern const char *reg_names_64[NUM_OF_SCRATCH_REGS + 1];
+extern const char *reg_names_32[NUM_OF_SCRATCH_REGS + 1];
+extern const char *reg_names_8[NUM_OF_SCRATCH_REGS + 1];
+
+#define NUM_OF_PARAM_REGISTERS 6
+extern const char *param_reg_names_64[NUM_OF_PARAM_REGISTERS];
+
 // @ast.c
 bool IsToken(struct Node *n);
 struct Node *AllocNode(enum NodeType type);
@@ -143,6 +153,9 @@ struct Node *CreateTypeStruct(struct Node *tag_token);
 struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type);
 struct Node *CreateASTIdent(struct Node *ident);
 void PrintASTNode(struct Node *n);
+
+// @generate.c
+void Generate(struct Node *ast);
 
 // @parser.c
 struct Node *Parse(struct Node *passed_tokens);
