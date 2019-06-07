@@ -118,7 +118,6 @@ struct Node *AllocList();
 int GetSizeOfList(struct Node *list);
 struct Node *GetNodeAt(struct Node *list, int index);
 struct Node *GetNodeByTokenKey(struct Node *list, struct Node *key);
-struct Node *CreateToken(const char *input);
 
 extern const char *symbol_prefix;
 
@@ -174,6 +173,10 @@ int IsEqualTokenWithCStr(struct Node *t, const char *s);
 void PrintToken(struct Node *t);
 void PrintTokenBrief(struct Node *t);
 void PrintTokenStrToFile(struct Node *t, FILE *fp);
+
+// @tokenizer.c
+struct Node *CreateToken(const char *input);
+struct Node *Tokenize(const char *input);
 
 // @type.c
 int IsSameTypeExceptAttr(struct Node *a, struct Node *b);
