@@ -54,13 +54,11 @@ static struct Node *FindLocalVar(struct VarContext *ctx,
   return n;
 }
 
-static struct VarContext *var_context;
-
-static void AnalyzeNode(struct Node *node) {
+static void AnalyzeNode(struct Node *node, struct VarContext *ctx) {
   assert(node);
   if (node->type == kASTList && !node->op) {
     for (int i = 0; i < GetSizeOfList(node); i++) {
-      AnalyzeNode(GetNodeAt(node, i));
+      AnalyzeNode(GetNodeAt(node, i), ctx);
     }
     return;
   }
@@ -68,16 +66,16 @@ static void AnalyzeNode(struct Node *node) {
     node->reg = AllocReg();
     // TODO: support expe_type other than int
     node->expr_type = CreateTypeBase(CreateToken("int"));
-    AnalyzeNode(node->func_expr);
+    AnalyzeNode(node->func_expr, ctx);
     FreeReg(node->func_expr->reg);
     for (int i = 0; i < GetSizeOfList(node->arg_expr_list); i++) {
       struct Node *n = GetNodeAt(node->arg_expr_list, i);
-      AnalyzeNode(n);
+      AnalyzeNode(n, ctx);
       FreeReg(n->reg);
     }
     return;
   } else if (node->type == kASTFuncDef) {
-    AnalyzeNode(node->func_body);
+    AnalyzeNode(node->func_body, ctx);
     return;
   }
   assert(node->op);
@@ -93,12 +91,12 @@ static void AnalyzeNode(struct Node *node) {
       node->expr_type = CreateTypePointer(CreateTypeBase(CreateToken("char")));
       return;
     } else if (IsEqualTokenWithCStr(node->op, "(")) {
-      AnalyzeNode(node->right);
+      AnalyzeNode(node->right, ctx);
       node->reg = node->right->reg;
       node->expr_type = node->right->expr_type;
       return;
     } else if (node->op->type == kTokenIdent) {
-      struct Node *ident_info = FindLocalVar(var_context, node->op);
+      struct Node *ident_info = FindLocalVar(ctx, node->op);
       if (ident_info) {
         node->byte_offset = ident_info->byte_offset;
         node->reg = AllocReg();
@@ -115,9 +113,9 @@ static void AnalyzeNode(struct Node *node) {
       }
       ErrorWithToken(node->op, "Unknown identifier");
     } else if (node->cond) {
-      AnalyzeNode(node->cond);
-      AnalyzeNode(node->left);
-      AnalyzeNode(node->right);
+      AnalyzeNode(node->cond, ctx);
+      AnalyzeNode(node->left, ctx);
+      AnalyzeNode(node->right, ctx);
       FreeReg(node->left->reg);
       FreeReg(node->right->reg);
       assert(
@@ -126,7 +124,7 @@ static void AnalyzeNode(struct Node *node) {
       node->expr_type = GetRValueType(node->right->expr_type);
       return;
     } else if (!node->left && node->right) {
-      AnalyzeNode(node->right);
+      AnalyzeNode(node->right, ctx);
       if (node->op->type == kTokenKwSizeof) {
         node->reg = AllocReg();
         node->expr_type = CreateTypeBase(CreateToken("int"));
@@ -147,8 +145,8 @@ static void AnalyzeNode(struct Node *node) {
       node->expr_type = GetRValueType(node->right->expr_type);
       return;
     } else if (node->left && node->right) {
-      AnalyzeNode(node->left);
-      AnalyzeNode(node->right);
+      AnalyzeNode(node->left, ctx);
+      AnalyzeNode(node->right, ctx);
       if (IsEqualTokenWithCStr(node->op, "=") ||
           IsEqualTokenWithCStr(node->op, ",")) {
         FreeReg(node->left->reg);
@@ -164,32 +162,32 @@ static void AnalyzeNode(struct Node *node) {
   }
   if (node->type == kASTExprStmt) {
     if (!node->left) return;
-    AnalyzeNode(node->left);
+    AnalyzeNode(node->left, ctx);
     if (node->left->reg) FreeReg(node->left->reg);
     return;
   } else if (node->type == kASTList) {
-    var_context = AllocVarContext(NULL);
+    ctx = AllocVarContext(ctx);
     for (int i = 0; i < GetSizeOfList(node); i++) {
-      AnalyzeNode(GetNodeAt(node, i));
+      AnalyzeNode(GetNodeAt(node, i), ctx);
     }
     return;
   } else if (node->type == kASTDecl) {
     struct Node *type = CreateType(node->op, node->right);
     assert(type && type->type == kTypeAttrIdent);
-    AddLocalVar(var_context, CreateTokenStr(type->left), type->right);
+    AddLocalVar(ctx, CreateTokenStr(type->left), type->right);
     return;
   } else if (node->type == kASTJumpStmt) {
     if (node->op->type == kTokenKwReturn) {
       if (!node->right) return;
-      AnalyzeNode(node->right);
+      AnalyzeNode(node->right, ctx);
       FreeReg(node->right->reg);
       return;
     }
   } else if (node->type == kASTSelectionStmt) {
     if (node->op->type == kTokenKwIf) {
-      AnalyzeNode(node->cond);
+      AnalyzeNode(node->cond, ctx);
       FreeReg(node->cond->reg);
-      AnalyzeNode(node->left);
+      AnalyzeNode(node->left, ctx);
       assert(!node->right);
       return;
     }
@@ -197,4 +195,7 @@ static void AnalyzeNode(struct Node *node) {
   ErrorWithToken(node->op, "AnalyzeNode: Not implemented");
 }
 
-void Analyze(struct Node *ast) { AnalyzeNode(ast); }
+void Analyze(struct Node *ast) {
+  struct VarContext *root_ctx = AllocVarContext(NULL);
+  AnalyzeNode(ast, root_ctx);
+}
