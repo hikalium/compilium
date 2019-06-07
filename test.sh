@@ -34,6 +34,18 @@ function test_src_result {
   test_result "$1" "$2" "$3" "$1"
 }
 
+# return with no expression
+test_src_result "`cat << EOS
+void func_returns_void() {
+  return;
+}
+int main() {
+  func_returns_void();
+  return 3;
+}
+EOS
+`" 3 ''
+
 test_src_result "`cat << EOS
 int main() {
   struct IncompleteStruct *incomplete_struct;

@@ -498,6 +498,7 @@ void Analyze(struct Node *node) {
     return;
   } else if (node->type == kASTJumpStmt) {
     if (node->op->type == kTokenKwReturn) {
+      if (!node->right) return;
       Analyze(node->right);
       FreeReg(node->right->reg);
       return;
@@ -751,8 +752,10 @@ void Generate(struct Node *node) {
     return;
   } else if (node->type == kASTJumpStmt) {
     if (node->op->type == kTokenKwReturn) {
-      GenerateRValue(node->right);
-      printf("mov rax, %s\n", reg_names_64[node->right->reg]);
+      if (node->right) {
+        GenerateRValue(node->right);
+        printf("mov rax, %s\n", reg_names_64[node->right->reg]);
+      }
       printf("mov rsp, rbp\n");
       printf("pop rbp\n");
       printf("ret\n");
