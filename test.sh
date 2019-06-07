@@ -34,6 +34,17 @@ function test_src_result {
   test_result "$1" "$2" "$3" "$1"
 }
 
+# if-stmt with comp-stmt
+test_src_result "`cat << EOS
+int main() {
+  if(1) {
+    return 3;
+  }
+  return 5;
+}
+EOS
+`" 3 ''
+
 # if-stmt false case
 test_src_result "`cat << EOS
 int main() {

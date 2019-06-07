@@ -1,6 +1,7 @@
 #include "compilium.h"
 
 struct Node *ParseStmt();
+struct Node *ParseCompStmt();
 
 struct Node *tokens;
 int token_stream_index;
@@ -288,7 +289,7 @@ struct Node *ParseJumpStmt() {
 struct Node *ParseStmt() {
   struct Node *stmt;
   if ((stmt = ParseExprStmt()) || (stmt = ParseJumpStmt()) ||
-      (stmt = ParseSelectionStmt()))
+      (stmt = ParseSelectionStmt()) || (stmt = ParseCompStmt()))
     return stmt;
   return NULL;
 }
