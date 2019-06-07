@@ -117,6 +117,7 @@ void PushKeyValueToList(struct Node *list, const char *key, struct Node *value);
 struct Node *AllocList();
 int GetSizeOfList(struct Node *list);
 struct Node *GetNodeAt(struct Node *list, int index);
+struct Node *GetNodeByTokenKey(struct Node *list, struct Node *key);
 struct Node *CreateToken(const char *input);
 
 extern const char *symbol_prefix;
@@ -128,6 +129,9 @@ extern const char *reg_names_8[NUM_OF_SCRATCH_REGS + 1];
 
 #define NUM_OF_PARAM_REGISTERS 6
 extern const char *param_reg_names_64[NUM_OF_PARAM_REGISTERS];
+
+// @analyzer.c
+void Analyze(struct Node *node);
 
 // @ast.c
 bool IsToken(struct Node *n);
@@ -158,6 +162,7 @@ void PrintASTNode(struct Node *n);
 void Generate(struct Node *ast);
 
 // @parser.c
+extern struct Node *toplevel_names;
 struct Node *Parse(struct Node *passed_tokens);
 
 // @token.c
