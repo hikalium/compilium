@@ -56,6 +56,14 @@ Node if-stmt:
   stmt->cond = cond-expr
   stmt->left = true-stmt
   stmt->right = false-stmt or null
+
+Node func-call-expr:
+  expr->func_expr
+  expr->arg_expr_list
+
+Node expr-stmt:
+  stmt->op = token(;)
+  stmt->left = node
 */
 
 struct Node {

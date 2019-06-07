@@ -182,8 +182,15 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
     fprintf(stderr, "}");
     return;
   } else if (n->type == kASTExprStmt) {
-    PrintASTNodeSub(n->right, depth);
+    PrintASTNodeSub(n->left, depth);
     fprintf(stderr, ";");
+    return;
+  } else if (n->type == kASTExprFuncCall) {
+    fprintf(stderr, "FuncCall<");
+    PrintASTNodeSub(n->func_expr, depth);
+    fprintf(stderr, ">(");
+    PrintASTNodeSub(n->arg_expr_list, depth);
+    fprintf(stderr, ")");
     return;
   }
   fprintf(stderr, "(op=");
