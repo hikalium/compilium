@@ -34,6 +34,25 @@ function test_src_result {
   test_result "$1" "$2" "$3" "$1"
 }
 
+# same symbols in diffrent scope shadows previous one
+test_src_result "`cat << EOS
+int main() {
+  int result;
+  result = 1;
+  int duplicated_var;
+  duplicated_var = 2;
+  result = result * duplicated_var;
+  if(1) {
+    int duplicated_var;
+    duplicated_var = 3;
+    result = result * duplicated_var;
+  }
+  result = result * duplicated_var;
+  return result;
+}
+EOS
+`" 12 ''
+
 # for stmt
 test_src_result "`cat << EOS
 int main() {

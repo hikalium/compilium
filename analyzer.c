@@ -174,9 +174,11 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     if (node->left->reg) FreeReg(node->left->reg);
     return;
   } else if (node->type == kASTList) {
+    struct SymbolEntry *saved_ctx = *ctx;
     for (int i = 0; i < GetSizeOfList(node); i++) {
       AnalyzeNode(GetNodeAt(node, i), ctx);
     }
+    *ctx = saved_ctx;
     return;
   } else if (node->type == kASTDecl) {
     struct Node *type = CreateType(node->op, node->right);
