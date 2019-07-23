@@ -72,6 +72,7 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     return;
   }
   if (node->type == kASTExprFuncCall) {
+    node->stack_size_needed = GetLastLocalVarOffset(*ctx);
     node->reg = AllocReg();
     // TODO: support expe_type other than int
     node->expr_type = CreateTypeBase(CreateToken("int"));

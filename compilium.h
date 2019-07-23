@@ -98,6 +98,7 @@ struct Node {
           struct Node *func_expr;
           struct Node *arg_expr_list;
           struct Node *arg_var_list;
+          int stack_size_needed;
         };
       };
     };

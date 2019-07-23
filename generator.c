@@ -41,6 +41,7 @@ static void GenerateForNode(struct Node *node) {
   }
   if (node->type == kASTExprFuncCall) {
     GenerateForNodeRValue(node->func_expr);
+    printf("sub rsp, %d\n", node->stack_size_needed);
     printf("push %s\n", reg_names_64[node->func_expr->reg]);
     int i;
     assert(GetSizeOfList(node->arg_expr_list) <= NUM_OF_PARAM_REGISTERS);
@@ -53,8 +54,15 @@ static void GenerateForNode(struct Node *node) {
       printf("pop %s\n", param_reg_names_64[i]);
     }
     printf("pop rax\n");
+    for (i = 1; i <= NUM_OF_SCRATCH_REGS; i++) {
+      printf("push %s\n", reg_names_64[i]);
+    }
     printf("call rax\n");
+    for (i = NUM_OF_SCRATCH_REGS; i >= 1; i--) {
+      printf("pop %s\n", reg_names_64[i]);
+    }
     printf("mov %s, rax\n", reg_names_64[node->reg]);
+    printf("add rsp, %d\n", node->stack_size_needed);
     return;
   } else if (node->type == kASTFuncDef) {
     const char *func_name = CreateTokenStr(node->func_name_token);
