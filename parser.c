@@ -286,10 +286,35 @@ struct Node *ParseJumpStmt() {
   return NULL;
 }
 
+struct Node *ParseIterationStmt() {
+  struct Node *t;
+  if ((t = ConsumeToken(kTokenKwFor))) {
+    ExpectPunctuator("(");
+    struct Node *init = ParseExpr();
+    ExpectPunctuator(";");
+    struct Node *cond = ParseExpr();
+    ExpectPunctuator(";");
+    struct Node *updt = ParseExpr();
+    ExpectPunctuator(")");
+    struct Node *body = ParseStmt();
+    assert(body);
+
+    struct Node *stmt = AllocNode(kASTForStmt);
+    stmt->op = t;
+    stmt->init = init;
+    stmt->cond = cond;
+    stmt->updt = updt;
+    stmt->body = body;
+    return stmt;
+  }
+  return NULL;
+}
+
 struct Node *ParseStmt() {
   struct Node *stmt;
   if ((stmt = ParseExprStmt()) || (stmt = ParseJumpStmt()) ||
-      (stmt = ParseSelectionStmt()) || (stmt = ParseCompStmt()))
+      (stmt = ParseSelectionStmt()) || (stmt = ParseCompStmt()) ||
+      (stmt = ParseIterationStmt()))
     return stmt;
   return NULL;
 }

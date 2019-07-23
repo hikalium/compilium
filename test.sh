@@ -34,6 +34,20 @@ function test_src_result {
   test_result "$1" "$2" "$3" "$1"
 }
 
+# for stmt
+test_src_result "`cat << EOS
+int main() {
+  int i;
+  int sum;
+  sum = 0;
+  for(i = 0; i <= 10; i = i + 1) {
+    sum = sum + i;
+  }
+  return sum;
+}
+EOS
+`" 55 ''
+
 # if-stmt with comp-stmt
 test_src_result "`cat << EOS
 int main() {

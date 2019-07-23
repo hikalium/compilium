@@ -294,6 +294,19 @@ static void GenerateForNode(struct Node *node) {
       return;
     }
     ErrorWithToken(node->op, "GenerateForNode: Not implemented jump stmt");
+  } else if (node->type == kASTForStmt) {
+    int loop_label = GetLabelNumber();
+    int end_label = GetLabelNumber();
+    GenerateForNode(node->init);
+    printf("L%d:\n", loop_label);
+    GenerateForNodeRValue(node->cond);
+    EmitConvertToBool(node->cond->reg, node->cond->reg);
+    printf("jz L%d\n", end_label);
+    GenerateForNode(node->body);
+    GenerateForNode(node->updt);
+    printf("jmp L%d\n", loop_label);
+    printf("L%d:\n", end_label);
+    return;
   }
   ErrorWithToken(node->op, "GenerateForNode: Not implemented");
 }

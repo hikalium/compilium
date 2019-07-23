@@ -27,6 +27,7 @@ static struct Node *CreateNextToken(const char *p, const char *src) {
     }
     struct Node *t = AllocToken(src, p, length, kTokenIdent);
     if (IsEqualTokenWithCStr(t, "char")) t->type = kTokenKwChar;
+    if (IsEqualTokenWithCStr(t, "for")) t->type = kTokenKwFor;
     if (IsEqualTokenWithCStr(t, "if")) t->type = kTokenKwIf;
     if (IsEqualTokenWithCStr(t, "int")) t->type = kTokenKwInt;
     if (IsEqualTokenWithCStr(t, "return")) t->type = kTokenKwReturn;

@@ -166,7 +166,6 @@ static void AnalyzeNode(struct Node *node, struct VarContext *ctx) {
     if (node->left->reg) FreeReg(node->left->reg);
     return;
   } else if (node->type == kASTList) {
-    ctx = AllocVarContext(ctx);
     for (int i = 0; i < GetSizeOfList(node); i++) {
       AnalyzeNode(GetNodeAt(node, i), ctx);
     }
@@ -191,6 +190,15 @@ static void AnalyzeNode(struct Node *node, struct VarContext *ctx) {
       assert(!node->right);
       return;
     }
+  } else if (node->type == kASTForStmt) {
+    AnalyzeNode(node->init, ctx);
+    FreeReg(node->init->reg);
+    AnalyzeNode(node->cond, ctx);
+    FreeReg(node->cond->reg);
+    AnalyzeNode(node->updt, ctx);
+    FreeReg(node->updt->reg);
+    AnalyzeNode(node->body, ctx);
+    return;
   }
   ErrorWithToken(node->op, "AnalyzeNode: Not implemented");
 }

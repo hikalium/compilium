@@ -17,6 +17,7 @@ enum NodeType {
   kTokenOctalNumber,
   kTokenIdent,
   kTokenKwChar,
+  kTokenKwFor,
   kTokenKwIf,
   kTokenKwInt,
   kTokenKwReturn,
@@ -38,6 +39,7 @@ enum NodeType {
   kASTDirectDecltor,
   kASTDecltor,
   kASTDecl,
+  kASTForStmt,
   kASTFuncDef,
   kASTKeyValue,
   kASTLocalVar,
@@ -75,7 +77,10 @@ struct Node {
       struct Node *op;
       struct Node *left;
       struct Node *right;
+      struct Node *init;
       struct Node *cond;
+      struct Node *updt;
+      struct Node *body;
       // for list
       int capacity;
       int size;
