@@ -34,6 +34,18 @@ function test_src_result {
   test_result "$1" "$2" "$3" "$1"
 }
 
+# func args should be visible
+test_src_result "`cat << EOS
+int sum(int a, int b) {
+  return a + b;
+}
+
+int main() {
+  return sum(3, 5);
+}
+EOS
+`" 8 ''
+
 # same symbols in diffrent scope shadows previous one
 test_src_result "`cat << EOS
 int main() {

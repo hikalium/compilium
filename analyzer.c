@@ -39,8 +39,8 @@ static int GetLastLocalVarOffset(struct SymbolEntry *last) {
   return last->value->byte_offset;
 }
 
-static void AddLocalVar(struct SymbolEntry **ctx, const char *key,
-                        struct Node *var_type) {
+static struct Node *AddLocalVar(struct SymbolEntry **ctx, const char *key,
+                                struct Node *var_type) {
   assert(ctx);
   int ofs = GetLastLocalVarOffset(*ctx);
   ofs += GetSizeOfType(var_type);
@@ -49,6 +49,7 @@ static void AddLocalVar(struct SymbolEntry **ctx, const char *key,
   struct Node *local_var = CreateASTLocalVar(ofs, var_type);
   struct SymbolEntry *e = AllocSymbolEntry(*ctx, key, local_var);
   *ctx = e;
+  return local_var;
 }
 
 static struct Node *FindLocalVar(struct SymbolEntry *e,
@@ -83,7 +84,26 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     }
     return;
   } else if (node->type == kASTFuncDef) {
+    struct SymbolEntry *saved_ctx = *ctx;
+    struct Node *arg_type_list = GetArgTypeList(node->func_type);
+    assert(arg_type_list);
+    node->arg_var_list = AllocList();
+    for (int i = 0; i < GetSizeOfList(arg_type_list); i++) {
+      struct Node *arg_type_with_attr = GetNodeAt(arg_type_list, i);
+      struct Node *arg_ident_token =
+          GetIdentifierTokenFromTypeAttr(arg_type_with_attr);
+      if (!arg_ident_token) {
+        PushToList(node->arg_var_list, NULL);
+        continue;
+      }
+      struct Node *arg_type = GetTypeWithoutAttr(arg_type_with_attr);
+      assert(arg_type);
+      struct Node *local_var =
+          AddLocalVar(ctx, CreateTokenStr(arg_ident_token), arg_type);
+      PushToList(node->arg_var_list, local_var);
+    }
     AnalyzeNode(node->func_body, ctx);
+    *ctx = saved_ctx;
     return;
   }
   assert(node->op);

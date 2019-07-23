@@ -97,6 +97,7 @@ struct Node {
           // kASTExprFuncCall
           struct Node *func_expr;
           struct Node *arg_expr_list;
+          struct Node *arg_var_list;
         };
       };
     };
@@ -141,6 +142,8 @@ extern const char *reg_names_8[NUM_OF_SCRATCH_REGS + 1];
 
 #define NUM_OF_PARAM_REGISTERS 6
 extern const char *param_reg_names_64[NUM_OF_PARAM_REGISTERS];
+extern const char *param_reg_names_32[NUM_OF_PARAM_REGISTERS];
+extern const char *param_reg_names_8[NUM_OF_PARAM_REGISTERS];
 
 // @analyzer.c
 void Analyze(struct Node *node);
@@ -165,6 +168,7 @@ struct Node *CreateTypeLValue(struct Node *type);
 struct Node *CreateTypePointer(struct Node *type);
 struct Node *CreateTypeFunction(struct Node *return_type,
                                 struct Node *arg_type_list);
+struct Node *GetArgTypeList(struct Node *func_type);
 struct Node *CreateTypeStruct(struct Node *tag_token);
 struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type);
 struct Node *CreateASTIdent(struct Node *ident);
@@ -194,6 +198,7 @@ struct Node *Tokenize(const char *input);
 // @type.c
 int IsSameTypeExceptAttr(struct Node *a, struct Node *b);
 struct Node *GetTypeWithoutAttr(struct Node *t);
+struct Node *GetIdentifierTokenFromTypeAttr(struct Node *t);
 struct Node *GetRValueType(struct Node *t);
 int GetSizeOfType(struct Node *t);
 struct Node *CreateType(struct Node *decl_spec, struct Node *decltor);

@@ -22,6 +22,16 @@ static void EmitCompareIntegers(int dst, int left, int right, const char *cc) {
   printf("movzx %s, %s\n", reg_names_64[dst], reg_names_8[dst]);
 }
 
+const char *GetParamRegName(struct Node *type, int idx) {
+  assert(0 <= idx && idx < NUM_OF_PARAM_REGISTERS);
+  int size = GetSizeOfType(type);
+  if (size == 8) return param_reg_names_64[idx];
+  if (size == 4) return param_reg_names_32[idx];
+  if (size == 1) return param_reg_names_8[idx];
+  ErrorWithToken(GetIdentifierTokenFromTypeAttr(type),
+                 "Assigning %d bytes is not implemented.", size);
+}
+
 static void GenerateForNode(struct Node *node) {
   if (node->type == kASTList && !node->op) {
     for (int i = 0; i < GetSizeOfList(node); i++) {
@@ -52,6 +62,16 @@ static void GenerateForNode(struct Node *node) {
     printf("%s%s:\n", symbol_prefix, func_name);
     printf("push rbp\n");
     printf("mov rbp, rsp\n");
+    struct Node *arg_var_list = node->arg_var_list;
+    assert(arg_var_list);
+    assert(GetSizeOfList(arg_var_list) <= NUM_OF_PARAM_REGISTERS);
+    for (int i = 0; i < GetSizeOfList(arg_var_list); i++) {
+      struct Node *arg_var = GetNodeAt(arg_var_list, i);
+      if (!arg_var) continue;
+      const char *param_reg_name = GetParamRegName(arg_var->expr_type, i);
+      printf("mov [rbp - %d], %s // arg[%d]\n", arg_var->byte_offset,
+             param_reg_name, i);
+    }
     GenerateForNode(node->func_body);
     printf("mov rsp, rbp\n");
     printf("pop rbp\n");

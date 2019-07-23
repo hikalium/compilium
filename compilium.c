@@ -174,6 +174,10 @@ const char *reg_names_8[NUM_OF_SCRATCH_REGS + 1] = {NULL, "dil", "sil", "r8b",
                                                     "r9b"};
 const char *param_reg_names_64[NUM_OF_PARAM_REGISTERS] = {"rdi", "rsi", "rdx",
                                                           "rcx", "r8",  "r9"};
+const char *param_reg_names_32[NUM_OF_PARAM_REGISTERS] = {"edi", "esi", "edx",
+                                                          "ecx", "r8d", "r9d"};
+const char *param_reg_names_8[NUM_OF_PARAM_REGISTERS] = {"dl", "sil", "dl",
+                                                         "cl", "r8b", "r9b"};
 #define MAX_INPUT_SIZE 4096
 int main(int argc, char *argv[]) {
   ParseCompilerArgs(argc, argv);
