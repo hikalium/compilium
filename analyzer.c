@@ -17,44 +17,52 @@ static void FreeReg(int reg) {
   reg_used_table[reg] = 0;
 }
 
-struct VarContext {
-  struct VarContext *parent;
-  struct Node *list;
+struct SymbolEntry {
+  struct SymbolEntry *prev;
+  const char *key;
+  struct Node *value;
 };
 
-struct VarContext *AllocVarContext(struct VarContext *parent) {
-  struct VarContext *ctx = calloc(1, sizeof(struct VarContext));
-  ctx->parent = parent;
-  ctx->list = AllocList();
-  return ctx;
+static struct SymbolEntry *AllocSymbolEntry(struct SymbolEntry *prev,
+                                            const char *key,
+                                            struct Node *value) {
+  struct SymbolEntry *e = calloc(1, sizeof(struct SymbolEntry));
+  e->prev = prev;
+  e->key = key;
+  e->value = value;
+  return e;
 }
 
-static void AddLocalVar(struct VarContext *ctx, const char *key,
+static int GetLastLocalVarOffset(struct SymbolEntry *last) {
+  if (!last) return 0;
+  assert(last->value && last->value->type == kASTLocalVar);
+  return last->value->byte_offset;
+}
+
+static void AddLocalVar(struct SymbolEntry **ctx, const char *key,
                         struct Node *var_type) {
   assert(ctx);
-  int ofs = 0;
-  if (GetSizeOfList(ctx->list)) {
-    struct Node *n = GetNodeAt(ctx->list, GetSizeOfList(ctx->list) - 1);
-    assert(n && n->type == kASTKeyValue);
-    struct Node *v = n->value;
-    assert(v && v->type == kASTLocalVar);
-    ofs = v->byte_offset;
-  }
+  int ofs = GetLastLocalVarOffset(*ctx);
   ofs += GetSizeOfType(var_type);
   int align = GetSizeOfType(var_type);
   ofs = (ofs + align - 1) / align * align;
   struct Node *local_var = CreateASTLocalVar(ofs, var_type);
-  PushKeyValueToList(ctx->list, key, local_var);
+  struct SymbolEntry *e = AllocSymbolEntry(*ctx, key, local_var);
+  *ctx = e;
 }
 
-static struct Node *FindLocalVar(struct VarContext *ctx,
+static struct Node *FindLocalVar(struct SymbolEntry *e,
                                  struct Node *key_token) {
-  struct Node *n = GetNodeByTokenKey(ctx->list, key_token);
-  if (!n || n->type != kASTLocalVar) return NULL;
-  return n;
+  while (e) {
+    if (IsEqualTokenWithCStr(key_token, e->key)) {
+      return e->value;
+    }
+    e = e->prev;
+  }
+  return NULL;
 }
 
-static void AnalyzeNode(struct Node *node, struct VarContext *ctx) {
+static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
   assert(node);
   if (node->type == kASTList && !node->op) {
     for (int i = 0; i < GetSizeOfList(node); i++) {
@@ -96,7 +104,7 @@ static void AnalyzeNode(struct Node *node, struct VarContext *ctx) {
       node->expr_type = node->right->expr_type;
       return;
     } else if (node->op->type == kTokenIdent) {
-      struct Node *ident_info = FindLocalVar(ctx, node->op);
+      struct Node *ident_info = FindLocalVar(*ctx, node->op);
       if (ident_info) {
         node->byte_offset = ident_info->byte_offset;
         node->reg = AllocReg();
@@ -204,6 +212,6 @@ static void AnalyzeNode(struct Node *node, struct VarContext *ctx) {
 }
 
 void Analyze(struct Node *ast) {
-  struct VarContext *root_ctx = AllocVarContext(NULL);
-  AnalyzeNode(ast, root_ctx);
+  struct SymbolEntry *root_ctx = NULL;
+  AnalyzeNode(ast, &root_ctx);
 }
