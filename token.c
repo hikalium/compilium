@@ -1,15 +1,17 @@
 #include "compilium.h"
 
-bool IsToken(struct Node *n) {
-  return n && kTokenLowerBound < n->type && n->type < kTokenUpperBound;
+bool IsToken(struct Node *n) { return n && n->type == kNodeToken; }
+
+bool IsTokenWithType(struct Node *n, enum TokenType token_type) {
+  return IsToken(n) && n->token_type == token_type;
 }
 
 struct Node *AllocToken(const char *src_str, const char *begin, int length,
-                        enum NodeType type) {
-  struct Node *t = AllocNode(type);
+                        enum TokenType type) {
+  struct Node *t = AllocNode(kNodeToken);
   t->begin = begin;
   t->length = length;
-  t->type = type;
+  t->token_type = type;
   t->src_str = src_str;
   return t;
 }
@@ -25,12 +27,13 @@ int IsEqualTokenWithCStr(struct Node *t, const char *s) {
 }
 
 void PrintToken(struct Node *t) {
-  fprintf(stderr, "(Token %.*s type=%d)", t->length, t->begin, t->type);
+  fprintf(stderr, "(Token %.*s type=%d)", t->length, t->begin, t->token_type);
 }
 
 void PrintTokenBrief(struct Node *t) {
   assert(t);
-  if (t->type == kTokenStringLiteral || t->type == kTokenCharLiteral) {
+  if (t->token_type == kTokenStringLiteral ||
+      t->token_type == kTokenCharLiteral) {
     fprintf(stderr, "%.*s", t->length, t->begin);
     return;
   }

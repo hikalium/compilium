@@ -11,23 +11,7 @@ char *strndup(const char *s, size_t n);
 
 enum NodeType {
   kNodeNone,
-  //
-  kTokenLowerBound,
-  kTokenDecimalNumber,
-  kTokenOctalNumber,
-  kTokenIdent,
-  kTokenKwChar,
-  kTokenKwFor,
-  kTokenKwIf,
-  kTokenKwInt,
-  kTokenKwReturn,
-  kTokenKwSizeof,
-  kTokenKwStruct,
-  kTokenKwVoid,
-  kTokenCharLiteral,
-  kTokenStringLiteral,
-  kTokenPunctuator,
-  kTokenUpperBound,
+  kNodeToken,
   //
   kASTExpr,
   kASTExprFuncCall,
@@ -51,6 +35,23 @@ enum NodeType {
   kTypeFunction,
   kTypeAttrIdent,
   kTypeStruct,
+};
+
+enum TokenType {
+  kTokenDecimalNumber,
+  kTokenOctalNumber,
+  kTokenIdent,
+  kTokenKwChar,
+  kTokenKwFor,
+  kTokenKwIf,
+  kTokenKwInt,
+  kTokenKwReturn,
+  kTokenKwSizeof,
+  kTokenKwStruct,
+  kTokenKwVoid,
+  kTokenCharLiteral,
+  kTokenStringLiteral,
+  kTokenPunctuator,
 };
 
 /*
@@ -113,7 +114,8 @@ struct Node {
       struct Node *tag;
     };
     struct {
-      // kToken...
+      // kNodeToken
+      enum TokenType token_type;
       const char *begin;
       int length;
       const char *src_str;
@@ -151,6 +153,7 @@ void Analyze(struct Node *node);
 
 // @ast.c
 bool IsToken(struct Node *n);
+bool IsTokenWithType(struct Node *n, enum TokenType type);
 struct Node *AllocNode(enum NodeType type);
 struct Node *CreateASTBinOp(struct Node *t, struct Node *left,
                             struct Node *right);
@@ -185,7 +188,7 @@ struct Node *Parse(struct Node *passed_tokens);
 // @token.c
 bool IsToken(struct Node *n);
 struct Node *AllocToken(const char *src_str, const char *begin, int length,
-                        enum NodeType type);
+                        enum TokenType type);
 const char *CreateTokenStr(struct Node *t);
 int IsEqualTokenWithCStr(struct Node *t, const char *s);
 void PrintToken(struct Node *t);

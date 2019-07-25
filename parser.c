@@ -6,10 +6,10 @@ struct Node *ParseCompStmt();
 struct Node *tokens;
 int token_stream_index;
 
-static struct Node *ConsumeToken(enum NodeType type) {
+static struct Node *ConsumeToken(enum TokenType type) {
   if (token_stream_index >= GetSizeOfList(tokens)) return NULL;
   struct Node *t = GetNodeAt(tokens, token_stream_index);
-  if (t->type != type) return NULL;
+  if (t->token_type != type) return NULL;
   token_stream_index++;
   return t;
 }

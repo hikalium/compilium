@@ -49,9 +49,15 @@ int GetSizeOfType(struct Node *t) {
   t = GetRValueType(t);
   assert(t);
   if (t->type == kTypeBase) {
-    assert(t->op);
-    if (t->op->type == kTokenKwInt) return 4;
-    if (t->op->type == kTokenKwChar) return 1;
+    assert(IsToken(t->op));
+    switch (t->op->token_type) {
+      case kTokenKwInt:
+        return 4;
+      case kTokenKwChar:
+        return 1;
+      default:
+        assert(false);
+    }
   } else if (t->type == kTypePointer) {
     return 8;
   }
@@ -90,7 +96,7 @@ struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
       type = CreateTypeFromDecltor(dd->value, type);
       continue;
     }
-    assert(dd->op && dd->op->type == kTokenIdent);
+    assert(IsTokenWithType(dd->op, kTokenIdent));
     type = CreateTypeAttrIdent(dd->op, type);
   }
   return type;

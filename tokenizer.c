@@ -26,14 +26,14 @@ static struct Node *CreateNextToken(const char *p, const char *src) {
       length++;
     }
     struct Node *t = AllocToken(src, p, length, kTokenIdent);
-    if (IsEqualTokenWithCStr(t, "char")) t->type = kTokenKwChar;
-    if (IsEqualTokenWithCStr(t, "for")) t->type = kTokenKwFor;
-    if (IsEqualTokenWithCStr(t, "if")) t->type = kTokenKwIf;
-    if (IsEqualTokenWithCStr(t, "int")) t->type = kTokenKwInt;
-    if (IsEqualTokenWithCStr(t, "return")) t->type = kTokenKwReturn;
-    if (IsEqualTokenWithCStr(t, "sizeof")) t->type = kTokenKwSizeof;
-    if (IsEqualTokenWithCStr(t, "struct")) t->type = kTokenKwStruct;
-    if (IsEqualTokenWithCStr(t, "void")) t->type = kTokenKwVoid;
+    if (IsEqualTokenWithCStr(t, "char")) t->token_type = kTokenKwChar;
+    if (IsEqualTokenWithCStr(t, "for")) t->token_type = kTokenKwFor;
+    if (IsEqualTokenWithCStr(t, "if")) t->token_type = kTokenKwIf;
+    if (IsEqualTokenWithCStr(t, "int")) t->token_type = kTokenKwInt;
+    if (IsEqualTokenWithCStr(t, "return")) t->token_type = kTokenKwReturn;
+    if (IsEqualTokenWithCStr(t, "sizeof")) t->token_type = kTokenKwSizeof;
+    if (IsEqualTokenWithCStr(t, "struct")) t->token_type = kTokenKwStruct;
+    if (IsEqualTokenWithCStr(t, "void")) t->token_type = kTokenKwVoid;
     return t;
   } else if ('\'' == *p) {
     int length = 1;

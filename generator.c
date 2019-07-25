@@ -88,12 +88,12 @@ static void GenerateForNode(struct Node *node) {
   }
   assert(node && node->op);
   if (node->type == kASTExpr) {
-    if (node->op->type == kTokenDecimalNumber ||
-        node->op->type == kTokenOctalNumber) {
+    if (IsTokenWithType(node->op, kTokenDecimalNumber) ||
+        IsTokenWithType(node->op, kTokenOctalNumber)) {
       printf("mov %s, %ld\n", reg_names_64[node->reg],
              strtol(node->op->begin, NULL, 0));
       return;
-    } else if (node->op->type == kTokenCharLiteral) {
+    } else if (IsTokenWithType(node->op, kTokenCharLiteral)) {
       if (node->op->length == (1 + 1 + 1)) {
         printf("mov %s, %d\n", reg_names_64[node->reg], node->op->begin[1]);
         return;
@@ -101,7 +101,7 @@ static void GenerateForNode(struct Node *node) {
     } else if (IsEqualTokenWithCStr(node->op, "(")) {
       GenerateForNode(node->right);
       return;
-    } else if (node->op->type == kTokenIdent) {
+    } else if (IsTokenWithType(node->op, kTokenIdent)) {
       if (node->expr_type->type == kTypeFunction) {
         const char *label_name = CreateTokenStr(node->op);
         printf(".global %s%s\n", symbol_prefix, label_name);
@@ -112,7 +112,7 @@ static void GenerateForNode(struct Node *node) {
       printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg],
              node->byte_offset);
       return;
-    } else if (node->op->type == kTokenStringLiteral) {
+    } else if (IsTokenWithType(node->op, kTokenStringLiteral)) {
       int str_label = GetLabelNumber();
       printf("lea %s, [rip + L%d]\n", reg_names_64[node->reg], str_label);
       node->label_number = str_label;
@@ -135,7 +135,7 @@ static void GenerateForNode(struct Node *node) {
       printf("L%d:\n", end_label);
       return;
     } else if (!node->left && node->right) {
-      if (node->op->type == kTokenKwSizeof) {
+      if (IsTokenWithType(node->op, kTokenKwSizeof)) {
         printf("mov %s, %d\n", reg_names_64[node->reg],
                GetSizeOfType(node->right->expr_type));
         return;
@@ -294,7 +294,7 @@ static void GenerateForNode(struct Node *node) {
   } else if (node->type == kASTDecl) {
     return;
   } else if (node->type == kASTJumpStmt) {
-    if (node->op->type == kTokenKwReturn) {
+    if (IsTokenWithType(node->op, kTokenKwReturn)) {
       if (node->right) {
         GenerateForNodeRValue(node->right);
         printf("mov rax, %s\n", reg_names_64[node->right->reg]);
@@ -306,7 +306,7 @@ static void GenerateForNode(struct Node *node) {
     }
     ErrorWithToken(node->op, "GenerateForNode: Not implemented jump stmt");
   } else if (node->type == kASTSelectionStmt) {
-    if (node->op->type == kTokenKwIf) {
+    if (IsTokenWithType(node->op, kTokenKwIf)) {
       GenerateForNodeRValue(node->cond);
       int false_label = GetLabelNumber();
       int end_label = GetLabelNumber();

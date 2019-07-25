@@ -109,13 +109,13 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
   }
   assert(node->op);
   if (node->type == kASTExpr) {
-    if (node->op->type == kTokenDecimalNumber ||
-        node->op->type == kTokenOctalNumber ||
-        node->op->type == kTokenCharLiteral) {
+    if (IsTokenWithType(node->op, kTokenDecimalNumber) ||
+        IsTokenWithType(node->op, kTokenOctalNumber) ||
+        IsTokenWithType(node->op, kTokenCharLiteral)) {
       node->reg = AllocReg();
       node->expr_type = CreateTypeBase(CreateToken("int"));
       return;
-    } else if (node->op->type == kTokenStringLiteral) {
+    } else if (IsTokenWithType(node->op, kTokenStringLiteral)) {
       node->reg = AllocReg();
       node->expr_type = CreateTypePointer(CreateTypeBase(CreateToken("char")));
       return;
@@ -124,7 +124,7 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       node->reg = node->right->reg;
       node->expr_type = node->right->expr_type;
       return;
-    } else if (node->op->type == kTokenIdent) {
+    } else if (IsTokenWithType(node->op, kTokenIdent)) {
       struct Node *ident_info = FindLocalVar(*ctx, node->op);
       if (ident_info) {
         node->byte_offset = ident_info->byte_offset;
@@ -154,7 +154,7 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       return;
     } else if (!node->left && node->right) {
       AnalyzeNode(node->right, ctx);
-      if (node->op->type == kTokenKwSizeof) {
+      if (IsTokenWithType(node->op, kTokenKwSizeof)) {
         node->reg = AllocReg();
         node->expr_type = CreateTypeBase(CreateToken("int"));
         return;
@@ -207,14 +207,14 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     AddLocalVar(ctx, CreateTokenStr(type->left), type->right);
     return;
   } else if (node->type == kASTJumpStmt) {
-    if (node->op->type == kTokenKwReturn) {
+    if (IsTokenWithType(node->op, kTokenKwReturn)) {
       if (!node->right) return;
       AnalyzeNode(node->right, ctx);
       FreeReg(node->right->reg);
       return;
     }
   } else if (node->type == kASTSelectionStmt) {
-    if (node->op->type == kTokenKwIf) {
+    if (IsTokenWithType(node->op, kTokenKwIf)) {
       AnalyzeNode(node->cond, ctx);
       FreeReg(node->cond->reg);
       AnalyzeNode(node->left, ctx);
