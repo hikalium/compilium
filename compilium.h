@@ -193,6 +193,7 @@ struct Node *AllocToken(const char *src_str, const char *begin, int length,
                         enum TokenType type);
 const char *CreateTokenStr(struct Node *t);
 int IsEqualTokenWithCStr(struct Node *t, const char *s);
+void PrintTokenSequence(struct Node *t);
 void PrintToken(struct Node *t);
 void PrintTokenBrief(struct Node *t);
 void PrintTokenStrToFile(struct Node *t, FILE *fp);

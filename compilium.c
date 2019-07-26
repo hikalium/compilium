@@ -191,7 +191,7 @@ int main(int argc, char *argv[]) {
 
   fprintf(stderr, "input:\n%s\n", input);
   struct Node *tokens = Tokenize(input);
-  PrintASTNode(tokens);
+  PrintTokenSequence(tokens);
 
   struct Node *ast = Parse(tokens);
   PrintASTNode(ast);

@@ -26,6 +26,15 @@ int IsEqualTokenWithCStr(struct Node *t, const char *s) {
          strncmp(t->begin, s, t->length) == 0;
 }
 
+void PrintTokenSequence(struct Node *t) {
+  if (!t) return;
+  assert(IsToken(t));
+  while (t) {
+    PrintASTNode(t);
+    t = t->next_token;
+  }
+}
+
 void PrintToken(struct Node *t) {
   fprintf(stderr, "(Token %.*s type=%d)", t->length, t->begin, t->token_type);
 }
