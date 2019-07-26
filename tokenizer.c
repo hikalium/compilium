@@ -16,7 +16,7 @@ static struct Node *CreateNextToken(const char *p, const char *src) {
     while ('0' <= p[length] && p[length] <= '7') {
       length++;
     }
-    return AllocToken(src, p, length, kTokenDecimalNumber);
+    return AllocToken(src, p, length, kTokenOctalNumber);
   } else if (('A' <= *p && *p <= 'Z') || ('a' <= *p && *p <= 'z') ||
              *p == '_') {
     int length = 0;
