@@ -116,6 +116,7 @@ struct Node {
     struct {
       // kNodeToken
       enum TokenType token_type;
+      struct Node *next_token;
       const char *begin;
       int length;
       const char *src_str;
@@ -183,6 +184,7 @@ void Generate(struct Node *ast);
 
 // @parser.c
 extern struct Node *toplevel_names;
+void InitParser(struct Node *head_token);
 struct Node *Parse(struct Node *passed_tokens);
 
 // @token.c

@@ -122,13 +122,10 @@ struct Node *CreateTypeFromDecl(struct Node *decl) {
 }
 
 struct Node *Tokenize(const char *input);
-extern struct Node *tokens;
-extern int token_stream_index;
 struct Node *ParseDecl(void);
 static struct Node *CreateTypeFromInput(const char *s) {
   fprintf(stderr, "CreateTypeFromInput: %s\n", s);
-  tokens = Tokenize(s);
-  token_stream_index = 0;
+  InitParser(Tokenize(s));
   return CreateTypeFromDecl(ParseDecl());
 }
 _Noreturn void TestType() {

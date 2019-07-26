@@ -134,12 +134,15 @@ struct Node *CreateToken(const char *input) {
 }
 
 struct Node *Tokenize(const char *input) {
+  // returns head of tokens.
+  struct Node *token_head = NULL;
+  struct Node **last_next_token = &token_head;
   const char *p = input;
   struct Node *t;
-  struct Node *tokens = AllocList();
   while ((t = CreateNextToken(p, input))) {
-    PushToList(tokens, t);
+    *last_next_token = t;
+    last_next_token = &t->next_token;
     p = t->begin + t->length;
   }
-  return tokens;
+  return token_head;
 }
