@@ -178,6 +178,25 @@ const char *param_reg_names_32[NUM_OF_PARAM_REGISTERS] = {"edi", "esi", "edx",
                                                           "ecx", "r8d", "r9d"};
 const char *param_reg_names_8[NUM_OF_PARAM_REGISTERS] = {"dl", "sil", "dl",
                                                          "cl", "r8b", "r9b"};
+
+void Preprocess(struct Node *t) {
+  if (!t) return;
+  assert(IsToken(t));
+  while (t) {
+    if (IsTokenWithType(t, kTokenIdent) &&
+        IsEqualTokenWithCStr(t, "__LINE__")) {
+      char s[32];
+      snprintf(s, sizeof(s), "%d", t->line);
+      t->token_type = kTokenDecimalNumber;
+      t->begin = t->src_str = strdup(s);
+      t->length = strlen(t->begin);
+      t = t->next_token;
+      continue;
+    }
+    t = t->next_token;
+  }
+}
+
 #define MAX_INPUT_SIZE 4096
 int main(int argc, char *argv[]) {
   ParseCompilerArgs(argc, argv);
@@ -191,6 +210,9 @@ int main(int argc, char *argv[]) {
 
   fprintf(stderr, "input:\n%s\n", input);
   struct Node *tokens = Tokenize(input);
+  PrintTokenSequence(tokens);
+
+  Preprocess(tokens);
   PrintTokenSequence(tokens);
 
   struct Node *ast = Parse(tokens);

@@ -1,10 +1,9 @@
-int puts(char *s);
-int printf(char *);
-void exit(int exit_code);
+int puts(char *);
+int printf(char *, int);
+void exit(int);
 
-void ExpectEq(int actual, int expected, char *case_name) {
-  printf(case_name);
-  printf("\t");
+void ExpectEq(int actual, int expected, int line) {
+  printf("Line %3d: ", line);
   if (actual != expected) {
     puts("FAIL");
     exit(1);
@@ -13,9 +12,11 @@ void ExpectEq(int actual, int expected, char *case_name) {
 }
 
 int main(int argc, char **argv) {
-  puts("statement_tests:");
-  ExpectEq(1, 1, "1 == 1");
-  ExpectEq(1, 0, "1 == 0");
-  puts("PASS");
+  ExpectEq(1, 1, __LINE__);
+  ExpectEq(017, 15, __LINE__);
+  ExpectEq((0), 0, __LINE__);
+  ExpectEq((1), 1, __LINE__);
+  ExpectEq(1 ? 2 : 3, 2, __LINE__);
+  puts("PASS all stmt tests");
   return 0;
 }

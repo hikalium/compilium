@@ -6,13 +6,14 @@ bool IsTokenWithType(struct Node *n, enum TokenType token_type) {
   return IsToken(n) && n->token_type == token_type;
 }
 
-struct Node *AllocToken(const char *src_str, const char *begin, int length,
-                        enum TokenType type) {
+struct Node *AllocToken(const char *src_str, int line, const char *begin,
+                        int length, enum TokenType type) {
   struct Node *t = AllocNode(kNodeToken);
   t->begin = begin;
   t->length = length;
   t->token_type = type;
   t->src_str = src_str;
+  t->line = line;
   return t;
 }
 

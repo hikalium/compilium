@@ -120,6 +120,7 @@ struct Node {
       const char *begin;
       int length;
       const char *src_str;
+      int line;
     };
   };
 };
@@ -189,8 +190,8 @@ struct Node *Parse(struct Node *passed_tokens);
 
 // @token.c
 bool IsToken(struct Node *n);
-struct Node *AllocToken(const char *src_str, const char *begin, int length,
-                        enum TokenType type);
+struct Node *AllocToken(const char *src_str, int line, const char *begin,
+                        int length, enum TokenType type);
 const char *CreateTokenStr(struct Node *t);
 int IsEqualTokenWithCStr(struct Node *t, const char *s);
 void PrintTokenSequence(struct Node *t);
