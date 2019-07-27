@@ -17,10 +17,13 @@ debug : compilium_dbg failcase.c
 		-o 'settings set target.input-path failcase.c' $(LLDB_ARGS) \
 		-- ./compilium_dbg --target-os `uname`
 
-testall : unittest test
+testall : unittest ctest test
 
 test : compilium
 	./test.sh
+
+ctest : compilium
+	make -C examples run_ctests
 
 run_unittest_% : compilium
 	@ ./compilium --run-unittest=$* || { echo "FAIL unittest.$*: Run 'make dbg_unittest_$*' to rerun this testcase with debugger"; exit 1; }

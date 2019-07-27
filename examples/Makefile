@@ -1,10 +1,10 @@
 default : hello.bin
 
-run_stmt_tests : stmt_tests.bin
-	./stmt_tests.bin
+run_ctests : ctests.bin
+	./ctests.bin
 
-run_stmt_tests_hostcc : stmt_tests.host.bin
-	./stmt_tests.host.bin
+run_ctests_hostcc : ctests.host.bin
+	./ctests.host.bin
 
 ../compilium:
 	make -C ..
@@ -13,10 +13,11 @@ run_stmt_tests_hostcc : stmt_tests.host.bin
 	$(CC) -o $*.host.bin $*.c
 
 %.S : %.c Makefile ../compilium
-	../compilium < $*.c > $*.S
+	../compilium --target-os `uname` < $*.c > $*.S
 
 %.bin : %.S Makefile
-	clang -o $@ $*.S
+	$(CC) -o $@ $*.S
 
 clean:
 	-rm *.bin
+	-rm *.S
