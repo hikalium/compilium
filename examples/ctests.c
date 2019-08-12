@@ -43,6 +43,18 @@ void TestIfStmtElseCase() {
   return 5;
 }
 
+void TestIfStmtNestedElseCase(int v) {
+  int ans;
+  ans = 1;
+  if (v & 1)
+    ans = ans * 2;
+  else if (v & 2)
+    ans = ans * 3;
+  else if (v & 4)
+    ans = ans * 5;
+  ans = ans * 7;
+}
+
 void TestIfStmtWithCompStmt() {
   if (1) {
     return 3;
@@ -183,6 +195,15 @@ int main(int argc, char **argv) {
   ExpectEq(TestIfStmtFalseCase(), 5, __LINE__);
   ExpectEq(TestIfStmtWithCompStmt(), 3, __LINE__);
   ExpectEq(TestIfStmtElseCase(), 3, __LINE__);
+
+  ExpectEq(TestIfStmtNestedElseCase(0), 7, __LINE__);
+  ExpectEq(TestIfStmtNestedElseCase(1), 14, __LINE__);
+  ExpectEq(TestIfStmtNestedElseCase(2), 21, __LINE__);
+  ExpectEq(TestIfStmtNestedElseCase(3), 14, __LINE__);
+  ExpectEq(TestIfStmtNestedElseCase(4), 35, __LINE__);
+  ExpectEq(TestIfStmtNestedElseCase(5), 14, __LINE__);
+  ExpectEq(TestIfStmtNestedElseCase(6), 21, __LINE__);
+  ExpectEq(TestIfStmtNestedElseCase(7), 14, __LINE__);
 
   puts("PASS all stmt tests");
   return 0;
