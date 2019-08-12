@@ -5,6 +5,7 @@
 #include <string.h>
 
 char *strndup(const char *s, size_t n);
+char *strdup(const char *s);
 
 #define assert(expr) \
   ((void)((expr) || (__assert(#expr, __FILE__, __LINE__), 0)))
