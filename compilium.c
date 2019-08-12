@@ -210,16 +210,22 @@ void Preprocess(struct Node **p) {
   }
 }
 
-#define MAX_INPUT_SIZE 8192
+#define INITIAL_INPUT_SIZE 8192
 int main(int argc, char *argv[]) {
   ParseCompilerArgs(argc, argv);
-  char *input = malloc(MAX_INPUT_SIZE);
-  int input_size;
-  for (input_size = 0;
-       input_size < MAX_INPUT_SIZE && (input[input_size] = getchar()) != EOF;
-       input_size++)
-    ;
-  assert(input_size < MAX_INPUT_SIZE);
+  int buf_size = INITIAL_INPUT_SIZE;
+  char *input = malloc(buf_size);
+  int input_size = 0;
+  int c;
+  while ((c = getchar()) != EOF) {
+    input[input_size++] = c;
+    if (input_size == buf_size) {
+      buf_size <<= 1;
+      assert(realloc(input, buf_size));
+    }
+  }
+  assert(input_size < buf_size);
+  input[input_size] = 0;
 
   fprintf(stderr, "input:\n%s\n", input);
   struct Node *tokens = Tokenize(input);
