@@ -195,8 +195,15 @@ void Preprocess(struct Node **p) {
     if (IsTokenWithType(*p, kTokenLineComment)) {
       int target_line = (*p)->line;
       struct Node *n = *p;
-      while (n->line == target_line) n = n->next_token;
+      while (n && n->line == target_line) n = n->next_token;
       *p = n;
+      continue;
+    }
+    if (IsTokenWithType(*p, kTokenBlockCommentBegin)) {
+      struct Node *n = *p;
+      while (n && !IsTokenWithType(n, kTokenBlockCommentEnd)) n = n->next_token;
+      assert(n);
+      *p = n->next_token;
       continue;
     }
     p = &(*p)->next_token;

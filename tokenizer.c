@@ -104,10 +104,16 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
   } else if ('-' == *p) {
     return AllocToken(src, *line, p, 1, kTokenPunctuator);
   } else if ('*' == *p) {
+    if (p[1] == '/') {
+      return AllocToken(src, *line, p, 2, kTokenBlockCommentEnd);
+    }
     return AllocToken(src, *line, p, 1, kTokenPunctuator);
   } else if ('/' == *p) {
     if (p[1] == '/') {
       return AllocToken(src, *line, p, 2, kTokenLineComment);
+    }
+    if (p[1] == '*') {
+      return AllocToken(src, *line, p, 2, kTokenBlockCommentBegin);
     }
     return AllocToken(src, *line, p, 1, kTokenPunctuator);
   } else if ('%' == *p) {

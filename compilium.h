@@ -53,6 +53,8 @@ enum TokenType {
   kTokenStringLiteral,
   kTokenPunctuator,
   kTokenLineComment,
+  kTokenBlockCommentBegin,
+  kTokenBlockCommentEnd,
 };
 
 /*

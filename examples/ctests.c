@@ -1,6 +1,16 @@
 // This is a first line comment
 // This is a second line comment
 // This is a third line comment
+/* This is a block comment */
+/*
+   This is a block comment 1
+ */
+/*
+   This is a block comment 2
+ */
+/*
+   This is a block comment 3
+ */
 int puts(char *);
 int printf(char *, int);
 void exit(int);
