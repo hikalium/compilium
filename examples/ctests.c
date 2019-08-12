@@ -24,6 +24,23 @@ void ExpectEq(int actual, int expected, int line) {
   puts("PASS");
 }
 
+void TestIfStmtTrueCase() {
+  if(1) return 3;
+  return 5;
+}
+
+void TestIfStmtFalseCase() {
+  if(0) return 3;
+  return 5;
+}
+
+void TestIfStmtWithCompStmt() {
+  if(1) {
+    return 3;
+  }
+  return 5;
+}
+
 int main(int argc, char **argv) {
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
@@ -152,6 +169,10 @@ int main(int argc, char **argv) {
   ExpectEq(12 + 17 % 7, 15, __LINE__);
   ExpectEq(1 + 2 << 3, 24, __LINE__);
   ExpectEq(-3 * -4 + -5, 7, __LINE__);
+
+  ExpectEq(TestIfStmtTrueCase(), 3, __LINE__);
+  ExpectEq(TestIfStmtFalseCase(), 5, __LINE__);
+  ExpectEq(TestIfStmtWithCompStmt(), 3, __LINE__);
 
   puts("PASS all stmt tests");
   return 0;

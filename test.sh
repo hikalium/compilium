@@ -103,35 +103,6 @@ int main() {
 EOS
 `" 55 ''
 
-# if-stmt with comp-stmt
-test_src_result "`cat << EOS
-int main() {
-  if(1) {
-    return 3;
-  }
-  return 5;
-}
-EOS
-`" 3 ''
-
-# if-stmt false case
-test_src_result "`cat << EOS
-int main() {
-  if(0) return 3;
-  return 5;
-}
-EOS
-`" 5 ''
-
-# if-stmt true case
-test_src_result "`cat << EOS
-int main() {
-  if(1) return 3;
-  return 5;
-}
-EOS
-`" 3 ''
-
 # return with no expression
 test_src_result "`cat << EOS
 void func_returns_void() {

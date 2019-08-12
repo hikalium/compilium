@@ -210,7 +210,7 @@ void Preprocess(struct Node **p) {
   }
 }
 
-#define MAX_INPUT_SIZE 4096
+#define MAX_INPUT_SIZE 8192
 int main(int argc, char *argv[]) {
   ParseCompilerArgs(argc, argv);
   char *input = malloc(MAX_INPUT_SIZE);
