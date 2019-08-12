@@ -226,7 +226,7 @@ struct Node *ParseAssignExpr() {
   struct Node *left = ParseConditionalExpr();
   if (!left) return NULL;
   struct Node *t;
-  if ((t = ConsumePunctuator("="))) {
+  if ((t = ConsumePunctuator("=")) || ((t = ConsumePunctuator("+=")))) {
     struct Node *right = ParseAssignExpr();
     if (!right) ErrorWithToken(t, "Expected expr after this token");
     return CreateASTBinOp(t, left, right);

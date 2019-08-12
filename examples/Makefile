@@ -6,6 +6,8 @@ run_ctests : ctests.bin ../compilium
 run_ctests_hostcc : ctests.host.bin
 	./ctests.host.bin
 
+validate : run_ctests_hostcc
+
 ../compilium:
 	make -C ..
 

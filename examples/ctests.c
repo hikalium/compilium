@@ -24,17 +24,17 @@ void ExpectEq(int actual, int expected, int line) {
   puts("PASS");
 }
 
-void TestIfStmtTrueCase() {
+int TestIfStmtTrueCase() {
   if (1) return 3;
   return 5;
 }
 
-void TestIfStmtFalseCase() {
+int TestIfStmtFalseCase() {
   if (0) return 3;
   return 5;
 }
 
-void TestIfStmtElseCase() {
+int TestIfStmtElseCase() {
   if (0) {
     return 2;
   } else {
@@ -43,7 +43,7 @@ void TestIfStmtElseCase() {
   return 5;
 }
 
-void TestIfStmtNestedElseCase(int v) {
+int TestIfStmtNestedElseCase(int v) {
   int ans;
   ans = 1;
   if (v & 1)
@@ -53,19 +53,26 @@ void TestIfStmtNestedElseCase(int v) {
   else if (v & 4)
     ans = ans * 5;
   ans = ans * 7;
+  return ans;
 }
 
-void TestIfStmtWithCompStmt() {
+int TestIfStmtWithCompStmt() {
   if (1) {
     return 3;
   }
   return 5;
 }
 
-void TestInitializer() {
+int TestInitializer() {
   int v0 = 3;
   int v1 = v0 * 5 + 7;
   return v0 + v1; // 25
+}
+
+int TestCompAssignPlusEq(int vL, int vR) {
+  int v = vL;
+  vL += vR;
+  return vL;
 }
 
 int main(int argc, char **argv) {
@@ -212,6 +219,9 @@ int main(int argc, char **argv) {
   ExpectEq(TestIfStmtNestedElseCase(7), 14, __LINE__);
 
   ExpectEq(TestInitializer(), 25, __LINE__);
+
+  ExpectEq(TestCompAssignPlusEq(3, 5), 8, __LINE__);
+  ExpectEq(TestCompAssignPlusEq(-5, 5), 0, __LINE__);
 
   puts("PASS all stmt tests");
   return 0;

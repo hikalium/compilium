@@ -22,6 +22,38 @@ static void EmitCompareIntegers(int dst, int left, int right, const char *cc) {
   printf("movzx %s, %s\n", reg_names_64[dst], reg_names_8[dst]);
 }
 
+static void EmitMoveToMemory(struct Node *op, int dst, int src, int size) {
+  if (size == 8) {
+    printf("mov [%s], %s\n", reg_names_64[dst], reg_names_64[src]);
+    return;
+  }
+  if (size == 4) {
+    printf("mov [%s], %s\n", reg_names_64[dst], reg_names_32[src]);
+    return;
+  }
+  if (size == 1) {
+    printf("mov [%s], %s\n", reg_names_64[dst], reg_names_8[src]);
+    return;
+  }
+  ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
+}
+
+static void EmitAddToMemory(struct Node *op, int dst, int src, int size) {
+  if (size == 8) {
+    printf("add qword ptr [%s], %s\n", reg_names_64[dst], reg_names_64[src]);
+    return;
+  }
+  if (size == 4) {
+    printf("add dword ptr [%s], %s\n", reg_names_64[dst], reg_names_32[src]);
+    return;
+  }
+  if (size == 1) {
+    printf("add byte ptr [%s], %s\n", reg_names_64[dst], reg_names_8[src]);
+    return;
+  }
+  ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
+}
+
 const char *GetParamRegName(struct Node *type, int idx) {
   assert(0 <= idx && idx < NUM_OF_PARAM_REGISTERS);
   int size = GetSizeOfType(type);
@@ -189,25 +221,20 @@ static void GenerateForNode(struct Node *node) {
         GenerateForNode(node->left);
         GenerateForNodeRValue(node->right);
         return;
-      } else if (IsEqualTokenWithCStr(node->op, "=")) {
+      } else if (IsEqualTokenWithCStr(node->op, "=") ||
+                 IsEqualTokenWithCStr(node->op, "+=")) {
         GenerateForNode(node->left);
         GenerateForNodeRValue(node->right);
         int size = GetSizeOfType(node->right->expr_type);
-        if (size == 8) {
-          printf("mov [%s], %s\n", reg_names_64[node->left->reg],
-                 reg_names_64[node->right->reg]);
-          return;
-        } else if (size == 4) {
-          printf("mov [%s], %s\n", reg_names_64[node->left->reg],
-                 reg_names_32[node->right->reg]);
-          return;
-        } else if (size == 1) {
-          printf("mov [%s], %s\n", reg_names_64[node->left->reg],
-                 reg_names_8[node->right->reg]);
+        if (IsEqualTokenWithCStr(node->op, "=")) {
+          EmitMoveToMemory(node->op, node->left->reg, node->right->reg, size);
           return;
         }
-        ErrorWithToken(node->op, "Assigning %d bytes is not implemented.",
-                       size);
+        if (IsEqualTokenWithCStr(node->op, "+=")) {
+          EmitAddToMemory(node->op, node->left->reg, node->right->reg, size);
+          return;
+        }
+        assert(false);
       }
       GenerateForNodeRValue(node->left);
       GenerateForNodeRValue(node->right);
