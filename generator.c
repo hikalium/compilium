@@ -312,11 +312,11 @@ static void GenerateForNode(struct Node *node) {
       int end_label = GetLabelNumber();
       EmitConvertToBool(node->cond->reg, node->cond->reg);
       printf("jz L%d\n", false_label);
-      GenerateForNodeRValue(node->left);
+      GenerateForNodeRValue(node->if_true_stmt);
       printf("jmp L%d\n", end_label);
       printf("L%d:\n", false_label);
-      if (node->right) {
-        GenerateForNodeRValue(node->right);
+      if (node->if_else_stmt) {
+        GenerateForNodeRValue(node->if_else_stmt);
       }
       printf("L%d:\n", end_label);
       return;

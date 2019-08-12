@@ -1,6 +1,6 @@
 default : hello.bin
 
-run_ctests : ctests.bin
+run_ctests : ctests.bin ../compilium
 	./ctests.bin
 
 run_ctests_hostcc : ctests.host.bin

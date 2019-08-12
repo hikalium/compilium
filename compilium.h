@@ -42,6 +42,7 @@ enum TokenType {
   kTokenOctalNumber,
   kTokenIdent,
   kTokenKwChar,
+  kTokenKwElse,
   kTokenKwFor,
   kTokenKwIf,
   kTokenKwInt,
@@ -74,58 +75,45 @@ Node expr-stmt:
 
 struct Node {
   enum NodeType type;
-  union {
-    struct {
-      int reg;
-      struct Node *expr_type;
-      struct Node *op;
-      struct Node *left;
-      struct Node *right;
-      struct Node *init;
-      struct Node *cond;
-      struct Node *updt;
-      struct Node *body;
-      // for list
-      int capacity;
-      int size;
-      struct Node **nodes;
-      // for key value
-      const char *key;
-      struct Node *value;
-      // for local var
-      int byte_offset;
-      // for string literal
-      int label_number;
-      union {
-        struct {
-          // kASTExprFuncCall
-          struct Node *func_expr;
-          struct Node *arg_expr_list;
-          struct Node *arg_var_list;
-          int stack_size_needed;
-        };
-      };
-    };
-    struct {
-      // kASTFuncDef
-      struct Node *func_body;
-      struct Node *func_type;
-      struct Node *func_name_token;
-    };
-    struct {
-      // kASTStruct, kTypeStruct
-      struct Node *tag;
-    };
-    struct {
-      // kNodeToken
-      enum TokenType token_type;
-      struct Node *next_token;
-      const char *begin;
-      int length;
-      const char *src_str;
-      int line;
-    };
-  };
+  int reg;
+  struct Node *expr_type;
+  struct Node *op;
+  struct Node *left;
+  struct Node *right;
+  struct Node *init;
+  struct Node *cond;
+  struct Node *updt;
+  struct Node *body;
+  struct Node *if_true_stmt;
+  struct Node *if_else_stmt;
+  // for list
+  int capacity;
+  int size;
+  struct Node **nodes;
+  // for key value
+  const char *key;
+  struct Node *value;
+  // for local var
+  int byte_offset;
+  // for string literal
+  int label_number;
+  // kASTExprFuncCall
+  struct Node *func_expr;
+  struct Node *arg_expr_list;
+  struct Node *arg_var_list;
+  int stack_size_needed;
+  // kASTFuncDef
+  struct Node *func_body;
+  struct Node *func_type;
+  struct Node *func_name_token;
+  struct Node *tag;
+  // kNodeToken
+  enum TokenType token_type;
+  struct Node *next_token;
+  const char *begin;
+  int length;
+  const char *src_str;
+  int line;
 };
 
 _Noreturn void Error(const char *fmt, ...);

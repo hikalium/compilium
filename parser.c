@@ -267,7 +267,10 @@ struct Node *ParseSelectionStmt() {
     struct Node *stmt = AllocNode(kASTSelectionStmt);
     stmt->op = t;
     stmt->cond = expr;
-    stmt->left = stmt_true;
+    stmt->if_true_stmt = stmt_true;
+    if (ConsumeToken(kTokenKwElse)) {
+      stmt->if_else_stmt = ParseStmt();
+    }
     return stmt;
   }
   return NULL;

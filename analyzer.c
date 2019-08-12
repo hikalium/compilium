@@ -217,8 +217,10 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     if (IsTokenWithType(node->op, kTokenKwIf)) {
       AnalyzeNode(node->cond, ctx);
       FreeReg(node->cond->reg);
-      AnalyzeNode(node->left, ctx);
-      assert(!node->right);
+      AnalyzeNode(node->if_true_stmt, ctx);
+      if (node->if_else_stmt) {
+        AnalyzeNode(node->if_else_stmt, ctx);
+      }
       return;
     }
   } else if (node->type == kASTForStmt) {
