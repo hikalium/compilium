@@ -49,6 +49,8 @@ _Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...) {
     line_begin--;
   }
 
+  fprintf(stderr, "Line %d:\n", t->line);
+
   for (const char *p = line_begin; *p && *p != '\n'; p++) {
     fputc(*p <= ' ' ? ' ' : *p, stderr);
   }
@@ -66,7 +68,6 @@ _Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...) {
   }
   fputc('\n', stderr);
 
-  fflush(stdout);
   fprintf(stderr, "Error: ");
   va_list ap;
   va_start(ap, fmt);

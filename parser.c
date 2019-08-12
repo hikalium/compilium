@@ -388,6 +388,17 @@ struct Node *ParseDecltor() {
   return n;
 }
 
+struct Node *ParseInitDecltor() {
+  struct Node *decltor = ParseDecltor();
+  if (!decltor) return NULL;
+  struct Node *t;
+  if (!(t = ConsumePunctuator("="))) return decltor;
+  struct Node *init_expr = ParseAssignExpr();
+  assert(init_expr);
+  decltor->decltor_init_expr = CreateASTBinOp(t, NULL, init_expr);
+  return decltor;
+}
+
 struct Node *ParseParamDecl() {
   struct Node *decl_spec = ParseDeclSpecs();
   if (!decl_spec) return NULL;
@@ -402,7 +413,7 @@ struct Node *ParseDeclBody() {
   if (!decl_spec) return NULL;
   struct Node *n = AllocNode(kASTDecl);
   n->op = decl_spec;
-  n->right = ParseDecltor();
+  n->right = ParseInitDecltor();
   return n;
 }
 

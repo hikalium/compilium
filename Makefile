@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Wpedantic -Wextra -Wconditional-uninitialized -std=c11
+CFLAGS=-Wall -Wpedantic -Wextra -Werror -Wconditional-uninitialized -std=c11
 SRCS=analyzer.c ast.c compilium.c generator.c parser.c token.c tokenizer.c type.c
 HEADERS=compilium.h
 CC=clang

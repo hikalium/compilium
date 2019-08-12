@@ -62,6 +62,12 @@ void TestIfStmtWithCompStmt() {
   return 5;
 }
 
+void TestInitializer() {
+  int v0 = 3;
+  int v1 = v0 * 5 + 7;
+  return v0 + v1; // 25
+}
+
 int main(int argc, char **argv) {
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
@@ -204,6 +210,8 @@ int main(int argc, char **argv) {
   ExpectEq(TestIfStmtNestedElseCase(5), 14, __LINE__);
   ExpectEq(TestIfStmtNestedElseCase(6), 21, __LINE__);
   ExpectEq(TestIfStmtNestedElseCase(7), 14, __LINE__);
+
+  ExpectEq(TestInitializer(), 25, __LINE__);
 
   puts("PASS all stmt tests");
   return 0;

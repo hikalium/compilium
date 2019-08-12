@@ -107,6 +107,7 @@ struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type) {
 }
 
 struct Node *CreateASTIdent(struct Node *ident) {
+  assert(IsToken(ident));
   struct Node *n = AllocNode(kASTIdent);
   n->op = ident;
   return n;

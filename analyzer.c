@@ -205,6 +205,14 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     struct Node *type = CreateType(node->op, node->right);
     assert(type && type->type == kTypeAttrIdent);
     AddLocalVar(ctx, CreateTokenStr(type->left), type->right);
+    assert(node->right->type == kASTDecltor);
+    if (node->right->decltor_init_expr) {
+      struct Node *left_expr = AllocNode(kASTExpr);
+      left_expr->op = type->left;
+      node->right->decltor_init_expr->left = left_expr;
+      AnalyzeNode(node->right->decltor_init_expr, ctx);
+      FreeReg(node->right->decltor_init_expr->reg);
+    }
     return;
   } else if (node->type == kASTJumpStmt) {
     if (IsTokenWithType(node->op, kTokenKwReturn)) {

@@ -86,6 +86,8 @@ struct Node {
   struct Node *body;
   struct Node *if_true_stmt;
   struct Node *if_else_stmt;
+  struct Node *decltor_init_expr;
+  struct Node *decltor_init_stmt;
   // for list
   int capacity;
   int size;
