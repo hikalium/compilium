@@ -179,21 +179,27 @@ const char *param_reg_names_32[NUM_OF_PARAM_REGISTERS] = {"edi", "esi", "edx",
 const char *param_reg_names_8[NUM_OF_PARAM_REGISTERS] = {"dl", "sil", "dl",
                                                          "cl", "r8b", "r9b"};
 
-void Preprocess(struct Node *t) {
-  if (!t) return;
-  assert(IsToken(t));
-  while (t) {
-    if (IsTokenWithType(t, kTokenIdent) &&
-        IsEqualTokenWithCStr(t, "__LINE__")) {
+void Preprocess(struct Node **p) {
+  if (!p || !*p) return;
+  while (*p) {
+    if (IsTokenWithType(*p, kTokenIdent) &&
+        IsEqualTokenWithCStr(*p, "__LINE__")) {
       char s[32];
-      snprintf(s, sizeof(s), "%d", t->line);
-      t->token_type = kTokenDecimalNumber;
-      t->begin = t->src_str = strdup(s);
-      t->length = strlen(t->begin);
-      t = t->next_token;
+      snprintf(s, sizeof(s), "%d", (*p)->line);
+      (*p)->token_type = kTokenDecimalNumber;
+      (*p)->begin = (*p)->src_str = strdup(s);
+      (*p)->length = strlen((*p)->begin);
+      p = &((*p)->next_token);
       continue;
     }
-    t = t->next_token;
+    if (IsTokenWithType(*p, kTokenLineComment)) {
+      int target_line = (*p)->line;
+      struct Node *n = *p;
+      while (n->line == target_line) n = n->next_token;
+      *p = n;
+      continue;
+    }
+    p = &(*p)->next_token;
   }
 }
 
@@ -212,7 +218,7 @@ int main(int argc, char *argv[]) {
   struct Node *tokens = Tokenize(input);
   PrintTokenSequence(tokens);
 
-  Preprocess(tokens);
+  Preprocess(&tokens);
   PrintTokenSequence(tokens);
 
   struct Node *ast = Parse(tokens);

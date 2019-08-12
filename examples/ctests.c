@@ -1,3 +1,6 @@
+// This is a first line comment
+// This is a second line comment
+// This is a third line comment
 int puts(char *);
 int printf(char *, int);
 void exit(int);
