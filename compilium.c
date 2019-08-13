@@ -41,7 +41,7 @@ void ParseCompilerArgs(int argc, char **argv) {
   }
 }
 
-_Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...) {
+void PrintTokenLine(struct Node *t) {
   assert(t);
   const char *line_begin = t->begin;
   while (t->src_str < line_begin) {
@@ -67,6 +67,10 @@ _Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...) {
     fputc(' ', stderr);
   }
   fputc('\n', stderr);
+}
+
+_Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...) {
+  PrintTokenLine(t);
 
   fprintf(stderr, "Error: ");
   va_list ap;

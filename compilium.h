@@ -122,6 +122,7 @@ struct Node {
 _Noreturn void Error(const char *fmt, ...);
 _Noreturn void __assert(const char *expr_str, const char *file, int line);
 
+void PrintTokenLine(struct Node *t);
 _Noreturn void ErrorWithToken(struct Node *t, const char *fmt, ...);
 
 void PushToList(struct Node *list, struct Node *node);

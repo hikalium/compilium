@@ -1,20 +1,36 @@
 #include "compilium.h"
 
 static int reg_used_table[NUM_OF_SCRATCH_REGS];
+static struct Node *reg_node_table[NUM_OF_SCRATCH_REGS];
 
-static int AllocReg() {
+static void AllocReg(struct Node *n) {
+  assert(n);
   for (int i = 1; i <= NUM_OF_SCRATCH_REGS; i++) {
     if (!reg_used_table[i]) {
       reg_used_table[i] = 1;
-      return i;
+      reg_node_table[i] = n;
+      n->reg = i;
+      return;
     }
   }
-  Error("No more regs");
+  fprintf(stderr, "\n**** Allocated regs ****\n");
+  for (int i = 1; i <= NUM_OF_SCRATCH_REGS; i++) {
+    fprintf(stderr, "reg[%d]:\n", i);
+    if (reg_node_table[i]->op) {
+      PrintTokenLine(reg_node_table[i]->op);
+    } else {
+      fprintf(stderr, "Op info not found\n");
+    }
+  }
+  fprintf(stderr, "\n**** Tried to allocate reg for ****\n");
+  PrintASTNode(n);
+  ErrorWithToken(n->op, "No free registers found");
 }
 
 static void FreeReg(int reg) {
   assert(1 <= reg && reg <= NUM_OF_SCRATCH_REGS);
   reg_used_table[reg] = 0;
+  reg_node_table[reg] = NULL;
 }
 
 struct SymbolEntry {
@@ -73,7 +89,7 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
   }
   if (node->type == kASTExprFuncCall) {
     node->stack_size_needed = (GetLastLocalVarOffset(*ctx) + 0xF) & ~0xF;
-    node->reg = AllocReg();
+    AllocReg(node);
     // TODO: support expe_type other than int
     node->expr_type = CreateTypeBase(CreateToken("int"));
     AnalyzeNode(node->func_expr, ctx);
@@ -112,11 +128,11 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     if (IsTokenWithType(node->op, kTokenDecimalNumber) ||
         IsTokenWithType(node->op, kTokenOctalNumber) ||
         IsTokenWithType(node->op, kTokenCharLiteral)) {
-      node->reg = AllocReg();
+      AllocReg(node);
       node->expr_type = CreateTypeBase(CreateToken("int"));
       return;
     } else if (IsTokenWithType(node->op, kTokenStringLiteral)) {
-      node->reg = AllocReg();
+      AllocReg(node);
       node->expr_type = CreateTypePointer(CreateTypeBase(CreateToken("char")));
       return;
     } else if (IsEqualTokenWithCStr(node->op, "(")) {
@@ -128,14 +144,14 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       struct Node *ident_info = FindLocalVar(*ctx, node->op);
       if (ident_info) {
         node->byte_offset = ident_info->byte_offset;
-        node->reg = AllocReg();
+        AllocReg(node);
         node->expr_type = CreateTypeLValue(ident_info->expr_type);
         return;
       }
       ident_info = GetNodeByTokenKey(toplevel_names, node->op);
       if (ident_info) {
         if (ident_info->type == kTypeFunction) {
-          node->reg = AllocReg();
+          AllocReg(node);
           node->expr_type = ident_info;
           return;
         }
@@ -155,7 +171,8 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     } else if (!node->left && node->right) {
       AnalyzeNode(node->right, ctx);
       if (IsTokenWithType(node->op, kTokenKwSizeof)) {
-        node->reg = AllocReg();
+        FreeReg(node->right->reg);
+        AllocReg(node);
         node->expr_type = CreateTypeBase(CreateToken("int"));
         return;
       }

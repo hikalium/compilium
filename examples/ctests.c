@@ -99,6 +99,11 @@ int TestCompAssignModEq(int vL, int vR) {
   return vL;
 }
 
+void TestSizeOfPointerOfIncompleteStruct() {
+  struct IncompleteStruct *incomplete_struct;
+  ExpectEq(sizeof(incomplete_struct), 8, __LINE__);
+}
+
 int main(int argc, char **argv) {
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
