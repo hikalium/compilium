@@ -324,6 +324,16 @@ struct Node *ParseStmt() {
   return NULL;
 }
 
+void AddMemberOfStructFromDecl(struct Node *struct_spec, struct Node *decl) {
+  struct Node *struct_member = AllocNode(kNodeStructMember);
+  struct Node *type = CreateTypeFromDecl(decl);
+  assert(type && type->left);
+  const char *name = CreateTokenStr(type->left);
+  struct_member->struct_member_ent_type = GetTypeWithoutAttr(type);
+  PushKeyValueToList(struct_spec->struct_member_dict, name, struct_member);
+}
+
+struct Node *ParseDecl();
 struct Node *ParseDeclSpecs() {
   struct Node *decl_spec;
   (decl_spec = ConsumeToken(kTokenKwInt)) ||
@@ -333,7 +343,16 @@ struct Node *ParseDeclSpecs() {
   if (ConsumeToken(kTokenKwStruct)) {
     struct Node *struct_spec = AllocNode(kASTStructSpec);
     struct_spec->tag = ConsumeToken(kTokenIdent);
+    struct_spec->struct_member_dict = AllocList();
     assert(struct_spec->tag);
+    if (ConsumePunctuator("{")) {
+      struct Node *decl;
+      while ((decl = ParseDecl())) {
+        AddMemberOfStructFromDecl(struct_spec, decl);
+      }
+      ExpectPunctuator("}");
+      PrintASTNode(struct_spec);
+    }
     return struct_spec;
   }
   return NULL;
@@ -459,6 +478,8 @@ struct Node *Parse(struct Node *head_token) {
   while ((decl_body = ParseDeclBody())) {
     if (ConsumePunctuator(";")) {
       struct Node *type = CreateTypeFromDecl(decl_body);
+      assert(type);
+      if (type->type != kTypeAttrIdent) continue;
       PushKeyValueToList(toplevel_names, CreateTokenStr(type->left),
                          GetTypeWithoutAttr(type));
       continue;

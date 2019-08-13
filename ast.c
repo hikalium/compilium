@@ -143,6 +143,17 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
     PrintPadding(depth);
     fprintf(stderr, "]");
     return;
+  } else if (n->type == kASTStructSpec) {
+    fprintf(stderr, "StructSpec: ");
+    PrintASTNodeSub(n->struct_member_dict, depth);
+    return;
+  } else if (n->type == kASTKeyValue) {
+    fprintf(stderr, "%s: ", n->key);
+    PrintASTNodeSub(n->value, depth);
+    return;
+  } else if (n->type == kNodeStructMember) {
+    PrintASTNodeSub(n->struct_member_ent_type, depth);
+    return;
   } else if (n->type == kTypeBase) {
     PrintTokenStrToFile(n->op, stderr);
     return;

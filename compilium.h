@@ -13,6 +13,7 @@ char *strdup(const char *s);
 enum NodeType {
   kNodeNone,
   kNodeToken,
+  kNodeStructMember,
   //
   kASTExpr,
   kASTExprFuncCall,
@@ -89,6 +90,9 @@ struct Node {
   struct Node *if_else_stmt;
   struct Node *decltor_init_expr;
   struct Node *decltor_init_stmt;
+  struct Node *struct_member_dict;
+  struct Node *struct_member_ent_type;
+  int struct_member_ent_ofs;
   // for list
   int capacity;
   int size;
