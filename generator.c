@@ -70,6 +70,19 @@ static void EmitSubFromMemory(struct Node *op, int dst, int src, int size) {
   ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
 }
 
+static void EmitMulToMemory(struct Node *op, int dst, int src, int size) {
+  if (size == 4) {
+    // rdx:rax <- rax * r/m
+    printf("xor rdx, rdx\n");
+    printf("mov rax, %s\n", reg_names_64[dst]);
+    printf("mov eax, [rax]\n");
+    printf("imul %s\n", reg_names_64[src]);
+    printf("mov [%s], eax\n", reg_names_64[dst]);
+    return;
+  }
+  ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
+}
+
 const char *GetParamRegName(struct Node *type, int idx) {
   assert(0 <= idx && idx < NUM_OF_PARAM_REGISTERS);
   int size = GetSizeOfType(type);
@@ -239,7 +252,8 @@ static void GenerateForNode(struct Node *node) {
         return;
       } else if (IsEqualTokenWithCStr(node->op, "=") ||
                  IsEqualTokenWithCStr(node->op, "+=") ||
-                 IsEqualTokenWithCStr(node->op, "-=")) {
+                 IsEqualTokenWithCStr(node->op, "-=") ||
+                 IsEqualTokenWithCStr(node->op, "*=")) {
         GenerateForNode(node->left);
         GenerateForNodeRValue(node->right);
         int size = GetSizeOfType(node->right->expr_type);
@@ -253,6 +267,10 @@ static void GenerateForNode(struct Node *node) {
         }
         if (IsEqualTokenWithCStr(node->op, "-=")) {
           EmitSubFromMemory(node->op, node->left->reg, node->right->reg, size);
+          return;
+        }
+        if (IsEqualTokenWithCStr(node->op, "*=")) {
+          EmitMulToMemory(node->op, node->left->reg, node->right->reg, size);
           return;
         }
         assert(false);
