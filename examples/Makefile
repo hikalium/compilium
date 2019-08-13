@@ -1,5 +1,7 @@
 default : hello.bin
 
+.FORCE : 
+
 run_ctests : ctests.bin ../compilium
 	./ctests.bin
 
@@ -8,13 +10,13 @@ run_ctests_hostcc : ctests.host.bin
 
 validate : run_ctests_hostcc
 
-../compilium:
+../compilium : .FORCE
 	make -C ..
 
 %.host.bin : %.c Makefile
 	$(CC) -o $*.host.bin $*.c
 
-%.S : %.c Makefile ../compilium
+%.S : %.c Makefile ../compilium .FORCE
 	../compilium --target-os `uname` < $*.c > $*.S
 
 %.bin : %.S Makefile

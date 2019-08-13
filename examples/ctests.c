@@ -75,6 +75,12 @@ int TestCompAssignPlusEq(int vL, int vR) {
   return vL;
 }
 
+int TestCompAssignMinusEq(int vL, int vR) {
+  int v = vL;
+  vL -= vR;
+  return vL;
+}
+
 int main(int argc, char **argv) {
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
@@ -222,6 +228,9 @@ int main(int argc, char **argv) {
 
   ExpectEq(TestCompAssignPlusEq(3, 5), 8, __LINE__);
   ExpectEq(TestCompAssignPlusEq(-5, 5), 0, __LINE__);
+
+  ExpectEq(TestCompAssignMinusEq(3, 5), -2, __LINE__);
+  ExpectEq(TestCompAssignMinusEq(-5, 5), -10, __LINE__);
 
   puts("PASS all stmt tests");
   return 0;
