@@ -87,6 +87,12 @@ int TestCompAssignMulEq(int vL, int vR) {
   return vL;
 }
 
+int TestCompAssignDivEq(int vL, int vR) {
+  int v = vL;
+  vL /= vR;
+  return vL;
+}
+
 int main(int argc, char **argv) {
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
@@ -242,6 +248,9 @@ int main(int argc, char **argv) {
   ExpectEq(TestCompAssignMulEq(0, 5), 0, __LINE__);
   ExpectEq(TestCompAssignMulEq(3, 5), 15, __LINE__);
   ExpectEq(TestCompAssignMulEq(5, 3), 15, __LINE__);
+
+  ExpectEq(TestCompAssignDivEq(8, 2), 4, __LINE__);
+  ExpectEq(TestCompAssignDivEq(13, 5), 2, __LINE__);
 
   puts("PASS all stmt tests");
   return 0;

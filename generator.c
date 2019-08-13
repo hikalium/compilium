@@ -83,6 +83,18 @@ static void EmitMulToMemory(struct Node *op, int dst, int src, int size) {
   ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
 }
 
+static void EmitDivToMemory(struct Node *op, int dst, int src, int size) {
+  if (size == 4) {
+    // rax <- rdx:rax / r/m
+    printf("xor rdx, rdx\n");
+    printf("mov eax, [%s]\n", reg_names_64[dst]);
+    printf("idiv %s\n", reg_names_64[src]);
+    printf("mov [%s], eax\n", reg_names_64[dst]);
+    return;
+  }
+  ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
+}
+
 const char *GetParamRegName(struct Node *type, int idx) {
   assert(0 <= idx && idx < NUM_OF_PARAM_REGISTERS);
   int size = GetSizeOfType(type);
@@ -253,7 +265,8 @@ static void GenerateForNode(struct Node *node) {
       } else if (IsEqualTokenWithCStr(node->op, "=") ||
                  IsEqualTokenWithCStr(node->op, "+=") ||
                  IsEqualTokenWithCStr(node->op, "-=") ||
-                 IsEqualTokenWithCStr(node->op, "*=")) {
+                 IsEqualTokenWithCStr(node->op, "*=") ||
+                 IsEqualTokenWithCStr(node->op, "/=")) {
         GenerateForNode(node->left);
         GenerateForNodeRValue(node->right);
         int size = GetSizeOfType(node->right->expr_type);
@@ -271,6 +284,10 @@ static void GenerateForNode(struct Node *node) {
         }
         if (IsEqualTokenWithCStr(node->op, "*=")) {
           EmitMulToMemory(node->op, node->left->reg, node->right->reg, size);
+          return;
+        }
+        if (IsEqualTokenWithCStr(node->op, "/=")) {
+          EmitDivToMemory(node->op, node->left->reg, node->right->reg, size);
           return;
         }
         assert(false);
@@ -300,7 +317,7 @@ static void GenerateForNode(struct Node *node) {
         printf("mov %s, rax\n", reg_names_64[node->reg]);
         return;
       } else if (IsEqualTokenWithCStr(node->op, "%")) {
-        // rdx <- rdx:rax / r/m
+        // rdx <- rdx:rax % r/m
         printf("xor rdx, rdx\n");
         printf("mov rax, %s\n", reg_names_64[node->reg]);
         printf("idiv %s\n", reg_names_64[node->right->reg]);
