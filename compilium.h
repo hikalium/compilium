@@ -187,6 +187,19 @@ extern struct Node *toplevel_names;
 void InitParser(struct Node *head_token);
 struct Node *Parse(struct Node *passed_tokens);
 
+// @symbol.c
+struct SymbolEntry {
+  struct SymbolEntry *prev;
+  const char *key;
+  struct Node *value;
+};
+struct SymbolEntry *AllocSymbolEntry(struct SymbolEntry *prev, const char *key,
+                                     struct Node *value);
+int GetLastLocalVarOffset(struct SymbolEntry *last);
+struct Node *AddLocalVar(struct SymbolEntry **ctx, const char *key,
+                         struct Node *var_type);
+struct Node *FindLocalVar(struct SymbolEntry *e, struct Node *key_token);
+
 // @token.c
 bool IsToken(struct Node *n);
 struct Node *AllocToken(const char *src_str, int line, const char *begin,
