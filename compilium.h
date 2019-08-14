@@ -188,6 +188,9 @@ extern struct Node *toplevel_names;
 void InitParser(struct Node *head_token);
 struct Node *Parse(struct Node *passed_tokens);
 
+// @struct.c
+void AddMemberOfStructFromDecl(struct Node *struct_spec, struct Node *decl);
+
 // @symbol.c
 enum SymbolType {
   kSymbolLocalVar,
