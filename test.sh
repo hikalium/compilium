@@ -36,20 +36,20 @@ function test_src_result {
 
 # nested func call with args
 test_src_result "`cat << EOS
-int f() {
-  int v;
-  v = 2;
-  int r;
-  r = g();
-  return v + r;
-}
-
 int g() {
   int a;
   a = 3;
   int b;
   b = 5;
   return a + b;
+}
+
+int f() {
+  int v;
+  v = 2;
+  int r;
+  r = g();
+  return v + r;
 }
 
 int main() {

@@ -99,9 +99,10 @@ int TestCompAssignModEq(int vL, int vR) {
   return vL;
 }
 
-struct point {
+struct Point3D {
   int x;
   int y;
+  int z;
 };
 
 void TestSizeOfPointerOfIncompleteStruct() {
@@ -270,6 +271,10 @@ int main(int argc, char **argv) {
 
   ExpectEq(TestCompAssignModEq(8, 2), 0, __LINE__);
   ExpectEq(TestCompAssignModEq(13, 5), 3, __LINE__);
+
+  ExpectEq(TestCompAssignModEq(13, 5), 3, __LINE__);
+
+  TestSizeOfPointerOfIncompleteStruct();
 
   puts("PASS all stmt tests");
   return 0;

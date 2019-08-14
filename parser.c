@@ -343,15 +343,14 @@ struct Node *ParseDeclSpecs() {
   if (ConsumeToken(kTokenKwStruct)) {
     struct Node *struct_spec = AllocNode(kASTStructSpec);
     struct_spec->tag = ConsumeToken(kTokenIdent);
-    struct_spec->struct_member_dict = AllocList();
     assert(struct_spec->tag);
     if (ConsumePunctuator("{")) {
+      struct_spec->struct_member_dict = AllocList();
       struct Node *decl;
       while ((decl = ParseDecl())) {
         AddMemberOfStructFromDecl(struct_spec, decl);
       }
       ExpectPunctuator("}");
-      PrintASTNode(struct_spec);
     }
     return struct_spec;
   }
@@ -464,12 +463,7 @@ struct Node *ParseFuncDef(struct Node *decl_body) {
   return CreateASTFuncDef(decl_body, comp_stmt);
 }
 
-struct Node *toplevel_names;
-
-void InitParser(struct Node *head_token) {
-  next_token = head_token;
-  toplevel_names = AllocList();
-}
+void InitParser(struct Node *head_token) { next_token = head_token; }
 
 struct Node *Parse(struct Node *head_token) {
   InitParser(head_token);
@@ -477,11 +471,7 @@ struct Node *Parse(struct Node *head_token) {
   struct Node *decl_body;
   while ((decl_body = ParseDeclBody())) {
     if (ConsumePunctuator(";")) {
-      struct Node *type = CreateTypeFromDecl(decl_body);
-      assert(type);
-      if (type->type != kTypeAttrIdent) continue;
-      PushKeyValueToList(toplevel_names, CreateTokenStr(type->left),
-                         GetTypeWithoutAttr(type));
+      PushToList(list, decl_body);
       continue;
     }
     struct Node *func_def = ParseFuncDef(decl_body);
@@ -489,9 +479,6 @@ struct Node *Parse(struct Node *head_token) {
       ErrorWithToken(NextToken(), "Unexpected token");
     }
     PushToList(list, func_def);
-    PushKeyValueToList(toplevel_names,
-                       CreateTokenStr(func_def->func_name_token),
-                       func_def->func_type);
   }
   struct Node *t;
   if (!(t = NextToken())) return list;

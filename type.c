@@ -60,6 +60,7 @@ int GetSizeOfType(struct Node *t) {
     }
   } else if (t->type == kTypePointer) {
     return 8;
+  } else if (t->type == kTypeStruct) {
   }
   assert(false);
 }
@@ -102,18 +103,31 @@ struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
   return type;
 }
 
-struct Node *CreateBaseTypeFromDeclSpec(struct Node *decl_spec) {
+static struct Node *CreateBaseTypeFromDeclSpec(struct SymbolEntry *ctx,
+                                               struct Node *decl_spec) {
   assert(decl_spec);
   if (IsToken(decl_spec)) return CreateTypeBase(decl_spec);
-  if (decl_spec->type == kASTStructSpec)
-    return CreateTypeStruct(decl_spec->tag);
+  if (decl_spec->type == kASTStructSpec) {
+    if (!decl_spec->struct_member_dict) {
+      assert(decl_spec->tag);
+      struct Node *resolved_type = FindStructType(ctx, decl_spec->tag);
+      if (resolved_type) return resolved_type;
+      return CreateTypeStruct(decl_spec->tag, NULL);
+    }
+    return CreateTypeStruct(decl_spec->tag, decl_spec);
+  }
   assert(false);
 }
 
-struct Node *CreateType(struct Node *decl_spec, struct Node *decltor) {
-  struct Node *type = CreateBaseTypeFromDeclSpec(decl_spec);
+struct Node *CreateTypeInContext(struct SymbolEntry *ctx,
+                                 struct Node *decl_spec, struct Node *decltor) {
+  struct Node *type = CreateBaseTypeFromDeclSpec(ctx, decl_spec);
   if (!decltor) return type;
   return CreateTypeFromDecltor(decltor, type);
+}
+
+struct Node *CreateType(struct Node *decl_spec, struct Node *decltor) {
+  return CreateTypeInContext(NULL, decl_spec, decltor);
 }
 
 struct Node *CreateTypeFromDecl(struct Node *decl) {

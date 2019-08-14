@@ -114,6 +114,7 @@ struct Node {
   struct Node *func_type;
   struct Node *func_name_token;
   struct Node *tag;
+  struct Node *type_struct_spec;
   // kNodeToken
   enum TokenType token_type;
   struct Node *next_token;
@@ -174,7 +175,7 @@ struct Node *CreateTypePointer(struct Node *type);
 struct Node *CreateTypeFunction(struct Node *return_type,
                                 struct Node *arg_type_list);
 struct Node *GetArgTypeList(struct Node *func_type);
-struct Node *CreateTypeStruct(struct Node *tag_token);
+struct Node *CreateTypeStruct(struct Node *tag_token, struct Node *struct_spec);
 struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type);
 struct Node *CreateASTIdent(struct Node *ident);
 void PrintASTNode(struct Node *n);
@@ -188,17 +189,25 @@ void InitParser(struct Node *head_token);
 struct Node *Parse(struct Node *passed_tokens);
 
 // @symbol.c
-struct SymbolEntry {
-  struct SymbolEntry *prev;
-  const char *key;
-  struct Node *value;
+enum SymbolType {
+  kSymbolLocalVar,
+  kSymbolFuncDef,
+  kSymbolFuncDeclType,
+  kSymbolStrucType,
 };
-struct SymbolEntry *AllocSymbolEntry(struct SymbolEntry *prev, const char *key,
-                                     struct Node *value);
-int GetLastLocalVarOffset(struct SymbolEntry *last);
+struct SymbolEntry;
+int GetLastLocalVarOffset(struct SymbolEntry *);
 struct Node *AddLocalVar(struct SymbolEntry **ctx, const char *key,
                          struct Node *var_type);
 struct Node *FindLocalVar(struct SymbolEntry *e, struct Node *key_token);
+void AddFuncDef(struct SymbolEntry **ctx, const char *key,
+                struct Node *func_def);
+struct Node *FindFuncDef(struct SymbolEntry *e, struct Node *key_token);
+void AddFuncDeclType(struct SymbolEntry **ctx, const char *key,
+                     struct Node *func_decl);
+struct Node *FindFuncDeclType(struct SymbolEntry *e, struct Node *key_token);
+void AddStructType(struct SymbolEntry **, const char *, struct Node *);
+struct Node *FindStructType(struct SymbolEntry *, struct Node *);
 
 // @token.c
 bool IsToken(struct Node *n);

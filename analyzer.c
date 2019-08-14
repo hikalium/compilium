@@ -55,6 +55,7 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     }
     return;
   } else if (node->type == kASTFuncDef) {
+    AddFuncDef(ctx, CreateTokenStr(node->func_name_token), node);
     struct SymbolEntry *saved_ctx = *ctx;
     struct Node *arg_type_list = GetArgTypeList(node->func_type);
     assert(arg_type_list);
@@ -102,13 +103,17 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
         node->expr_type = CreateTypeLValue(ident_info->expr_type);
         return;
       }
-      ident_info = GetNodeByTokenKey(toplevel_names, node->op);
-      if (ident_info) {
-        if (ident_info->type == kTypeFunction) {
-          AllocReg(node);
-          node->expr_type = ident_info;
-          return;
-        }
+      struct Node *func_def = FindFuncDef(*ctx, node->op);
+      if (func_def) {
+        AllocReg(node);
+        node->expr_type = func_def->func_type;
+        return;
+      }
+      struct Node *func_decl_type = FindFuncDeclType(*ctx, node->op);
+      if (func_decl_type) {
+        AllocReg(node);
+        node->expr_type = GetTypeWithoutAttr(func_decl_type);
+        return;
       }
       ErrorWithToken(node->op, "Unknown identifier");
     } else if (node->cond) {
@@ -173,13 +178,31 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     *ctx = saved_ctx;
     return;
   } else if (node->type == kASTDecl) {
-    struct Node *type = CreateType(node->op, node->right);
-    assert(type && type->type == kTypeAttrIdent);
-    AddLocalVar(ctx, CreateTokenStr(type->left), type->right);
+    struct Node *raw_type = CreateType(node->op, node->right);
+    PrintASTNode(raw_type);
+    assert(raw_type);
+    struct Node *type_ident = NULL;
+    if (raw_type && raw_type->type == kTypeAttrIdent) {
+      type_ident = raw_type->left;
+    }
+    struct Node *type = GetTypeWithoutAttr(raw_type);
+    assert(type);
+
+    if (type_ident && type->type == kTypeFunction) {
+      AddFuncDeclType(ctx, CreateTokenStr(type_ident), raw_type);
+      return;
+    }
+    if (!type_ident && type->type == kTypeStruct) {
+      assert(type->tag);
+      AddStructType(ctx, CreateTokenStr(type->tag), type);
+      return;
+    }
+    assert(type && type_ident);
+    AddLocalVar(ctx, CreateTokenStr(type_ident), type);
     assert(node->right->type == kASTDecltor);
     if (node->right->decltor_init_expr) {
       struct Node *left_expr = AllocNode(kASTExpr);
-      left_expr->op = type->left;
+      left_expr->op = type_ident;
       node->right->decltor_init_expr->left = left_expr;
       AnalyzeNode(node->right->decltor_init_expr, ctx);
       FreeReg(node->right->decltor_init_expr->reg);

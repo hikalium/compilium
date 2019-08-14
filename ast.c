@@ -91,10 +91,12 @@ struct Node *GetArgTypeList(struct Node *func_type) {
   return func_type->right;
 }
 
-struct Node *CreateTypeStruct(struct Node *tag_token) {
+struct Node *CreateTypeStruct(struct Node *tag_token,
+                              struct Node *struct_spec) {
   assert(IsToken(tag_token));
   struct Node *n = AllocNode(kTypeStruct);
   n->tag = tag_token;
+  n->type_struct_spec = struct_spec;
   return n;
 }
 
