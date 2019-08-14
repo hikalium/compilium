@@ -179,6 +179,9 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
   } else if (n->type == kTypeStruct) {
     fprintf(stderr, "struct<tag: ");
     PrintASTNodeSub(n->tag, depth);
+    if (!n->type_struct_spec) {
+      fprintf(stderr, ", incomplete");
+    }
     fprintf(stderr, ">");
     return;
   } else if (n->type == kTypeAttrIdent) {

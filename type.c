@@ -46,7 +46,7 @@ int IsAssignable(struct Node *dst, struct Node *src) {
 }
 
 int GetSizeOfType(struct Node *t) {
-  t = GetRValueType(t);
+  t = GetTypeWithoutAttr(t);
   assert(t);
   if (t->type == kTypeBase) {
     assert(IsToken(t->op));
@@ -61,7 +61,28 @@ int GetSizeOfType(struct Node *t) {
   } else if (t->type == kTypePointer) {
     return 8;
   } else if (t->type == kTypeStruct) {
+    return CalcStructSize(t->type_struct_spec);
   }
+  assert(false);
+}
+
+int GetAlignOfType(struct Node *t) {
+  t = GetTypeWithoutAttr(t);
+  assert(t);
+  if (t->type == kTypeBase) {
+    assert(IsToken(t->op));
+    switch (t->op->token_type) {
+      case kTokenKwInt:
+        return 4;
+      case kTokenKwChar:
+        return 1;
+      default:
+        assert(false);
+    }
+  } else if (t->type == kTypePointer) {
+    return 8;
+  }
+  PrintASTNode(t);
   assert(false);
 }
 

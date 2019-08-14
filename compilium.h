@@ -189,6 +189,7 @@ void InitParser(struct Node *head_token);
 struct Node *Parse(struct Node *passed_tokens);
 
 // @struct.c
+int CalcStructSize(struct Node *spec);
 void AddMemberOfStructFromDecl(struct Node *struct_spec, struct Node *decl);
 
 // @symbol.c
@@ -196,7 +197,7 @@ enum SymbolType {
   kSymbolLocalVar,
   kSymbolFuncDef,
   kSymbolFuncDeclType,
-  kSymbolStrucType,
+  kSymbolStructType,
 };
 struct SymbolEntry;
 int GetLastLocalVarOffset(struct SymbolEntry *);
@@ -233,5 +234,8 @@ struct Node *GetTypeWithoutAttr(struct Node *t);
 struct Node *GetIdentifierTokenFromTypeAttr(struct Node *t);
 struct Node *GetRValueType(struct Node *t);
 int GetSizeOfType(struct Node *t);
+int GetAlignOfType(struct Node *t);
+struct Node *CreateTypeInContext(struct SymbolEntry *ctx,
+                                 struct Node *decl_spec, struct Node *decltor);
 struct Node *CreateType(struct Node *decl_spec, struct Node *decltor);
 struct Node *CreateTypeFromDecl(struct Node *decl);

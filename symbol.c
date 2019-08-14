@@ -88,13 +88,14 @@ struct Node *FindFuncDeclType(struct SymbolEntry *e, struct Node *key_token) {
 void AddStructType(struct SymbolEntry **ctx, const char *key,
                    struct Node *type) {
   assert(ctx);
-  struct SymbolEntry *e = AllocSymbolEntry(kSymbolStrucType, key, type);
+  struct SymbolEntry *e = AllocSymbolEntry(kSymbolStructType, key, type);
   PushSymbol(ctx, e);
+  PrintASTNode(type);
 }
 
 struct Node *FindStructType(struct SymbolEntry *e, struct Node *key_token) {
   for (; e; e = e->prev) {
-    if (e->type != kSymbolStrucType) continue;
+    if (e->type != kSymbolStructType) continue;
     if (!IsEqualTokenWithCStr(key_token, e->key)) continue;
     return e->value;
   }

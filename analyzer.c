@@ -178,7 +178,7 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     *ctx = saved_ctx;
     return;
   } else if (node->type == kASTDecl) {
-    struct Node *raw_type = CreateType(node->op, node->right);
+    struct Node *raw_type = CreateTypeInContext(*ctx, node->op, node->right);
     PrintASTNode(raw_type);
     assert(raw_type);
     struct Node *type_ident = NULL;
