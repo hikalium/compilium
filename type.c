@@ -81,6 +81,8 @@ int GetAlignOfType(struct Node *t) {
     }
   } else if (t->type == kTypePointer) {
     return 8;
+  } else if (t->type == kTypeStruct) {
+    return CalcStructAlign(t->type_struct_spec);
   }
   PrintASTNode(t);
   assert(false);
@@ -154,6 +156,12 @@ struct Node *CreateType(struct Node *decl_spec, struct Node *decltor) {
 struct Node *CreateTypeFromDecl(struct Node *decl) {
   assert(decl && decl->type == kASTDecl);
   return CreateType(decl->op, decl->right);
+}
+
+struct Node *CreateTypeFromDeclInContext(struct SymbolEntry *ctx,
+                                         struct Node *decl) {
+  assert(decl && decl->type == kASTDecl);
+  return CreateTypeInContext(ctx, decl->op, decl->right);
 }
 
 struct Node *Tokenize(const char *input);

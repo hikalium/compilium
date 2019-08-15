@@ -228,6 +228,8 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       return;
     }
     if (!type_ident && type->type == kTypeStruct) {
+      struct Node *spec = type->type_struct_spec;
+      ResolveTypesOfMembersOfStruct(*ctx, spec);
       assert(type->tag);
       AddStructType(ctx, CreateTokenStr(type->tag), type);
       return;

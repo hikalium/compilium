@@ -115,6 +115,11 @@ struct Point2D {
   int y;
 };
 
+struct Line2D {
+  struct Point2D p;
+  struct Point2D q;
+};
+
 void TestSizeOfStruct() {
   struct Point2D p2d;
   ExpectEq(sizeof(p2d), 8, __LINE__);

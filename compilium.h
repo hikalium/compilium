@@ -92,6 +92,7 @@ struct Node {
   struct Node *decltor_init_stmt;
   struct Node *struct_member_dict;
   struct Node *struct_member_ent_type;
+  struct Node *struct_member_decl;
   int struct_member_ent_ofs;
   // for list
   int capacity;
@@ -189,9 +190,12 @@ void InitParser(struct Node *head_token);
 struct Node *Parse(struct Node *passed_tokens);
 
 // @struct.c
+struct SymbolEntry;
 int CalcStructSize(struct Node *spec);
+int CalcStructAlign(struct Node *spec);
 void AddMemberOfStructFromDecl(struct Node *struct_spec, struct Node *decl);
 struct Node *FindStructMember(struct Node *struct_type, struct Node *key_token);
+void ResolveTypesOfMembersOfStruct(struct SymbolEntry *ctx, struct Node *spec);
 
 // @symbol.c
 enum SymbolType {
@@ -240,3 +244,5 @@ struct Node *CreateTypeInContext(struct SymbolEntry *ctx,
                                  struct Node *decl_spec, struct Node *decltor);
 struct Node *CreateType(struct Node *decl_spec, struct Node *decltor);
 struct Node *CreateTypeFromDecl(struct Node *decl);
+struct Node *CreateTypeFromDeclInContext(struct SymbolEntry *ctx,
+                                         struct Node *decl);
