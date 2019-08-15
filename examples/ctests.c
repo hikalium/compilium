@@ -153,6 +153,14 @@ void TestStructVecSumRef(int x0, int y0, int x1, int y1, int x_expected, int y_e
   ExpectEq(vp0->y + v1.y, y_expected, __LINE__);
 }
 
+int TestArray(int v0, int v1, int v2, int idx) {
+  int a[3];
+  a[0] = v0;
+  a[1] = v1;
+  a[2] = v2;
+  return a[idx];
+}
+
 int main(int argc, char **argv) {
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
@@ -325,6 +333,14 @@ int main(int argc, char **argv) {
 
   TestStructVecSumRef(1, 2, 3, 4, 4, 6);
   TestStructVecSumRef(2, 3, 5, 7, 7, 10);
+
+  ExpectEq(TestArray(2, 3, 5, 0), 2, __LINE__);
+  ExpectEq(TestArray(2, 3, 5, 1), 3, __LINE__);
+  ExpectEq(TestArray(2, 3, 5, 2), 5, __LINE__);
+
+  ExpectEq(TestArray(7, 11, 13, 0), 7, __LINE__);
+  ExpectEq(TestArray(7, 11, 13, 1), 11, __LINE__);
+  ExpectEq(TestArray(7, 11, 13, 2), 13, __LINE__);
 
   puts("PASS all stmt tests");
   return 0;

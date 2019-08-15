@@ -115,6 +115,13 @@ struct Node *CreateASTIdent(struct Node *ident) {
   return n;
 }
 
+struct Node *CreateTypeArray(struct Node *type_of, struct Node *index_decl) {
+  struct Node *n = AllocNode(kTypeArray);
+  n->type_array_type_of = type_of;
+  n->type_array_index_decl = index_decl;
+  return n;
+}
+
 static void PrintPadding(int depth) {
   for (int i = 0; i < depth; i++) {
     fputc(' ', stderr);
@@ -184,6 +191,13 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
       fprintf(stderr, ", incomplete");
     }
     fprintf(stderr, ">");
+    return;
+  } else if (n->type == kTypeArray) {
+    fprintf(stderr, "array_of<");
+    PrintASTNodeSub(n->type_array_type_of, depth);
+    fprintf(stderr, ">[");
+    PrintASTNodeSub(n->type_array_index_decl, depth);
+    fprintf(stderr, "]");
     return;
   } else if (n->type == kTypeAttrIdent) {
     fputc('`', stderr);

@@ -196,6 +196,15 @@ static void GenerateForNode(struct Node *node) {
       printf("add %s, %d # struct member ofs\n", reg_names_64[node->reg],
              node->byte_offset);
       return;
+    } else if (IsEqualTokenWithCStr(node->op, "[")) {
+      GenerateForNodeRValue(node->left);
+      GenerateForNodeRValue(node->right);
+      printf("imul %s, %s, %d\n", reg_names_64[node->right->reg],
+             reg_names_64[node->right->reg],
+             GetSizeOfType(node->left->expr_type->type_array_type_of));
+      printf("add %s, %s\n", reg_names_64[node->left->reg],
+             reg_names_64[node->right->reg]);
+      return;
     } else if (IsTokenWithType(node->op, kTokenIdent)) {
       if (node->expr_type->type == kTypeFunction) {
         const char *label_name = CreateTokenStr(node->op);

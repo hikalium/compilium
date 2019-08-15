@@ -45,6 +45,14 @@ int IsAssignable(struct Node *dst, struct Node *src) {
   return IsSameTypeExceptAttr(GetRValueType(dst), src);
 }
 
+int EvalExprAsInt(struct Node *n) {
+  assert(n);
+  if (IsTokenWithType(n->op, kTokenDecimalNumber)) {
+    return strtol(n->op->begin, NULL, 0);
+  }
+  assert(false);
+}
+
 int GetSizeOfType(struct Node *t) {
   t = GetTypeWithoutAttr(t);
   assert(t);
@@ -62,7 +70,11 @@ int GetSizeOfType(struct Node *t) {
     return 8;
   } else if (t->type == kTypeStruct) {
     return CalcStructSize(t->type_struct_spec);
+  } else if (t->type == kTypeArray) {
+    return GetSizeOfType(t->type_array_type_of) *
+           EvalExprAsInt(t->type_array_index_decl);
   }
+  PrintASTNode(t);
   assert(false);
 }
 
@@ -111,6 +123,10 @@ struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
                      CreateTypeFromDecl(GetNodeAt(dd->right, i)));
         }
         type = CreateTypeFunction(type, arg_type_list);
+        continue;
+      }
+      if (IsEqualTokenWithCStr(dd->op, "[")) {
+        type = CreateTypeArray(type, dd->right);
         continue;
       }
     }

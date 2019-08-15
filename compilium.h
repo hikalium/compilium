@@ -37,6 +37,7 @@ enum NodeType {
   kTypeFunction,
   kTypeAttrIdent,
   kTypeStruct,
+  kTypeArray,
 };
 
 enum TokenType {
@@ -116,6 +117,8 @@ struct Node {
   struct Node *func_name_token;
   struct Node *tag;
   struct Node *type_struct_spec;
+  struct Node *type_array_type_of;
+  struct Node *type_array_index_decl;
   // kNodeToken
   enum TokenType token_type;
   struct Node *next_token;
@@ -179,6 +182,7 @@ struct Node *GetArgTypeList(struct Node *func_type);
 struct Node *CreateTypeStruct(struct Node *tag_token, struct Node *struct_spec);
 struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type);
 struct Node *CreateASTIdent(struct Node *ident);
+struct Node *CreateTypeArray(struct Node *type_of, struct Node *index_decl);
 void PrintASTNode(struct Node *n);
 
 // @generate.c

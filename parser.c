@@ -84,6 +84,10 @@ struct Node *ParsePostfixExpr() {
       n = nn;
       continue;
     }
+    if ((t = ConsumePunctuator("["))) {
+      n = CreateASTBinOp(t, n, ParseExpr());
+      ExpectPunctuator("]");
+    }
     if ((t = ConsumePunctuator(".")) || (t = ConsumePunctuator("->"))) {
       struct Node *right = ConsumeToken(kTokenIdent);
       assert(right);
@@ -392,6 +396,14 @@ struct Node *ParseDirectDecltor() {
       nn->right = args;
       nn->left = n;
       n = nn;
+    }
+    if ((t = ConsumePunctuator("["))) {
+      struct Node *nn = AllocNode(kASTDirectDecltor);
+      nn->op = t;
+      nn->right = ParseAssignExpr();
+      nn->left = n;
+      n = nn;
+      ExpectPunctuator("]");
     }
     break;
   }

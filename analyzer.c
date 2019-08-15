@@ -95,6 +95,14 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       node->reg = node->right->reg;
       node->expr_type = node->right->expr_type;
       return;
+    } else if (IsEqualTokenWithCStr(node->op, "[")) {
+      AnalyzeNode(node->left, ctx);
+      AnalyzeNode(node->right, ctx);
+      node->reg = node->left->reg;
+      FreeReg(node->right->reg);
+      node->expr_type =
+          CreateTypeLValue(node->left->expr_type->type_array_type_of);
+      return;
     } else if (IsEqualTokenWithCStr(node->op, ".") ||
                IsEqualTokenWithCStr(node->op, "->")) {
       AnalyzeNode(node->left, ctx);
@@ -131,7 +139,9 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       if (ident_info) {
         node->byte_offset = ident_info->byte_offset;
         AllocReg(node);
-        if (GetTypeWithoutAttr(ident_info->expr_type)->type == kTypeStruct) {
+        enum NodeType expr_type =
+            GetTypeWithoutAttr(ident_info->expr_type)->type;
+        if (expr_type == kTypeStruct || expr_type == kTypeArray) {
           node->expr_type = ident_info->expr_type;
           return;
         }
