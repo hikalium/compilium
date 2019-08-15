@@ -191,6 +191,11 @@ static void GenerateForNode(struct Node *node) {
       printf("add %s, %d # struct member ofs\n", reg_names_64[node->reg],
              node->byte_offset);
       return;
+    } else if (IsEqualTokenWithCStr(node->op, "->")) {
+      GenerateForNodeRValue(node->left);
+      printf("add %s, %d # struct member ofs\n", reg_names_64[node->reg],
+             node->byte_offset);
+      return;
     } else if (IsTokenWithType(node->op, kTokenIdent)) {
       if (node->expr_type->type == kTypeFunction) {
         const char *label_name = CreateTokenStr(node->op);

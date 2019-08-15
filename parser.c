@@ -84,7 +84,7 @@ struct Node *ParsePostfixExpr() {
       n = nn;
       continue;
     }
-    if ((t = ConsumePunctuator("."))) {
+    if ((t = ConsumePunctuator(".")) || (t = ConsumePunctuator("->"))) {
       struct Node *right = ConsumeToken(kTokenIdent);
       assert(right);
       n = CreateASTBinOp(t, n, right);

@@ -95,18 +95,37 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       node->reg = node->right->reg;
       node->expr_type = node->right->expr_type;
       return;
-    } else if (IsEqualTokenWithCStr(node->op, ".")) {
+    } else if (IsEqualTokenWithCStr(node->op, ".") ||
+               IsEqualTokenWithCStr(node->op, "->")) {
       AnalyzeNode(node->left, ctx);
       node->reg = node->left->reg;
       PrintASTNode(node->left->expr_type);
-      assert(node->right->type == kNodeToken);
-      struct Node *member =
-          FindStructMember(node->left->expr_type, node->right);
-      PrintASTNode(member);
-      node->byte_offset = member->struct_member_ent_ofs;
-      node->expr_type =
-          CreateTypeLValue(GetTypeWithoutAttr(member->struct_member_ent_type));
-      return;
+      assert(node->right && node->right->type == kNodeToken);
+      if (IsEqualTokenWithCStr(node->op, ".")) {
+        if (GetTypeWithoutAttr(node->left->expr_type)->type != kTypeStruct)
+          ErrorWithToken(node->op, "left operand is not a struct");
+        struct Node *member =
+            FindStructMember(node->left->expr_type, node->right);
+        PrintASTNode(member);
+        node->byte_offset = member->struct_member_ent_ofs;
+        node->expr_type = CreateTypeLValue(
+            GetTypeWithoutAttr(member->struct_member_ent_type));
+        return;
+      }
+      if (IsEqualTokenWithCStr(node->op, "->")) {
+        struct Node *left_type = GetTypeWithoutAttr(node->left->expr_type);
+        PrintASTNode(left_type);
+        assert(left_type->type == kTypePointer);
+        struct Node *left_deref_type = left_type->right;
+        assert(left_deref_type->type == kTypeStruct);
+        struct Node *member = FindStructMember(left_deref_type, node->right);
+        PrintASTNode(member);
+        node->byte_offset = member->struct_member_ent_ofs;
+        node->expr_type = CreateTypeLValue(
+            GetTypeWithoutAttr(member->struct_member_ent_type));
+        return;
+      }
+      assert(false);
     } else if (IsTokenWithType(node->op, kTokenIdent)) {
       struct Node *ident_info = FindLocalVar(*ctx, node->op);
       if (ident_info) {

@@ -133,6 +133,21 @@ void TestStructVecSum(int x0, int y0, int x1, int y1, int x_expected, int y_expe
   ExpectEq(v0.y + v1.y, y_expected, __LINE__);
 }
 
+void TestStructVecSumRef(int x0, int y0, int x1, int y1, int x_expected, int y_expected) {
+  struct Point2D v0;
+  struct Point2D v1;
+  struct Point2D* vp0 = &v0;
+  struct Point2D* vp1 = &v1;
+  struct Point2D** vpp0 = &vp0;
+  struct Point2D** vpp1 = &vp1;
+  v0.x = x0;
+  v0.y = y0;
+  vp1->x = x1;
+  (*vpp1)->y = y1;
+  ExpectEq((*vpp0)->x + v1.x, x_expected, __LINE__);
+  ExpectEq(vp0->y + v1.y, y_expected, __LINE__);
+}
+
 int main(int argc, char **argv) {
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
@@ -302,6 +317,9 @@ int main(int argc, char **argv) {
 
   TestStructVecSum(1, 2, 3, 4, 4, 6);
   TestStructVecSum(2, 3, 5, 7, 7, 10);
+
+  TestStructVecSumRef(1, 2, 3, 4, 4, 6);
+  TestStructVecSumRef(2, 3, 5, 7, 7, 10);
 
   puts("PASS all stmt tests");
   return 0;
