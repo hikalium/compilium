@@ -154,6 +154,7 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
     PrintASTNodeSub(n->value, depth);
     return;
   } else if (n->type == kNodeStructMember) {
+    fprintf(stderr, "Member +%d: ", n->struct_member_ent_ofs);
     PrintASTNodeSub(n->struct_member_ent_type, depth);
     return;
   } else if (n->type == kTypeBase) {

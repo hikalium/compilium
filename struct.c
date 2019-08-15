@@ -31,3 +31,12 @@ void AddMemberOfStructFromDecl(struct Node *struct_spec, struct Node *decl) {
   PushKeyValueToList(dict, name, struct_member);
   PrintASTNode(struct_member);
 }
+
+struct Node *FindStructMember(struct Node *struct_type,
+                              struct Node *key_token) {
+  assert(key_token->type == kNodeToken);
+  struct_type = GetTypeWithoutAttr(struct_type);
+  assert(struct_type && struct_type->type == kTypeStruct);
+  return GetNodeByTokenKey(struct_type->type_struct_spec->struct_member_dict,
+                           key_token);
+}

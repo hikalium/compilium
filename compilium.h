@@ -191,6 +191,7 @@ struct Node *Parse(struct Node *passed_tokens);
 // @struct.c
 int CalcStructSize(struct Node *spec);
 void AddMemberOfStructFromDecl(struct Node *struct_spec, struct Node *decl);
+struct Node *FindStructMember(struct Node *struct_type, struct Node *key_token);
 
 // @symbol.c
 enum SymbolType {

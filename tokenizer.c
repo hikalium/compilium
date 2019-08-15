@@ -152,6 +152,8 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
     return AllocToken(src, *line, p, 1, kTokenPunctuator);
   } else if (')' == *p) {
     return AllocToken(src, *line, p, 1, kTokenPunctuator);
+  } else if ('.' == *p) {
+    return AllocToken(src, *line, p, 1, kTokenPunctuator);
   }
   Error("Unexpected char %c", *p);
 }

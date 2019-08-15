@@ -122,6 +122,17 @@ void TestSizeOfStruct() {
   ExpectEq(sizeof(p3d), 12, __LINE__);
 }
 
+void TestStructVecSum(int x0, int y0, int x1, int y1, int x_expected, int y_expected) {
+  struct Point2D v0;
+  struct Point2D v1;
+  v0.x = x0;
+  v0.y = y0;
+  v1.x = x1;
+  v1.y = y1;
+  ExpectEq(v0.x + v1.x, x_expected, __LINE__);
+  ExpectEq(v0.y + v1.y, y_expected, __LINE__);
+}
+
 int main(int argc, char **argv) {
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
@@ -288,6 +299,9 @@ int main(int argc, char **argv) {
 
   TestSizeOfPointerOfIncompleteStruct();
   TestSizeOfStruct();
+
+  TestStructVecSum(1, 2, 3, 4, 4, 6);
+  TestStructVecSum(2, 3, 5, 7, 7, 10);
 
   puts("PASS all stmt tests");
   return 0;

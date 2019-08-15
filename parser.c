@@ -65,21 +65,32 @@ struct Node *ParsePrimaryExpr() {
 struct Node *ParseAssignExpr();
 struct Node *ParsePostfixExpr() {
   struct Node *n = ParsePrimaryExpr();
-  if (!n) return NULL;
-  if (ConsumePunctuator("(")) {
-    struct Node *args = AllocList();
-    if (!ConsumePunctuator(")")) {
-      do {
-        struct Node *arg_expr = ParseAssignExpr();
-        if (!arg_expr) ErrorWithToken(NextToken(), "Expected expression here");
-        PushToList(args, arg_expr);
-      } while (ConsumePunctuator(","));
-      ExpectPunctuator(")");
+  while (n) {
+    struct Node *t;
+    if (ConsumePunctuator("(")) {
+      struct Node *args = AllocList();
+      if (!ConsumePunctuator(")")) {
+        do {
+          struct Node *arg_expr = ParseAssignExpr();
+          if (!arg_expr)
+            ErrorWithToken(NextToken(), "Expected expression here");
+          PushToList(args, arg_expr);
+        } while (ConsumePunctuator(","));
+        ExpectPunctuator(")");
+      }
+      struct Node *nn = AllocNode(kASTExprFuncCall);
+      nn->func_expr = n;
+      nn->arg_expr_list = args;
+      n = nn;
+      continue;
     }
-    struct Node *nn = AllocNode(kASTExprFuncCall);
-    nn->func_expr = n;
-    nn->arg_expr_list = args;
-    n = nn;
+    if ((t = ConsumePunctuator("."))) {
+      struct Node *right = ConsumeToken(kTokenIdent);
+      assert(right);
+      n = CreateASTBinOp(t, n, right);
+      continue;
+    }
+    break;
   }
   return n;
 }

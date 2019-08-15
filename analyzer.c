@@ -95,11 +95,27 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       node->reg = node->right->reg;
       node->expr_type = node->right->expr_type;
       return;
+    } else if (IsEqualTokenWithCStr(node->op, ".")) {
+      AnalyzeNode(node->left, ctx);
+      node->reg = node->left->reg;
+      PrintASTNode(node->left->expr_type);
+      assert(node->right->type == kNodeToken);
+      struct Node *member =
+          FindStructMember(node->left->expr_type, node->right);
+      PrintASTNode(member);
+      node->byte_offset = member->struct_member_ent_ofs;
+      node->expr_type =
+          CreateTypeLValue(GetTypeWithoutAttr(member->struct_member_ent_type));
+      return;
     } else if (IsTokenWithType(node->op, kTokenIdent)) {
       struct Node *ident_info = FindLocalVar(*ctx, node->op);
       if (ident_info) {
         node->byte_offset = ident_info->byte_offset;
         AllocReg(node);
+        if (GetTypeWithoutAttr(ident_info->expr_type)->type == kTypeStruct) {
+          node->expr_type = ident_info->expr_type;
+          return;
+        }
         node->expr_type = CreateTypeLValue(ident_info->expr_type);
         return;
       }
