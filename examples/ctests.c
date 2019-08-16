@@ -173,6 +173,14 @@ int TestWhileLoop(int idx_begin, int idx_end, int idx_inc, int value_inc) {
   return v;
 }
 
+int TestForLoop(int idx_begin, int idx_end, int idx_inc, int value_inc) {
+  int v = 0;
+  for (int i = idx_begin; i < idx_end; i += idx_inc) {
+    v += value_inc;
+  }
+  return v;
+}
+
 int main(int argc, char** argv) {
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
@@ -357,6 +365,10 @@ int main(int argc, char** argv) {
   ExpectEq(TestWhileLoop(7, 11, 2, 5), 10, __LINE__);
   ExpectEq(TestWhileLoop(11, 7, 2, 5), 0, __LINE__);
   ExpectEq(TestWhileLoop(7, 11, 1, 5), 20, __LINE__);
+
+  ExpectEq(TestForLoop(7, 11, 2, 5), 10, __LINE__);
+  ExpectEq(TestForLoop(11, 7, 2, 5), 0, __LINE__);
+  ExpectEq(TestForLoop(7, 11, 1, 5), 20, __LINE__);
 
   puts("PASS all stmt tests");
   return 0;

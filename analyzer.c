@@ -283,7 +283,7 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     }
   } else if (node->type == kASTForStmt) {
     AnalyzeNode(node->init, ctx);
-    FreeReg(node->init->reg);
+    if (node->init->reg) FreeReg(node->init->reg);
     AnalyzeNode(node->cond, ctx);
     FreeReg(node->cond->reg);
     AnalyzeNode(node->updt, ctx);

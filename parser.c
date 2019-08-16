@@ -2,6 +2,7 @@
 
 struct Node *ParseStmt();
 struct Node *ParseCompStmt();
+struct Node *ParseDeclBody();
 
 struct Node *next_token;
 
@@ -315,7 +316,8 @@ struct Node *ParseIterationStmt() {
   struct Node *t;
   if ((t = ConsumeToken(kTokenKwFor))) {
     ExpectPunctuator("(");
-    struct Node *init = ParseExpr();
+    struct Node *init = ParseDeclBody();
+    if (!init) init = ParseExpr();
     ExpectPunctuator(";");
     struct Node *cond = ParseExpr();
     ExpectPunctuator(";");
