@@ -11,8 +11,8 @@
 /*
    This is a block comment 3
  */
-int puts(char *);
-int printf(char *, int);
+int puts(char*);
+int printf(char*, int);
 void exit(int);
 
 void ExpectEq(int actual, int expected, int line) {
@@ -66,7 +66,7 @@ int TestIfStmtWithCompStmt() {
 int TestInitializer() {
   int v0 = 3;
   int v1 = v0 * 5 + 7;
-  return v0 + v1; // 25
+  return v0 + v1;  // 25
 }
 
 int TestCompAssignPlusEq(int vL, int vR) {
@@ -100,7 +100,7 @@ int TestCompAssignModEq(int vL, int vR) {
 }
 
 void TestSizeOfPointerOfIncompleteStruct() {
-  struct IncompleteStruct *incomplete_struct;
+  struct IncompleteStruct* incomplete_struct;
   ExpectEq(sizeof(incomplete_struct), 8, __LINE__);
 }
 
@@ -127,7 +127,8 @@ void TestSizeOfStruct() {
   ExpectEq(sizeof(p3d), 12, __LINE__);
 }
 
-void TestStructVecSum(int x0, int y0, int x1, int y1, int x_expected, int y_expected) {
+void TestStructVecSum(int x0, int y0, int x1, int y1, int x_expected,
+                      int y_expected) {
   struct Point2D v0;
   struct Point2D v1;
   v0.x = x0;
@@ -138,7 +139,8 @@ void TestStructVecSum(int x0, int y0, int x1, int y1, int x_expected, int y_expe
   ExpectEq(v0.y + v1.y, y_expected, __LINE__);
 }
 
-void TestStructVecSumRef(int x0, int y0, int x1, int y1, int x_expected, int y_expected) {
+void TestStructVecSumRef(int x0, int y0, int x1, int y1, int x_expected,
+                         int y_expected) {
   struct Point2D v0;
   struct Point2D v1;
   struct Point2D* vp0 = &v0;
@@ -161,7 +163,17 @@ int TestArray(int v0, int v1, int v2, int idx) {
   return a[idx];
 }
 
-int main(int argc, char **argv) {
+int TestWhileLoop(int idx_begin, int idx_end, int idx_inc, int value_inc) {
+  int v = 0;
+  int i = idx_begin;
+  while (i < idx_end) {
+    v += value_inc;
+    i += idx_inc;
+  }
+  return v;
+}
+
+int main(int argc, char** argv) {
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
 
@@ -341,6 +353,10 @@ int main(int argc, char **argv) {
   ExpectEq(TestArray(7, 11, 13, 0), 7, __LINE__);
   ExpectEq(TestArray(7, 11, 13, 1), 11, __LINE__);
   ExpectEq(TestArray(7, 11, 13, 2), 13, __LINE__);
+
+  ExpectEq(TestWhileLoop(7, 11, 2, 5), 10, __LINE__);
+  ExpectEq(TestWhileLoop(11, 7, 2, 5), 0, __LINE__);
+  ExpectEq(TestWhileLoop(7, 11, 1, 5), 20, __LINE__);
 
   puts("PASS all stmt tests");
   return 0;

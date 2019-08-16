@@ -37,6 +37,7 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
     if (IsEqualTokenWithCStr(t, "sizeof")) t->token_type = kTokenKwSizeof;
     if (IsEqualTokenWithCStr(t, "struct")) t->token_type = kTokenKwStruct;
     if (IsEqualTokenWithCStr(t, "void")) t->token_type = kTokenKwVoid;
+    if (IsEqualTokenWithCStr(t, "while")) t->token_type = kTokenKwWhile;
     return t;
   } else if ('\'' == *p) {
     int length = 1;

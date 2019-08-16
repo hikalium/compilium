@@ -22,16 +22,16 @@ int main() {
   int cx = size / 2;
   int cy = size / 2;
 
-  map[cy-1][cx-3] = 1;
-  map[cy-1][cx+2] = 1;
+  map[cy - 1][cx - 3] = 1;
+  map[cy - 1][cx + 2] = 1;
 
-  map[cy][cx-4] = 1;
-  map[cy][cx-3] = 1;
-  map[cy][cx+2] = 1;
-  map[cy][cx+3] = 1;
-  
-  map[cy+1][cx-3] = 1;
-  map[cy+1][cx+2] = 1;
+  map[cy][cx - 4] = 1;
+  map[cy][cx - 3] = 1;
+  map[cy][cx + 2] = 1;
+  map[cy][cx + 3] = 1;
+
+  map[cy + 1][cx - 3] = 1;
+  map[cy + 1][cx + 2] = 1;
 
   for (1; 1; 1) {
     for (y = 0; y < size; y++) {

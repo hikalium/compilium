@@ -290,6 +290,11 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     FreeReg(node->updt->reg);
     AnalyzeNode(node->body, ctx);
     return;
+  } else if (node->type == kASTWhileStmt) {
+    AnalyzeNode(node->cond, ctx);
+    FreeReg(node->cond->reg);
+    AnalyzeNode(node->body, ctx);
+    return;
   }
   ErrorWithToken(node->op, "AnalyzeNode: Not implemented");
 }

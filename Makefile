@@ -36,6 +36,7 @@ unittest : run_unittest_List run_unittest_Type
 
 format:
 	clang-format -i $(SRCS) $(HEADERS)
+	make -C examples format
 
 commit:
 	make format

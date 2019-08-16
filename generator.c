@@ -162,7 +162,7 @@ static void GenerateForNode(struct Node *node) {
     for (i = NUM_OF_SCRATCH_REGS; i >= 1; i--) {
       printf("pop %s\n", reg_names_64[i]);
     }
-    printf("mov %s, rax\n", reg_names_64[node->reg]);
+    printf("movsxd %s, eax\n", reg_names_64[node->reg]);
     printf("add rsp, %d\n", node->stack_size_needed);
     return;
   } else if (node->type == kASTFuncDef) {
@@ -489,6 +489,17 @@ static void GenerateForNode(struct Node *node) {
     printf("jz L%d\n", end_label);
     GenerateForNode(node->body);
     GenerateForNode(node->updt);
+    printf("jmp L%d\n", loop_label);
+    printf("L%d:\n", end_label);
+    return;
+  } else if (node->type == kASTWhileStmt) {
+    int loop_label = GetLabelNumber();
+    int end_label = GetLabelNumber();
+    printf("L%d:\n", loop_label);
+    GenerateForNodeRValue(node->cond);
+    EmitConvertToBool(node->cond->reg, node->cond->reg);
+    printf("jz L%d\n", end_label);
+    GenerateForNode(node->body);
     printf("jmp L%d\n", loop_label);
     printf("L%d:\n", end_label);
     return;

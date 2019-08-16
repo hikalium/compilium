@@ -332,6 +332,20 @@ struct Node *ParseIterationStmt() {
     stmt->body = body;
     return stmt;
   }
+  if ((t = ConsumeToken(kTokenKwWhile))) {
+    ExpectPunctuator("(");
+    struct Node *cond = ParseExpr();
+    assert(cond);
+    ExpectPunctuator(")");
+    struct Node *body = ParseStmt();
+    assert(body);
+
+    struct Node *stmt = AllocNode(kASTWhileStmt);
+    stmt->op = t;
+    stmt->cond = cond;
+    stmt->body = body;
+    return stmt;
+  }
   return NULL;
 }
 
