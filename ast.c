@@ -24,6 +24,15 @@ struct Node *CreateASTUnaryPrefixOp(struct Node *t, struct Node *right) {
   return op;
 }
 
+struct Node *CreateASTUnaryPostfixOp(struct Node *left, struct Node *t) {
+  assert(IsToken(t));
+  if (!left) ErrorWithToken(t, "Expected expression before prefix operator");
+  struct Node *op = AllocNode(kASTExpr);
+  op->op = t;
+  op->left = left;
+  return op;
+}
+
 struct Node *CreateASTExprStmt(struct Node *t, struct Node *left) {
   struct Node *op = AllocNode(kASTExprStmt);
   op->op = t;

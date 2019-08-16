@@ -70,6 +70,22 @@ static void EmitSubFromMemory(struct Node *op, int dst, int src, int size) {
   ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
 }
 
+static void EmitIncMemory(struct Node *op, int dst, int size) {
+  if (size == 8) {
+    printf("inc qword ptr [%s]\n", reg_names_64[dst]);
+    return;
+  }
+  if (size == 4) {
+    printf("inc dword ptr [%s]\n", reg_names_64[dst]);
+    return;
+  }
+  if (size == 1) {
+    printf("inc byte ptr [%s]\n", reg_names_64[dst]);
+    return;
+  }
+  ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
+}
+
 static void EmitMulToMemory(struct Node *op, int dst, int src, int size) {
   if (size == 4) {
     // rdx:rax <- rax * r/m
@@ -183,6 +199,13 @@ static void GenerateForNode(struct Node *node) {
         printf("mov %s, %d\n", reg_names_64[node->reg], node->op->begin[1]);
         return;
       }
+      if (node->op->length == (1 + 2 + 1) && node->op->begin[1] == '\\') {
+        if (node->op->begin[2] == 'n') {
+          printf("mov %s, %d\n", reg_names_64[node->reg], '\n');
+          return;
+        }
+      }
+      ErrorWithToken(node->op, "Not implemented char literal");
     } else if (IsEqualTokenWithCStr(node->op, "(")) {
       GenerateForNode(node->right);
       return;
@@ -199,9 +222,11 @@ static void GenerateForNode(struct Node *node) {
     } else if (IsEqualTokenWithCStr(node->op, "[")) {
       GenerateForNodeRValue(node->left);
       GenerateForNodeRValue(node->right);
+      struct Node *left_type = GetTypeWithoutAttr(node->left->expr_type);
+      assert(left_type->type == kTypeArray);
       printf("imul %s, %s, %d\n", reg_names_64[node->right->reg],
              reg_names_64[node->right->reg],
-             GetSizeOfType(node->left->expr_type->type_array_type_of));
+             GetSizeOfType(left_type->type_array_type_of));
       printf("add %s, %s\n", reg_names_64[node->left->reg],
              reg_names_64[node->right->reg]);
       return;
@@ -270,6 +295,16 @@ static void GenerateForNode(struct Node *node) {
       }
       ErrorWithToken(node->op,
                      "GenerateForNode: Not implemented unary prefix op");
+    } else if (node->left && !node->right) {
+      if (IsEqualTokenWithCStr(node->op, "++")) {
+        GenerateForNode(node->left);
+        EmitIncMemory(node->op, node->reg, GetSizeOfType(node->expr_type));
+        printf("mov %s, [%s]\n", reg_names_64[node->reg],
+               reg_names_64[node->reg]);
+        return;
+      }
+      ErrorWithToken(node->op,
+                     "GenerateForNode: Not implemented unary postfix op");
     } else if (node->left && node->right) {
       if (IsEqualTokenWithCStr(node->op, "&&")) {
         GenerateForNodeRValue(node->left);
@@ -463,7 +498,11 @@ static void GenerateForNode(struct Node *node) {
 
 static void GenerateForNodeRValue(struct Node *node) {
   GenerateForNode(node);
-  if (!node->expr_type || node->expr_type->type != kTypeLValue) return;
+  if (!node->expr_type) return;
+  if (node->expr_type->type != kTypeLValue) return;
+  if (node->expr_type->type == kTypeLValue &&
+      node->expr_type->right->type == kTypeArray)
+    return;
   int size = GetSizeOfType(GetRValueType(node->expr_type));
   if (size == 8) {
     printf("mov %s, [%s]\n", reg_names_64[node->reg], reg_names_64[node->reg]);

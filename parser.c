@@ -87,11 +87,16 @@ struct Node *ParsePostfixExpr() {
     if ((t = ConsumePunctuator("["))) {
       n = CreateASTBinOp(t, n, ParseExpr());
       ExpectPunctuator("]");
+      continue;
     }
     if ((t = ConsumePunctuator(".")) || (t = ConsumePunctuator("->"))) {
       struct Node *right = ConsumeToken(kTokenIdent);
       assert(right);
       n = CreateASTBinOp(t, n, right);
+      continue;
+    }
+    if ((t = ConsumePunctuator("++"))) {
+      n = CreateASTUnaryPostfixOp(n, t);
       continue;
     }
     break;
@@ -404,6 +409,7 @@ struct Node *ParseDirectDecltor() {
       nn->left = n;
       n = nn;
       ExpectPunctuator("]");
+      continue;
     }
     break;
   }

@@ -164,6 +164,7 @@ struct Node *AllocNode(enum NodeType type);
 struct Node *CreateASTBinOp(struct Node *t, struct Node *left,
                             struct Node *right);
 struct Node *CreateASTUnaryPrefixOp(struct Node *t, struct Node *right);
+struct Node *CreateASTUnaryPostfixOp(struct Node *left, struct Node *t);
 struct Node *CreateASTExprStmt(struct Node *t, struct Node *left);
 struct Node *CreateASTFuncDef(struct Node *func_decl, struct Node *func_body);
 
@@ -239,6 +240,7 @@ struct Node *Tokenize(const char *input);
 
 // @type.c
 int IsSameTypeExceptAttr(struct Node *a, struct Node *b);
+int IsLValueType(struct Node *t);
 struct Node *GetTypeWithoutAttr(struct Node *t);
 struct Node *GetIdentifierTokenFromTypeAttr(struct Node *t);
 struct Node *GetRValueType(struct Node *t);

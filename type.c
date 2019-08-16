@@ -39,6 +39,8 @@ struct Node *GetRValueType(struct Node *t) {
   return t->right;
 }
 
+int IsLValueType(struct Node *t) { return t && t->type == kTypeLValue; }
+
 int IsAssignable(struct Node *dst, struct Node *src) {
   assert(dst && src);
   if (dst->type != kTypeLValue) return 0;

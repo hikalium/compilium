@@ -100,8 +100,8 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       AnalyzeNode(node->right, ctx);
       node->reg = node->left->reg;
       FreeReg(node->right->reg);
-      node->expr_type =
-          CreateTypeLValue(node->left->expr_type->type_array_type_of);
+      node->expr_type = CreateTypeLValue(
+          GetTypeWithoutAttr(node->left->expr_type)->type_array_type_of);
       return;
     } else if (IsEqualTokenWithCStr(node->op, ".") ||
                IsEqualTokenWithCStr(node->op, "->")) {
@@ -194,6 +194,14 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       }
       node->expr_type = GetRValueType(node->right->expr_type);
       return;
+    } else if (node->left && !node->right) {
+      if (IsEqualTokenWithCStr(node->op, "++")) {
+        AnalyzeNode(node->left, ctx);
+        assert(IsLValueType(node->left->expr_type));
+        node->reg = node->left->reg;
+        node->expr_type = GetRValueType(node->left->expr_type);
+        return;
+      }
     } else if (node->left && node->right) {
       AnalyzeNode(node->left, ctx);
       AnalyzeNode(node->right, ctx);
@@ -209,6 +217,7 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       node->expr_type = GetRValueType(node->left->expr_type);
       return;
     }
+    assert(false);
   }
   if (node->type == kASTExprStmt) {
     if (!node->left) return;

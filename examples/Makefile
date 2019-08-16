@@ -1,4 +1,4 @@
-default : hello.bin
+default : hello.bin gameoflife.bin
 
 .FORCE : 
 
@@ -21,11 +21,12 @@ validate : run_ctests_hostcc
 
 LLDB_ARGS = -o 'settings set interpreter.prompt-on-quit false' \
 			-o 'b __assert' \
+			-o 'b ErrorWithToken' \
 			-o 'process launch'
 
-debug_ctests : ../compilium_dbg ctests.c
+debug_% : ../compilium_dbg %.c
 	lldb \
-		-o 'settings set target.input-path ctests.c' $(LLDB_ARGS) \
+		-o 'settings set target.input-path $*.c' $(LLDB_ARGS) \
 		-- ../compilium_dbg --target-os `uname`
 
 %.S : %.c Makefile ../compilium .FORCE
