@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
     input[input_size++] = c;
     if (input_size == buf_size) {
       buf_size <<= 1;
-      assert(realloc(input, buf_size));
+      assert((input = realloc(input, buf_size)));
     }
   }
   assert(input_size < buf_size);
