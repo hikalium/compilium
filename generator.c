@@ -132,6 +132,15 @@ static void EmitLShiftMemory(struct Node *op, int dst, int src, int size) {
   ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
 }
 
+static void EmitRShiftMemory(struct Node *op, int dst, int src, int size) {
+  if (size == 4) {
+    printf("mov ecx, %s\n", reg_names_32[src]);
+    printf("shr dword ptr [%s], cl\n", reg_names_64[dst]);
+    return;
+  }
+  ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
+}
+
 const char *GetParamRegName(struct Node *type, int idx) {
   assert(0 <= idx && idx < NUM_OF_PARAM_REGISTERS);
   int size = GetSizeOfType(type);
@@ -343,7 +352,8 @@ static void GenerateForNode(struct Node *node) {
                  IsEqualTokenWithCStr(node->op, "*=") ||
                  IsEqualTokenWithCStr(node->op, "/=") ||
                  IsEqualTokenWithCStr(node->op, "%=") ||
-                 IsEqualTokenWithCStr(node->op, "<<=")) {
+                 IsEqualTokenWithCStr(node->op, "<<=") ||
+                 IsEqualTokenWithCStr(node->op, ">>=")) {
         GenerateForNode(node->left);
         GenerateForNodeRValue(node->right);
         int size = GetSizeOfType(node->right->expr_type);
@@ -373,6 +383,10 @@ static void GenerateForNode(struct Node *node) {
         }
         if (IsEqualTokenWithCStr(node->op, "<<=")) {
           EmitLShiftMemory(node->op, node->left->reg, node->right->reg, size);
+          return;
+        }
+        if (IsEqualTokenWithCStr(node->op, ">>=")) {
+          EmitRShiftMemory(node->op, node->left->reg, node->right->reg, size);
           return;
         }
         assert(false);

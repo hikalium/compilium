@@ -105,6 +105,12 @@ int TestCompAssignLShift(int vL, int vR) {
   return vL;
 }
 
+int TestCompAssignRShift(int vL, int vR) {
+  int v = vL;
+  vL >>= vR;
+  return vL;
+}
+
 void TestSizeOfPointerOfIncompleteStruct() {
   struct IncompleteStruct* incomplete_struct;
   ExpectEq(sizeof(incomplete_struct), 8, __LINE__);
@@ -380,6 +386,11 @@ int main(int argc, char** argv) {
   ExpectEq(TestCompAssignLShift(1, 3), 8, __LINE__);
   ExpectEq(TestCompAssignLShift(5, 0), 5, __LINE__);
   ExpectEq(TestCompAssignLShift(5, 3), 40, __LINE__);
+
+  ExpectEq(TestCompAssignRShift(32, 0), 32, __LINE__);
+  ExpectEq(TestCompAssignRShift(32, 3), 4, __LINE__);
+  ExpectEq(TestCompAssignRShift(32, 6), 0, __LINE__);
+  ExpectEq(TestCompAssignRShift(7, 2), 1, __LINE__);
 
   puts("PASS all stmt tests");
   return 0;
