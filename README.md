@@ -24,6 +24,12 @@ compilium takes stdin as an input, so you can compile your code like this (in ba
 make testall
 ```
 
+## Local CI
+```
+circleci config validate
+circleci local execute
+```
+
 ## License
 MIT
 

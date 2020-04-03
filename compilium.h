@@ -1,8 +1,8 @@
-#include <stdarg.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "include/stdarg.h"
+#include "include/stdbool.h"
+#include "include/stdio.h"
+#include "include/stdlib.h"
+#include "include/string.h"
 
 char *strndup(const char *s, size_t n);
 char *strdup(const char *s);
