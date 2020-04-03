@@ -42,6 +42,7 @@ enum NodeType {
 };
 
 enum TokenType {
+  kTokenDelimiter,
   kTokenDecimalNumber,
   kTokenOctalNumber,
   kTokenIdent,
@@ -236,6 +237,7 @@ void OutputTokenSequenceAsCSource(struct Node *t);
 void PrintToken(struct Node *t);
 void PrintTokenBrief(struct Node *t);
 void PrintTokenStrToFile(struct Node *t, FILE *fp);
+struct Node *RemoveDelimiterTokens(struct Node *t);
 
 // @tokenizer.c
 struct Node *CreateToken(const char *input);

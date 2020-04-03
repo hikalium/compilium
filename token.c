@@ -62,3 +62,15 @@ void PrintTokenBrief(struct Node *t) {
 void PrintTokenStrToFile(struct Node *t, FILE *fp) {
   fprintf(fp, "%.*s", t->length, t->begin);
 }
+
+struct Node *RemoveDelimiterTokens(struct Node *head) {
+  struct Node **t = &head;
+  for (;;) {
+    while (*t && (*t)->token_type == kTokenDelimiter) {
+      *t = (*t)->next_token;
+    }
+    if (!*t) break;
+    t = &(*t)->next_token;
+  }
+  return head;
+}

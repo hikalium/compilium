@@ -5,7 +5,7 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
   while (*p <= ' ') {
     if (!*p) return NULL;
     if (*p == '\n') (*line)++;
-    p++;
+    return AllocToken(src, *line, p, 1, kTokenDelimiter);
   }
   if ('1' <= *p && *p <= '9') {
     int length = 0;

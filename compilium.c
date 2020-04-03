@@ -236,15 +236,12 @@ int main(int argc, char *argv[]) {
   input[input_size] = 0;
 
   struct Node *tokens = Tokenize(input);
-  PrintTokenSequence(tokens);
 
   Preprocess(&tokens);
   if (is_preprocess_only) {
     OutputTokenSequenceAsCSource(tokens);
     return 0;
   }
-
-  PrintTokenSequence(tokens);
 
   struct Node *ast = Parse(tokens);
   PrintASTNode(ast);

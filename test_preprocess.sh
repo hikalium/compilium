@@ -5,7 +5,8 @@ function test_stdout {
   expected_stdout="$2"
   testname="$3"
   printf "$expected_stdout" > expected.stdout
-  ./compilium -E --target-os `uname` <<< "$input" > out.stdout || { \
+  printf "$input" > testinput.c
+  cat testinput.c | ./compilium -E --target-os `uname` > out.stdout || { \
     echo "$input" > failcase.txt; \
     echo "Compilation failed."; \
     exit 1; }
@@ -22,4 +23,21 @@ EOS
 EOS
 `" \
 'empty input becomes empty'
+
+test_stdout \
+"`cat << EOS
+int   one;
+
+int   two;
+int three;
+EOS
+`" \
+"`cat << EOS
+int   one;
+
+int   two;
+int three;
+EOS
+`" \
+'keep white spaces and new lines'
 

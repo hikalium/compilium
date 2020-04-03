@@ -500,7 +500,9 @@ struct Node *ParseFuncDef(struct Node *decl_body) {
   return CreateASTFuncDef(decl_body, comp_stmt);
 }
 
-void InitParser(struct Node *head_token) { next_token = head_token; }
+void InitParser(struct Node *head_token) {
+  next_token = RemoveDelimiterTokens(head_token);
+}
 
 struct Node *Parse(struct Node *head_token) {
   InitParser(head_token);
