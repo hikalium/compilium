@@ -19,11 +19,16 @@ debug : compilium_dbg failcase.c
 
 testall : unittest ctest test
 
+test_preprocess : compilium
+	./test_preprocess.sh
+
 test : compilium
 	./test.sh
 
 ctest : compilium
 	make -C examples run_ctests
+
+unittest : run_unittest_List run_unittest_Type
 
 run_unittest_% : compilium
 	@ ./compilium --run-unittest=$* || { echo "FAIL unittest.$*: Run 'make dbg_unittest_$*' to rerun this testcase with debugger"; exit 1; }
@@ -31,8 +36,6 @@ run_unittest_% : compilium
 dbg_unittest_% : compilium_dbg
 	lldb $(LLDB_ARGS)\
 		-- ./compilium_dbg --run-unittest=$*
-
-unittest : run_unittest_List run_unittest_Type
 
 format:
 	clang-format -i $(SRCS) $(HEADERS)

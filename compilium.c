@@ -1,6 +1,7 @@
 #include "compilium.h"
 
 const char *symbol_prefix;
+bool is_preprocess_only = false;
 
 _Noreturn void Error(const char *fmt, ...) {
   fflush(stdout);
@@ -35,6 +36,8 @@ void ParseCompilerArgs(int argc, char **argv) {
       TestList();
     } else if (strcmp(argv[i], "--run-unittest=Type") == 0) {
       TestType();
+    } else if (strcmp(argv[i], "-E") == 0) {
+      is_preprocess_only = true;
     } else {
       Error("Unknown argument: %s", argv[i]);
     }
@@ -232,11 +235,15 @@ int main(int argc, char *argv[]) {
   assert(input_size < buf_size);
   input[input_size] = 0;
 
-  fprintf(stderr, "input:\n%s\n", input);
   struct Node *tokens = Tokenize(input);
   PrintTokenSequence(tokens);
 
   Preprocess(&tokens);
+  if (is_preprocess_only) {
+    OutputTokenSequenceAsCSource(tokens);
+    return 0;
+  }
+
   PrintTokenSequence(tokens);
 
   struct Node *ast = Parse(tokens);

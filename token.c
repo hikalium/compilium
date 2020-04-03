@@ -36,6 +36,15 @@ void PrintTokenSequence(struct Node *t) {
   }
 }
 
+void OutputTokenSequenceAsCSource(struct Node *t) {
+  if (!t) return;
+  assert(IsToken(t));
+  while (t) {
+    fprintf(stdout, "%.*s", t->length, t->begin);
+    t = t->next_token;
+  }
+}
+
 void PrintToken(struct Node *t) {
   fprintf(stderr, "(Token %.*s type=%d)", t->length, t->begin, t->token_type);
 }
