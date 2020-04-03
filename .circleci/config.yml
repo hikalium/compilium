@@ -8,7 +8,7 @@ jobs:
             - run:
                 name: Install build tools
                 command: >
-                    apt update && apt install -y build-essential wget software-properties-common python-software-properties &&
+                    apt update && apt install -y build-essential wget software-properties-common python-software-properties apt-transport-https &&
                     wget https://apt.llvm.org/llvm-snapshot.gpg.key && 
                     apt-key add llvm-snapshot.gpg.key &&
                     apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-6.0 main" &&
