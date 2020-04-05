@@ -3,41 +3,6 @@
 struct Node *ParseStmt();
 struct Node *ParseCompStmt();
 struct Node *ParseDeclBody();
-
-struct Node *next_token;
-
-static struct Node *ConsumeToken(enum TokenType type) {
-  if (!next_token) return NULL;
-  struct Node *t = next_token;
-  if (!IsTokenWithType(t, type)) return NULL;
-  next_token = next_token->next_token;
-  return t;
-}
-
-static struct Node *ConsumePunctuator(const char *s) {
-  if (!next_token) return NULL;
-  struct Node *t = next_token;
-  if (!IsEqualTokenWithCStr(t, s)) return NULL;
-  next_token = next_token->next_token;
-  return t;
-}
-
-static struct Node *ExpectPunctuator(const char *s) {
-  if (!next_token) Error("Expect token %s but got EOF", s);
-  struct Node *t = next_token;
-  if (!IsEqualTokenWithCStr(t, s))
-    ErrorWithToken(t, "Expected token %s here", s);
-  next_token = next_token->next_token;
-  return t;
-}
-
-static struct Node *NextToken() {
-  if (!next_token) return NULL;
-  struct Node *t = next_token;
-  next_token = next_token->next_token;
-  return t;
-}
-
 struct Node *ParseCastExpr();
 struct Node *ParseExpr(void);
 
@@ -501,7 +466,7 @@ struct Node *ParseFuncDef(struct Node *decl_body) {
 }
 
 void InitParser(struct Node *head_token) {
-  next_token = RemoveDelimiterTokens(head_token);
+  InitTokenStream(RemoveDelimiterTokens(head_token));
 }
 
 struct Node *Parse(struct Node *head_token) {

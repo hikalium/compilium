@@ -240,6 +240,12 @@ void PrintTokenBrief(struct Node *t);
 void PrintTokenStrToFile(struct Node *t, FILE *fp);
 struct Node *RemoveDelimiterTokens(struct Node *t);
 
+void InitTokenStream(struct Node *head_token);
+struct Node *ConsumeToken(enum TokenType type);
+struct Node *ConsumePunctuator(const char *s);
+struct Node *ExpectPunctuator(const char *s);
+struct Node *NextToken();
+
 // @tokenizer.c
 struct Node *CreateToken(const char *input);
 struct Node *Tokenize(const char *input);
