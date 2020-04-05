@@ -228,18 +228,26 @@ void Preprocess(struct Node **head_holder) {
         assert(t);
         t = SkipDelimiterTokensInLogicalLine(t->next_token);
         assert(!IsEqualTokenWithCStr(t, "("));
-        struct Node *to = t;
+        // Token level replace case
         assert(t);
-        t = SkipDelimiterTokensInLogicalLine(t->next_token);
+        struct Node *to_token_head = NULL;
+        struct Node **to_token_last_holder = &to_token_head;
+        while (t && !IsEqualTokenWithCStr(t, "\n")) {
+          *to_token_last_holder = DuplicateToken(t);
+          to_token_last_holder = &(*to_token_last_holder)->next_token;
+          t = t->next_token;
+        }
         assert(IsEqualTokenWithCStr(t, "\n"));
-        PushKeyValueToList(replacement_list, CreateTokenStr(from), to);
         RemoveTokensUpTo(t->next_token);
+        PushKeyValueToList(replacement_list, CreateTokenStr(from),
+                           CreateMacroReplacement(to_token_head));
         continue;
       }
       ErrorWithToken(NextToken(), "Not a valid macro");
     }
     if ((e = GetNodeByTokenKey(replacement_list, PeekToken()))) {
-      struct Node *rep = DuplicateToken(e);
+      assert(e->type == kNodeMacroReplacement);
+      struct Node *rep = DuplicateTokenSequence(e->value);
       RemoveCurrentToken();
       InsertTokens(rep);
       continue;

@@ -25,6 +25,17 @@ struct Node *DuplicateToken(struct Node *base_token) {
   return t;
 }
 
+struct Node *DuplicateTokenSequence(struct Node *base_head) {
+  struct Node *dup_head = NULL;
+  struct Node **dup_head_holder = &dup_head;
+  while (base_head) {
+    *dup_head_holder = DuplicateToken(base_head);
+    dup_head_holder = &(*dup_head_holder)->next_token;
+    base_head = base_head->next_token;
+  }
+  return dup_head;
+}
+
 const char *CreateTokenStr(struct Node *t) {
   assert(IsToken(t));
   return strndup(t->begin, t->length);
@@ -159,6 +170,7 @@ void RemoveTokensUpTo(struct Node *end) {
 
 void InsertTokens(struct Node *seq_first) {
   // Insert token sequece (seq) at current cursor pos.
+  if (!IsToken(seq_first)) return;
   struct Node *seq_last = seq_first;
   while (seq_last->next_token) seq_last = seq_last->next_token;
   seq_last->next_token = PeekToken();

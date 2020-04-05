@@ -90,3 +90,27 @@ printf("Hello, world!");
 EOS
 `" \
 'Simple macro replacement'
+
+test_stdout \
+"`cat << EOS
+#define hello printf("Hello, world!")
+hello;
+EOS
+`" \
+"`cat << EOS
+printf("Hello, world!");
+EOS
+`" \
+'Simple macro replacement with multiple tokens'
+
+test_stdout \
+"`cat << EOS
+#define hello
+hello;
+EOS
+`" \
+"`cat << EOS
+;
+EOS
+`" \
+'Simple macro replacement with zero tokens'

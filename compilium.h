@@ -14,6 +14,7 @@ enum NodeType {
   kNodeNone,
   kNodeToken,
   kNodeStructMember,
+  kNodeMacroReplacement,
   //
   kASTExpr,
   kASTExprFuncCall,
@@ -188,6 +189,7 @@ struct Node *CreateTypeStruct(struct Node *tag_token, struct Node *struct_spec);
 struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type);
 struct Node *CreateASTIdent(struct Node *ident);
 struct Node *CreateTypeArray(struct Node *type_of, struct Node *index_decl);
+struct Node *CreateMacroReplacement(struct Node *to_tokens);
 void PrintASTNode(struct Node *n);
 
 // @generate.c
@@ -232,6 +234,7 @@ bool IsToken(struct Node *n);
 struct Node *AllocToken(const char *src_str, int line, const char *begin,
                         int length, enum TokenType type);
 struct Node *DuplicateToken(struct Node *base_token);
+struct Node *DuplicateTokenSequence(struct Node *base_head);
 const char *CreateTokenStr(struct Node *t);
 int IsEqualTokenWithCStr(struct Node *t, const char *s);
 void PrintTokenSequence(struct Node *t);

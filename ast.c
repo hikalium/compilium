@@ -131,6 +131,12 @@ struct Node *CreateTypeArray(struct Node *type_of, struct Node *index_decl) {
   return n;
 }
 
+struct Node *CreateMacroReplacement(struct Node *to_tokens) {
+  struct Node *n = AllocNode(kNodeMacroReplacement);
+  n->value = to_tokens;
+  return n;
+}
+
 static void PrintPadding(int depth) {
   for (int i = 0; i < depth; i++) {
     fputc(' ', stderr);
