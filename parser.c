@@ -465,11 +465,11 @@ struct Node *ParseFuncDef(struct Node *decl_body) {
   return CreateASTFuncDef(decl_body, comp_stmt);
 }
 
-void InitParser(struct Node *head_token) {
+void InitParser(struct Node **head_token) {
   InitTokenStream(RemoveDelimiterTokens(head_token));
 }
 
-struct Node *Parse(struct Node *head_token) {
+struct Node *Parse(struct Node **head_token) {
   InitParser(head_token);
   struct Node *list = AllocList();
   struct Node *decl_body;

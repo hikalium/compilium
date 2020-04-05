@@ -186,7 +186,8 @@ struct Node *Tokenize(const char *input);
 struct Node *ParseDecl(void);
 static struct Node *CreateTypeFromInput(const char *s) {
   fprintf(stderr, "CreateTypeFromInput: %s\n", s);
-  InitParser(Tokenize(s));
+  struct Node *tokens = Tokenize(s);
+  InitParser(&tokens);
   return CreateTypeFromDecl(ParseDecl());
 }
 _Noreturn void TestType() {

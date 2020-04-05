@@ -70,52 +70,88 @@ static bool ShouldRemoveToken(struct Node *t) {
          t->token_type == kTokenZeroWidthNoBreakSpace;
 }
 
-struct Node *RemoveDelimiterTokens(struct Node *head) {
-  struct Node **t = &head;
-  for (;;) {
-    while (*t && ShouldRemoveToken(*t)) {
-      *t = (*t)->next_token;
-    }
-    if (!*t) break;
-    t = &(*t)->next_token;
-  }
-  return head;
-}
-
 // Token stream
 
-static struct Node *next_token;
+static struct Node **next_token_holder;
 
-void InitTokenStream(struct Node *head_token) { next_token = head_token; }
+void InitTokenStream(struct Node **head_token_holder) {
+  assert(head_token_holder);
+  next_token_holder = head_token_holder;
+}
+
+static void AdvanceTokenStream(void) {
+  if (!*next_token_holder) return;
+  next_token_holder = &(*next_token_holder)->next_token;
+}
+
+struct Node *PeekToken(void) {
+  assert(next_token_holder);
+  return *next_token_holder;
+}
+
+struct Node *ReadToken(enum TokenType type) {
+  struct Node *t = *next_token_holder;
+  if (!t || !IsTokenWithType(t, type)) return NULL;
+  return t;
+}
 
 struct Node *ConsumeToken(enum TokenType type) {
-  if (!next_token) return NULL;
-  struct Node *t = next_token;
-  if (!IsTokenWithType(t, type)) return NULL;
-  next_token = next_token->next_token;
+  struct Node *t = *next_token_holder;
+  if (!t || !IsTokenWithType(t, type)) return NULL;
+  AdvanceTokenStream();
+  return t;
+}
+
+struct Node *ConsumeTokenStr(const char *s) {
+  struct Node *t = *next_token_holder;
+  if (!t || !IsEqualTokenWithCStr(t, s)) return NULL;
+  AdvanceTokenStream();
   return t;
 }
 
 struct Node *ConsumePunctuator(const char *s) {
-  if (!next_token) return NULL;
-  struct Node *t = next_token;
-  if (!IsEqualTokenWithCStr(t, s)) return NULL;
-  next_token = next_token->next_token;
+  struct Node *t = *next_token_holder;
+  if (!t || !IsTokenWithType(t, kTokenPunctuator) ||
+      !IsEqualTokenWithCStr(t, s))
+    return NULL;
+  AdvanceTokenStream();
   return t;
 }
 
 struct Node *ExpectPunctuator(const char *s) {
-  if (!next_token) Error("Expect token %s but got EOF", s);
-  struct Node *t = next_token;
-  if (!IsEqualTokenWithCStr(t, s))
-    ErrorWithToken(t, "Expected token %s here", s);
-  next_token = next_token->next_token;
+  struct Node *t = *next_token_holder;
+  if (!t) Error("Expect token %s but got EOF", s);
+  if (!ConsumePunctuator(s)) ErrorWithToken(t, "Expected token %s here", s);
   return t;
 }
 
-struct Node *NextToken() {
-  if (!next_token) return NULL;
-  struct Node *t = next_token;
-  next_token = next_token->next_token;
+struct Node *NextToken(void) {
+  struct Node *t = *next_token_holder;
+  AdvanceTokenStream();
   return t;
+}
+
+void RemoveCurrentToken(void) {
+  if (!*next_token_holder) return;
+  *next_token_holder = (*next_token_holder)->next_token;
+}
+
+void RemoveTokensUpTo(struct Node *end) {
+  while (*next_token_holder && *next_token_holder != end) {
+    RemoveCurrentToken();
+  }
+}
+
+struct Node **RemoveDelimiterTokens(struct Node **head_holder) {
+  InitTokenStream(head_holder);
+  for (;;) {
+    struct Node *t = PeekToken();
+    if (!t) break;
+    if (ShouldRemoveToken(t)) {
+      RemoveCurrentToken();
+      continue;
+    }
+    AdvanceTokenStream();
+  }
+  return head_holder;
 }

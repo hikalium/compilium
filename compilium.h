@@ -195,8 +195,8 @@ void Generate(struct Node *ast);
 
 // @parser.c
 extern struct Node *toplevel_names;
-void InitParser(struct Node *head_token);
-struct Node *Parse(struct Node *passed_tokens);
+void InitParser(struct Node **);
+struct Node *Parse(struct Node **passed_tokens);
 
 // @struct.c
 struct SymbolEntry;
@@ -238,13 +238,18 @@ void OutputTokenSequenceAsCSource(struct Node *t);
 void PrintToken(struct Node *t);
 void PrintTokenBrief(struct Node *t);
 void PrintTokenStrToFile(struct Node *t, FILE *fp);
-struct Node *RemoveDelimiterTokens(struct Node *t);
 
-void InitTokenStream(struct Node *head_token);
+void InitTokenStream(struct Node **head_token);
+struct Node *PeekToken(void);
+struct Node *ReadToken(enum TokenType type);
 struct Node *ConsumeToken(enum TokenType type);
+struct Node *ConsumeTokenStr(const char *s);
 struct Node *ConsumePunctuator(const char *s);
 struct Node *ExpectPunctuator(const char *s);
-struct Node *NextToken();
+struct Node *NextToken(void);
+void RemoveCurrentToken(void);
+void RemoveTokensUpTo(struct Node *end);
+struct Node **RemoveDelimiterTokens(struct Node **);
 
 // @tokenizer.c
 struct Node *CreateToken(const char *input);

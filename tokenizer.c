@@ -2,9 +2,12 @@
 
 static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
   assert(line);
-  while (*p <= ' ') {
-    if (!*p) return NULL;
-    if (*p == '\n') (*line)++;
+  if (!*p) return NULL;
+  if (*p == ' ') {
+    return AllocToken(src, *line, p, 1, kTokenDelimiter);
+  }
+  if (*p == '\n') {
+    (*line)++;
     return AllocToken(src, *line, p, 1, kTokenDelimiter);
   }
   if (p[0] == '\\' && p[1] == '\n') {

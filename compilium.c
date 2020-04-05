@@ -187,34 +187,33 @@ const char *param_reg_names_32[NUM_OF_PARAM_REGISTERS] = {"edi", "esi", "edx",
 const char *param_reg_names_8[NUM_OF_PARAM_REGISTERS] = {"dl", "sil", "dl",
                                                          "cl", "r8b", "r9b"};
 
-void Preprocess(struct Node **p) {
-  if (!p || !*p) return;
-  while (*p) {
-    if (IsTokenWithType(*p, kTokenIdent) &&
-        IsEqualTokenWithCStr(*p, "__LINE__")) {
+void Preprocess(struct Node **head_holder) {
+  InitTokenStream(head_holder);
+  struct Node *t;
+  while (PeekToken()) {
+    if ((t = ConsumeTokenStr("__LINE__"))) {
       char s[32];
-      snprintf(s, sizeof(s), "%d", (*p)->line);
-      (*p)->token_type = kTokenDecimalNumber;
-      (*p)->begin = (*p)->src_str = strdup(s);
-      (*p)->length = strlen((*p)->begin);
-      p = &((*p)->next_token);
+      snprintf(s, sizeof(s), "%d", t->line);
+      t->token_type = kTokenDecimalNumber;
+      t->begin = t->src_str = strdup(s);
+      t->length = strlen(t->begin);
       continue;
     }
-    if (IsTokenWithType(*p, kTokenLineComment)) {
-      int target_line = (*p)->line;
-      struct Node *n = *p;
-      while (n && n->line == target_line) n = n->next_token;
-      *p = n;
+    if ((t = ReadToken(kTokenLineComment))) {
+      while (t && !IsEqualTokenWithCStr(t, "\n")) t = t->next_token;
+      RemoveTokensUpTo(t);
       continue;
     }
-    if (IsTokenWithType(*p, kTokenBlockCommentBegin)) {
-      struct Node *n = *p;
-      while (n && !IsTokenWithType(n, kTokenBlockCommentEnd)) n = n->next_token;
-      assert(n);
-      *p = n->next_token;
+    if ((t = ReadToken(kTokenBlockCommentBegin))) {
+      while (t && !IsTokenWithType(t, kTokenBlockCommentEnd)) t = t->next_token;
+      if (IsTokenWithType(t, kTokenBlockCommentEnd)) t = t->next_token;
+      RemoveTokensUpTo(t);
       continue;
     }
-    p = &(*p)->next_token;
+    if (ConsumePunctuator("#")) {
+      ErrorWithToken(NextToken(), "Not a valid macro");
+    }
+    NextToken();
   }
 }
 
@@ -243,7 +242,7 @@ int main(int argc, char *argv[]) {
     return 0;
   }
 
-  struct Node *ast = Parse(tokens);
+  struct Node *ast = Parse(&tokens);
   PrintASTNode(ast);
   fputc('\n', stderr);
 
