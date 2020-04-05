@@ -17,6 +17,14 @@ struct Node *AllocToken(const char *src_str, int line, const char *begin,
   return t;
 }
 
+struct Node *DuplicateToken(struct Node *base_token) {
+  assert(IsToken(base_token));
+  struct Node *t = AllocNode(kNodeToken);
+  memcpy(t, base_token, sizeof(*t));
+  t->next_token = NULL;
+  return t;
+}
+
 const char *CreateTokenStr(struct Node *t) {
   assert(IsToken(t));
   return strndup(t->begin, t->length);
@@ -109,6 +117,13 @@ struct Node *ConsumeTokenStr(const char *s) {
   return t;
 }
 
+struct Node *ExpectTokenStr(const char *s) {
+  struct Node *t = *next_token_holder;
+  if (!t) Error("Expect token %s but got EOF", s);
+  if (!ConsumeTokenStr(s)) ErrorWithToken(t, "Expected token %s here", s);
+  return t;
+}
+
 struct Node *ConsumePunctuator(const char *s) {
   struct Node *t = *next_token_holder;
   if (!t || !IsTokenWithType(t, kTokenPunctuator) ||
@@ -140,6 +155,14 @@ void RemoveTokensUpTo(struct Node *end) {
   while (*next_token_holder && *next_token_holder != end) {
     RemoveCurrentToken();
   }
+}
+
+void InsertTokens(struct Node *seq_first) {
+  // Insert token sequece (seq) at current cursor pos.
+  struct Node *seq_last = seq_first;
+  while (seq_last->next_token) seq_last = seq_last->next_token;
+  seq_last->next_token = PeekToken();
+  *next_token_holder = seq_first;
 }
 
 struct Node **RemoveDelimiterTokens(struct Node **head_holder) {

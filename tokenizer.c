@@ -72,6 +72,11 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
     }
     length++;
     return AllocToken(src, *line, p, length, kTokenStringLiteral);
+  } else if ('#' == *p) {
+    if (p[1] == '#') {
+      return AllocToken(src, *line, p, 2, kTokenPunctuator);
+    }
+    return AllocToken(src, *line, p, 1, kTokenPunctuator);
   } else if ('&' == *p) {
     if (p[1] == '&') {
       return AllocToken(src, *line, p, 2, kTokenPunctuator);

@@ -187,9 +187,17 @@ const char *param_reg_names_32[NUM_OF_PARAM_REGISTERS] = {"edi", "esi", "edx",
 const char *param_reg_names_8[NUM_OF_PARAM_REGISTERS] = {"dl", "sil", "dl",
                                                          "cl", "r8b", "r9b"};
 
+static struct Node *SkipDelimiterTokensInLogicalLine(struct Node *t) {
+  while (t && t->token_type == kTokenDelimiter &&
+         !IsEqualTokenWithCStr(t, "\n"))
+    t = t->next_token;
+  return t;
+}
+
 void Preprocess(struct Node **head_holder) {
   InitTokenStream(head_holder);
-  struct Node *t;
+  struct Node *replacement_list = AllocList();
+  struct Node *t, *e;
   while (PeekToken()) {
     if ((t = ConsumeTokenStr("__LINE__"))) {
       char s[32];
@@ -210,8 +218,31 @@ void Preprocess(struct Node **head_holder) {
       RemoveTokensUpTo(t);
       continue;
     }
-    if (ConsumePunctuator("#")) {
+    if (IsEqualTokenWithCStr((t = PeekToken()), "#")) {
+      assert(t);
+      t = SkipDelimiterTokensInLogicalLine(t->next_token);
+      if (IsEqualTokenWithCStr(t, "define")) {
+        assert(t);
+        t = SkipDelimiterTokensInLogicalLine(t->next_token);
+        struct Node *from = t;
+        assert(t);
+        t = SkipDelimiterTokensInLogicalLine(t->next_token);
+        assert(!IsEqualTokenWithCStr(t, "("));
+        struct Node *to = t;
+        assert(t);
+        t = SkipDelimiterTokensInLogicalLine(t->next_token);
+        assert(IsEqualTokenWithCStr(t, "\n"));
+        PushKeyValueToList(replacement_list, CreateTokenStr(from), to);
+        RemoveTokensUpTo(t->next_token);
+        continue;
+      }
       ErrorWithToken(NextToken(), "Not a valid macro");
+    }
+    if ((e = GetNodeByTokenKey(replacement_list, PeekToken()))) {
+      struct Node *rep = DuplicateToken(e);
+      RemoveCurrentToken();
+      InsertTokens(rep);
+      continue;
     }
     NextToken();
   }

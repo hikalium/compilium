@@ -78,3 +78,15 @@ four 4 4
 EOS
 `" \
 '__LINE__ macro'
+
+test_stdout \
+"`cat << EOS
+#define hello "Hello, world!"
+printf(hello);
+EOS
+`" \
+"`cat << EOS
+printf("Hello, world!");
+EOS
+`" \
+'Simple macro replacement'

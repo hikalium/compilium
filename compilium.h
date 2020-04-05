@@ -231,6 +231,7 @@ struct Node *FindStructType(struct SymbolEntry *, struct Node *);
 bool IsToken(struct Node *n);
 struct Node *AllocToken(const char *src_str, int line, const char *begin,
                         int length, enum TokenType type);
+struct Node *DuplicateToken(struct Node *base_token);
 const char *CreateTokenStr(struct Node *t);
 int IsEqualTokenWithCStr(struct Node *t, const char *s);
 void PrintTokenSequence(struct Node *t);
@@ -244,11 +245,13 @@ struct Node *PeekToken(void);
 struct Node *ReadToken(enum TokenType type);
 struct Node *ConsumeToken(enum TokenType type);
 struct Node *ConsumeTokenStr(const char *s);
+struct Node *ExpectTokenStr(const char *s);
 struct Node *ConsumePunctuator(const char *s);
 struct Node *ExpectPunctuator(const char *s);
 struct Node *NextToken(void);
 void RemoveCurrentToken(void);
 void RemoveTokensUpTo(struct Node *end);
+void InsertTokens(struct Node *);
 struct Node **RemoveDelimiterTokens(struct Node **);
 
 // @tokenizer.c
