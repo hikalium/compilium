@@ -68,3 +68,4 @@ failcase.c
 a.out*
 expected.*
 out.*
+testinput.c
