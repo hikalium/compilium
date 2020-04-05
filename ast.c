@@ -181,6 +181,13 @@ static void PrintASTNodeSub(struct Node *n, int depth) {
     fprintf(stderr, "Member +%d: ", n->struct_member_ent_ofs);
     PrintASTNodeSub(n->struct_member_ent_type, depth);
     return;
+  } else if (n->type == kNodeMacroReplacement) {
+    fprintf(stderr, "MacroReplacement<args: ");
+    PrintASTNodeSub(n->arg_expr_list, depth);
+    fprintf(stderr, ", rep: ");
+    PrintTokenSequence(n->value);
+    fprintf(stderr, ">");
+    return;
   } else if (n->type == kTypeBase) {
     PrintTokenStrToFile(n->op, stderr);
     return;

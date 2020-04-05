@@ -42,16 +42,18 @@ const char *CreateTokenStr(struct Node *t) {
 }
 
 int IsEqualTokenWithCStr(struct Node *t, const char *s) {
-  return strlen(s) == (unsigned)t->length &&
+  return IsToken(t) && strlen(s) == (unsigned)t->length &&
          strncmp(t->begin, s, t->length) == 0;
 }
 
 void PrintTokenSequence(struct Node *t) {
   if (!t) return;
   assert(IsToken(t));
-  while (t) {
-    PrintASTNode(t);
-    t = t->next_token;
+  for (; t; t = t->next_token) {
+    if (t->token_type == kTokenZeroWidthNoBreakSpace) {
+      continue;
+    }
+    fprintf(stderr, "%.*s", t->length, t->begin);
   }
 }
 
@@ -175,6 +177,34 @@ void InsertTokens(struct Node *seq_first) {
   while (seq_last->next_token) seq_last = seq_last->next_token;
   seq_last->next_token = PeekToken();
   *next_token_holder = seq_first;
+}
+
+void InsertTokensWithIdentReplace(struct Node *seq, struct Node *rep_list) {
+  // Insert token sequece (seq) at current cursor pos.
+  // if seq contains token in rep_list, replace it with tokens rep_list[token];
+  // elements of seq will be inserted directly.
+  if (!IsToken(seq)) return;
+  struct Node **next_holder = next_token_holder;
+  while (seq) {
+    struct Node *e;
+    if (!(e = GetNodeByTokenKey(rep_list, seq))) {
+      // no replace
+      struct Node *n = seq;
+      seq = seq->next_token;
+
+      n->next_token = *next_holder;
+      *next_holder = n;
+      next_holder = &(*next_holder)->next_token;
+      continue;
+    }
+    seq = seq->next_token;
+    struct Node *n = DuplicateTokenSequence(e->value);
+    struct Node *n_last = n;
+    while (n_last->next_token) n_last = n_last->next_token;
+    n_last->next_token = *next_holder;
+    *next_holder = n;
+    next_holder = &n_last->next_token;
+  }
 }
 
 struct Node **RemoveDelimiterTokens(struct Node **head_holder) {

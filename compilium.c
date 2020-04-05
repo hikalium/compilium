@@ -268,15 +268,37 @@ void Preprocess(struct Node **head_holder) {
       assert(e->type == kNodeMacroReplacement);
       struct Node *rep = DuplicateTokenSequence(e->value);
       RemoveCurrentToken();
-      if (e->arg_expr_list) {
-        // function-like macro case
-        t = SkipDelimiterTokensInLogicalLine(t->next_token);
-        if (!IsEqualTokenWithCStr(t, "(")) ErrorWithToken(t, "Expected ( here");
-        t = SkipDelimiterTokensInLogicalLine(t->next_token);
-        if (!IsEqualTokenWithCStr(t, ")")) ErrorWithToken(t, "Expected ) here");
-        RemoveTokensUpTo(t->next_token);
+      if (!e->arg_expr_list) {
+        // ident replace macro case
+        InsertTokens(rep);
+        continue;
       }
-      InsertTokens(rep);
+      // function-like macro case
+      t = SkipDelimiterTokensInLogicalLine(t->next_token);
+      if (!IsEqualTokenWithCStr(t, "(")) ErrorWithToken(t, "Expected ( here");
+      t = t->next_token;
+      struct Node *it;
+      struct Node *arg_rep_list = AllocList();
+      for (it = e->arg_expr_list; it; it = it->next_token) {
+        if (IsEqualTokenWithCStr(it, ")")) break;
+        struct Node *arg_token_head = NULL;
+        struct Node **arg_token_last_holder = &arg_token_head;
+        t = SkipDelimiterTokensInLogicalLine(t);
+        for (; t; t = t->next_token) {
+          if (IsEqualTokenWithCStr(t, ")") || IsEqualTokenWithCStr(t, ","))
+            break;
+          *arg_token_last_holder = DuplicateToken(t);
+          arg_token_last_holder = &(*arg_token_last_holder)->next_token;
+        }
+        PushKeyValueToList(arg_rep_list, CreateTokenStr(it),
+                           CreateMacroReplacement(NULL, arg_token_head));
+        if (IsEqualTokenWithCStr(t, ")")) break;
+        t = t->next_token;
+      }
+      if (!IsEqualTokenWithCStr(t, ")")) ErrorWithToken(t, "Expected ) here");
+      RemoveTokensUpTo(t->next_token);
+      // Insert & replace args
+      InsertTokensWithIdentReplace(rep, arg_rep_list);
       continue;
     }
     NextToken();

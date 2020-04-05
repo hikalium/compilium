@@ -117,12 +117,18 @@ EOS
 
 test_stdout \
 "`cat << EOS
-#define f() printf("Zero")
-f();
+#define f0() printf("Zero")
+#define f1(a) printf("One %d", a)
+#define f2(a, b) printf("Two %d %d", a, b)
+f0();
+f1(1 + 1);
+f2(1 + 1, 3);
 EOS
 `" \
 "`cat << EOS
 printf("Zero");
+printf("One %d", 1 + 1);
+printf("Two %d %d", 1 + 1, 3);
 EOS
 `" \
-'Function-like macro with zero args'
+'Function-like macros'
