@@ -227,7 +227,25 @@ void Preprocess(struct Node **head_holder) {
         struct Node *from = t;
         assert(t);
         t = SkipDelimiterTokensInLogicalLine(t->next_token);
-        assert(!IsEqualTokenWithCStr(t, "("));
+        struct Node *args_token_head = NULL;
+        if (IsEqualTokenWithCStr(t, "(")) {
+          struct Node **args_token_last_holder = &args_token_head;
+          for (t = SkipDelimiterTokensInLogicalLine(t->next_token); t;
+               t = SkipDelimiterTokensInLogicalLine(t->next_token)) {
+            if (IsEqualTokenWithCStr(t, ")")) break;
+            *args_token_last_holder = DuplicateToken(t);
+            args_token_last_holder = &(*args_token_last_holder)->next_token;
+            t = SkipDelimiterTokensInLogicalLine(t->next_token);
+            if (!IsEqualTokenWithCStr(t, ",")) break;
+          }
+          if (!IsEqualTokenWithCStr(t, ")"))
+            ErrorWithToken(t, "Expected ) here");
+          // To distinguish function-like macro with zero args and
+          // token level replacement macro, add ) at the end of args
+          // to ensure args is not NULL
+          *args_token_last_holder = DuplicateToken(t);
+          t = SkipDelimiterTokensInLogicalLine(t->next_token);
+        }
         // Token level replace case
         assert(t);
         struct Node *to_token_head = NULL;
@@ -239,16 +257,25 @@ void Preprocess(struct Node **head_holder) {
         }
         assert(IsEqualTokenWithCStr(t, "\n"));
         RemoveTokensUpTo(t->next_token);
-        PushKeyValueToList(replacement_list, CreateTokenStr(from),
-                           CreateMacroReplacement(to_token_head));
+        PushKeyValueToList(
+            replacement_list, CreateTokenStr(from),
+            CreateMacroReplacement(args_token_head, to_token_head));
         continue;
       }
       ErrorWithToken(NextToken(), "Not a valid macro");
     }
-    if ((e = GetNodeByTokenKey(replacement_list, PeekToken()))) {
+    if ((e = GetNodeByTokenKey(replacement_list, (t = PeekToken())))) {
       assert(e->type == kNodeMacroReplacement);
       struct Node *rep = DuplicateTokenSequence(e->value);
       RemoveCurrentToken();
+      if (e->arg_expr_list) {
+        // function-like macro case
+        t = SkipDelimiterTokensInLogicalLine(t->next_token);
+        if (!IsEqualTokenWithCStr(t, "(")) ErrorWithToken(t, "Expected ( here");
+        t = SkipDelimiterTokensInLogicalLine(t->next_token);
+        if (!IsEqualTokenWithCStr(t, ")")) ErrorWithToken(t, "Expected ) here");
+        RemoveTokensUpTo(t->next_token);
+      }
       InsertTokens(rep);
       continue;
     }

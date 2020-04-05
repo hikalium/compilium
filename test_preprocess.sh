@@ -114,3 +114,15 @@ EOS
 EOS
 `" \
 'Simple macro replacement with zero tokens'
+
+test_stdout \
+"`cat << EOS
+#define f() printf("Zero")
+f();
+EOS
+`" \
+"`cat << EOS
+printf("Zero");
+EOS
+`" \
+'Function-like macro with zero args'

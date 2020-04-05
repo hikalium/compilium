@@ -131,8 +131,10 @@ struct Node *CreateTypeArray(struct Node *type_of, struct Node *index_decl) {
   return n;
 }
 
-struct Node *CreateMacroReplacement(struct Node *to_tokens) {
+struct Node *CreateMacroReplacement(struct Node *args_tokens,
+                                    struct Node *to_tokens) {
   struct Node *n = AllocNode(kNodeMacroReplacement);
+  n->arg_expr_list = args_tokens;
   n->value = to_tokens;
   return n;
 }
