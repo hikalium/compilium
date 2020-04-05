@@ -39,9 +39,11 @@ void PrintTokenSequence(struct Node *t) {
 void OutputTokenSequenceAsCSource(struct Node *t) {
   if (!t) return;
   assert(IsToken(t));
-  while (t) {
+  for (; t; t = t->next_token) {
+    if (t->token_type == kTokenZeroWidthNoBreakSpace) {
+      continue;
+    }
     fprintf(stdout, "%.*s", t->length, t->begin);
-    t = t->next_token;
   }
 }
 
@@ -63,10 +65,15 @@ void PrintTokenStrToFile(struct Node *t, FILE *fp) {
   fprintf(fp, "%.*s", t->length, t->begin);
 }
 
+static bool ShouldRemoveToken(struct Node *t) {
+  return t->token_type == kTokenDelimiter ||
+         t->token_type == kTokenZeroWidthNoBreakSpace;
+}
+
 struct Node *RemoveDelimiterTokens(struct Node *head) {
   struct Node **t = &head;
   for (;;) {
-    while (*t && (*t)->token_type == kTokenDelimiter) {
+    while (*t && ShouldRemoveToken(*t)) {
       *t = (*t)->next_token;
     }
     if (!*t) break;

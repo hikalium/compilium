@@ -41,3 +41,40 @@ EOS
 `" \
 'keep white spaces and new lines'
 
+# 6.10.8.1 Mandatory macros - 1 
+# 5.1.1.2 Translation phases - 2
+# 
+# $ printf 'one\\\n __LINE__ two' | clang -E -
+# one 2 two
+# $ printf 'one\n __LINE__ two' | clang -E -
+# one
+#  2 two
+
+test_stdout \
+"`cat << EOS
+one\\\\
+ __LINE__ two
+EOS
+`" \
+"`cat << EOS
+one 2 two
+EOS
+`" \
+'__LINE__ macro shows physical source line, not logical one.'
+
+test_stdout \
+"`cat << EOS
+one
+ __LINE__ two
+three__LINE__
+four __LINE__ __LINE__
+EOS
+`" \
+"`cat << EOS
+one
+ 2 two
+three__LINE__
+four 4 4
+EOS
+`" \
+'__LINE__ macro'

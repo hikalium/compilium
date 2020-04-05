@@ -7,6 +7,10 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
     if (*p == '\n') (*line)++;
     return AllocToken(src, *line, p, 1, kTokenDelimiter);
   }
+  if (p[0] == '\\' && p[1] == '\n') {
+    (*line)++;
+    return AllocToken(src, *line, p, 2, kTokenZeroWidthNoBreakSpace);
+  }
   if ('1' <= *p && *p <= '9') {
     int length = 0;
     while ('0' <= p[length] && p[length] <= '9') {
@@ -172,7 +176,7 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
   } else if (']' == *p) {
     return AllocToken(src, *line, p, 1, kTokenPunctuator);
   }
-  Error("Unexpected char %c", *p);
+  Error("Tokenizer: Unexpected char %c", *p);
 }
 
 struct Node *CreateToken(const char *input) {
