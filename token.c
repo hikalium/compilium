@@ -164,7 +164,7 @@ void RemoveCurrentToken(void) {
   *next_token_holder = (*next_token_holder)->next_token;
 }
 
-void RemoveTokensUpTo(struct Node *end) {
+void RemoveTokensTo(struct Node *end) {
   while (*next_token_holder && *next_token_holder != end) {
     RemoveCurrentToken();
   }

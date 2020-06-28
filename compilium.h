@@ -254,7 +254,7 @@ struct Node *ConsumePunctuator(const char *s);
 struct Node *ExpectPunctuator(const char *s);
 struct Node *NextToken(void);
 void RemoveCurrentToken(void);
-void RemoveTokensUpTo(struct Node *end);
+void RemoveTokensTo(struct Node *end);
 void InsertTokens(struct Node *);
 void InsertTokensWithIdentReplace(struct Node *seq, struct Node *rep_list);
 struct Node **RemoveDelimiterTokens(struct Node **);

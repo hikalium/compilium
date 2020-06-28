@@ -194,6 +194,16 @@ static struct Node *SkipDelimiterTokensInLogicalLine(struct Node *t) {
   return t;
 }
 
+static const char *CreateStrFromTokenRange(struct Node *begin,
+                                           struct Node *end) {
+  assert(begin);
+  int len = 0;
+  for (struct Node *t = begin; t && t != end; t = t->next_token) {
+    len += t->length;
+  }
+  return strndup(begin->begin, len);
+}
+
 void Preprocess(struct Node **head_holder) {
   InitTokenStream(head_holder);
   struct Node *replacement_list = AllocList();
@@ -209,13 +219,13 @@ void Preprocess(struct Node **head_holder) {
     }
     if ((t = ReadToken(kTokenLineComment))) {
       while (t && !IsEqualTokenWithCStr(t, "\n")) t = t->next_token;
-      RemoveTokensUpTo(t);
+      RemoveTokensTo(t);
       continue;
     }
     if ((t = ReadToken(kTokenBlockCommentBegin))) {
       while (t && !IsTokenWithType(t, kTokenBlockCommentEnd)) t = t->next_token;
       if (IsTokenWithType(t, kTokenBlockCommentEnd)) t = t->next_token;
-      RemoveTokensUpTo(t);
+      RemoveTokensTo(t);
       continue;
     }
     if (IsEqualTokenWithCStr((t = PeekToken()), "#")) {
@@ -256,10 +266,35 @@ void Preprocess(struct Node **head_holder) {
           t = t->next_token;
         }
         assert(IsEqualTokenWithCStr(t, "\n"));
-        RemoveTokensUpTo(t->next_token);
+        RemoveTokensTo(t->next_token);
         PushKeyValueToList(
             replacement_list, CreateTokenStr(from),
             CreateMacroReplacement(args_token_head, to_token_head));
+        continue;
+      }
+      if (IsEqualTokenWithCStr(t, "include")) {
+        t = SkipDelimiterTokensInLogicalLine(t->next_token);
+        if (!IsEqualTokenWithCStr(t, "<")) {
+          ErrorWithToken(t, "Expected < here");
+        }
+        struct Node *markL = t;
+        t = t->next_token;
+        struct Node *begin = t;
+        while (t && !IsEqualTokenWithCStr(t, ">")) {
+          t = t->next_token;
+        }
+        if (!t) {
+          ErrorWithToken(markL,
+                         "Unexpected EOF. > is expected to match with this.");
+        }
+        struct Node *end = t;
+        const char *fname = CreateStrFromTokenRange(begin, end);
+        RemoveTokensTo(end->next_token);
+        if (strcmp(fname, "stdio.h") == 0) {
+          InsertTokens(Tokenize("int puts(char *s);"));
+        } else {
+          ErrorWithToken(t, "include! %s", CreateStrFromTokenRange(begin, end));
+        }
         continue;
       }
       ErrorWithToken(NextToken(), "Not a valid macro");
@@ -296,7 +331,7 @@ void Preprocess(struct Node **head_holder) {
         t = t->next_token;
       }
       if (!IsEqualTokenWithCStr(t, ")")) ErrorWithToken(t, "Expected ) here");
-      RemoveTokensUpTo(t->next_token);
+      RemoveTokensTo(t->next_token);
       // Insert & replace args
       InsertTokensWithIdentReplace(rep, arg_rep_list);
       continue;
