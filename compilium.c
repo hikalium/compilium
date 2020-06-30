@@ -213,6 +213,24 @@ static const char *CreateStrFromTokenRange(struct Node *begin,
   return strndup(begin->begin, len);
 }
 
+#define INITIAL_INPUT_SIZE 8192
+static const char *ReadFile(FILE *fp) {
+  int buf_size = INITIAL_INPUT_SIZE;
+  char *input = malloc(buf_size);
+  int input_size = 0;
+  int c;
+  while ((c = fgetc(fp)) != EOF) {
+    input[input_size++] = c;
+    if (input_size == buf_size) {
+      buf_size <<= 1;
+      assert((input = realloc(input, buf_size)));
+    }
+  }
+  assert(input_size < buf_size);
+  input[input_size] = 0;
+  return input;
+}
+
 void Preprocess(struct Node **head_holder) {
   InitTokenStream(head_holder);
   struct Node *replacement_list = AllocList();
@@ -245,7 +263,7 @@ void Preprocess(struct Node **head_holder) {
         t = SkipDelimiterTokensInLogicalLine(t->next_token);
         struct Node *from = t;
         assert(t);
-        t = SkipDelimiterTokensInLogicalLine(t->next_token);
+        t = t->next_token;
         struct Node *args_token_head = NULL;
         if (IsEqualTokenWithCStr(t, "(")) {
           struct Node **args_token_last_holder = &args_token_head;
@@ -299,11 +317,23 @@ void Preprocess(struct Node **head_holder) {
         struct Node *end = t;
         const char *fname = CreateStrFromTokenRange(begin, end);
         RemoveTokensTo(end->next_token);
-        if (strcmp(fname, "stdio.h") == 0) {
-          InsertTokens(Tokenize("int puts(char *s);"));
-        } else {
-          ErrorWithToken(t, "include! %s", CreateStrFromTokenRange(begin, end));
+        if (!include_path) {
+          ErrorWithToken(markL,
+                         "Include path is not provided in compiler args");
         }
+        char path[256];
+        if (sizeof(path) <= strlen(include_path) + strlen(fname)) {
+          ErrorWithToken(markL, "Include path is too long");
+        }
+        strcpy(path, include_path);
+        strcat(path, fname);
+        FILE *fp = fopen(path, "rb");
+        if (!fp) {
+          ErrorWithToken(markL, "File not found: %s", path);
+        }
+        const char *include_input = ReadFile(fp);
+        InsertTokens(Tokenize(include_input));
+        fclose(fp);
         continue;
       }
       ErrorWithToken(NextToken(), "Not a valid macro");
@@ -349,22 +379,9 @@ void Preprocess(struct Node **head_holder) {
   }
 }
 
-#define INITIAL_INPUT_SIZE 8192
 int main(int argc, char *argv[]) {
   ParseCompilerArgs(argc, argv);
-  int buf_size = INITIAL_INPUT_SIZE;
-  char *input = malloc(buf_size);
-  int input_size = 0;
-  int c;
-  while ((c = getchar()) != EOF) {
-    input[input_size++] = c;
-    if (input_size == buf_size) {
-      buf_size <<= 1;
-      assert((input = realloc(input, buf_size)));
-    }
-  }
-  assert(input_size < buf_size);
-  input[input_size] = 0;
+  const char *input = ReadFile(stdin);
 
   struct Node *tokens = Tokenize(input);
 

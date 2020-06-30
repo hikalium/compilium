@@ -148,6 +148,7 @@ struct Node *GetNodeAt(struct Node *list, int index);
 struct Node *GetNodeByTokenKey(struct Node *list, struct Node *key);
 
 extern const char *symbol_prefix;
+extern const char *include_path;
 
 #define NUM_OF_SCRATCH_REGS 4
 extern const char *reg_names_64[NUM_OF_SCRATCH_REGS + 1];

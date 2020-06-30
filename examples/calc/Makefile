@@ -13,7 +13,7 @@ verify : $(TARGET).bin
 	@echo "OK"
 
 $(TARGET).compilium.bin : $(TARGET).c Makefile compilium
-	cat $(TARGET).c | ../../compilium -I ../../include/ > $(TARGET).compilium.S
+	cat $(TARGET).c | ../../compilium -I ./ > $(TARGET).compilium.S
 	gcc -o $(TARGET).compilium.bin $(TARGET).compilium.S
 
 $(TARGET).bin : $(TARGET).c Makefile
