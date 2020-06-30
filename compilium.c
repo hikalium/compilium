@@ -231,10 +231,22 @@ static const char *ReadFile(FILE *fp) {
   return input;
 }
 
-void Preprocess(struct Node **head_holder) {
-  InitTokenStream(head_holder);
-  struct Node *replacement_list = AllocList();
-  struct Node *t, *e;
+static void PreprocessRemoveBlock(void) {
+  for (struct Node *t = PeekToken(); t; t = t->next_token) {
+    if (!IsEqualTokenWithCStr(t, "#")) {
+      continue;
+    }
+    t = SkipDelimiterTokensInLogicalLine(t->next_token);
+    if (!IsEqualTokenWithCStr(t, "endif")) {
+      continue;
+    }
+    RemoveTokensTo(t);
+    break;
+  }
+}
+
+static void PreprocessBlock(struct Node *replacement_list, int level) {
+  struct Node *t;
   while (PeekToken()) {
     if ((t = ConsumeTokenStr("__LINE__"))) {
       char s[32];
@@ -262,8 +274,8 @@ void Preprocess(struct Node **head_holder) {
         assert(t);
         t = SkipDelimiterTokensInLogicalLine(t->next_token);
         struct Node *from = t;
+        t = SkipDelimiterTokensInLogicalLine(t->next_token);
         assert(t);
-        t = t->next_token;
         struct Node *args_token_head = NULL;
         if (IsEqualTokenWithCStr(t, "(")) {
           struct Node **args_token_last_holder = &args_token_head;
@@ -336,8 +348,38 @@ void Preprocess(struct Node **head_holder) {
         fclose(fp);
         continue;
       }
+      if (IsEqualTokenWithCStr(t, "ifdef")) {
+        struct Node *ifdef_token = t;
+        t = SkipDelimiterTokensInLogicalLine(t->next_token);
+        struct Node *e;
+        bool cond = (e = GetNodeByTokenKey(replacement_list, t));
+        // defined
+        t = SkipDelimiterTokensInLogicalLine(t->next_token);
+        RemoveTokensTo(t);
+        if (cond) {
+          PreprocessBlock(replacement_list, level + 1);
+        } else {
+          PreprocessRemoveBlock();
+        }
+        t = PeekToken();
+        if (!IsEqualTokenWithCStr(t, "endif")) {
+          ErrorWithToken(ifdef_token,
+                         "Unexpected eof. Expected #endif to match with this.");
+        }
+        t = SkipDelimiterTokensInLogicalLine(t->next_token);
+        RemoveTokensTo(t);
+        continue;
+      }
+      if (IsEqualTokenWithCStr(t, "endif")) {
+        if (level == 0) {
+          ErrorWithToken(t, "Unexpected endif here");
+        }
+        RemoveTokensTo(t);
+        return;
+      }
       ErrorWithToken(NextToken(), "Not a valid macro");
     }
+    struct Node *e;
     if ((e = GetNodeByTokenKey(replacement_list, (t = PeekToken())))) {
       assert(e->type == kNodeMacroReplacement);
       struct Node *rep = DuplicateTokenSequence(e->value);
@@ -377,6 +419,11 @@ void Preprocess(struct Node **head_holder) {
     }
     NextToken();
   }
+}
+
+void Preprocess(struct Node **head_holder) {
+  InitTokenStream(head_holder);
+  PreprocessBlock(AllocList(), 0);
 }
 
 int main(int argc, char *argv[]) {

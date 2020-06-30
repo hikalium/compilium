@@ -10,10 +10,74 @@ function test_stdout {
     echo "$input" > failcase.txt; \
     echo "Compilation failed."; \
     exit 1; }
-  diff -u expected.stdout out.stdout \
-    && echo "PASS $testname" \
-    || { echo "FAIL $testname: stdout diff"; exit 1; }
+  diff -y expected.stdout out.stdout \
+    && printf "\nPASS $testname\n" \
+    || { printf "\nFAIL $testname: stdout diff\n"; exit 1; }
 }
+
+test_stdout \
+"`cat << EOS
+#define MACRO_DEFINED
+#ifdef MACRO_DEFINED
+int this_should_be_visible;
+#ifdef MACRO_DEFINED
+#ifdef MACRO_NOT_DEFINED
+int this_is_not_visible;
+#endif
+int this_is_also_visible;
+#endif
+#endif
+int always_visible;
+EOS
+`" \
+"`cat << EOS
+
+int this_should_be_visible;
+
+
+int this_is_also_visible;
+
+
+int always_visible;
+
+EOS
+`" \
+'ifdef nested case'
+
+test_stdout \
+"`cat << EOS
+#ifdef MACRO_NOT_DEFINED
+int this_is_not_visible;
+#endif
+int always_visible;
+EOS
+`" \
+"`cat << EOS
+
+int always_visible;
+
+EOS
+`" \
+'ifdef not defined case'
+
+test_stdout \
+"`cat << EOS
+#define MACRO_DEFINED
+#ifdef MACRO_DEFINED
+int this_should_be_visible;
+#endif
+int always_visible;
+EOS
+`" \
+"`cat << EOS
+
+int this_should_be_visible;
+
+int always_visible;
+
+EOS
+`" \
+'ifdef defined case'
 
 test_stdout \
 "`cat << EOS
