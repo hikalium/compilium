@@ -1,6 +1,7 @@
 #include "compilium.h"
 
 const char *symbol_prefix;
+const char *include_path;
 bool is_preprocess_only = false;
 
 _Noreturn void Error(const char *fmt, ...) {
@@ -32,6 +33,14 @@ void ParseCompilerArgs(int argc, char **argv) {
       } else {
         Error("Unknown os type %s", argv[i]);
       }
+    } else if (strcmp(argv[i], "-I") == 0) {
+      i++;
+      include_path = argv[i];
+      assert(include_path);
+      if (include_path[strlen(include_path) - 1] != '/') {
+        Error("Include path (-I <path>) should be ended with '/'");
+      }
+      fprintf(stderr, "Include path: %s\n", include_path);
     } else if (strcmp(argv[i], "--run-unittest=List") == 0) {
       TestList();
     } else if (strcmp(argv[i], "--run-unittest=Type") == 0) {
