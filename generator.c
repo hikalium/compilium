@@ -315,10 +315,12 @@ static void GenerateForNode(struct Node *node) {
                      "GenerateForNode: Not implemented unary prefix op");
     } else if (node->left && !node->right) {
       if (IsEqualTokenWithCStr(node->op, "++")) {
+        // Postfix ++
         GenerateForNode(node->left);
         EmitIncMemory(node->op, node->reg, GetSizeOfType(node->expr_type));
         printf("mov %s, [%s]\n", reg_names_64[node->reg],
                reg_names_64[node->reg]);
+        printf("sub %s, 1\n", reg_names_64[node->reg]);
         return;
       }
       ErrorWithToken(node->op,

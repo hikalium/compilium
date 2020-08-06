@@ -3,6 +3,7 @@ default : hello.bin gameoflife.bin
 .FORCE : 
 
 run_ctests : ctests.bin ../compilium
+	make run_ctests_hostcc
 	./ctests.bin
 
 run_ctests_hostcc : ctests.host.bin

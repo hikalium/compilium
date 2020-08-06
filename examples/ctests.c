@@ -193,7 +193,17 @@ int TestForLoop(int idx_begin, int idx_end, int idx_inc, int value_inc) {
   return v;
 }
 
+void TestInc() {
+  int v = 2;
+  ExpectEq(v++, 2, __LINE__);
+  ExpectEq(v, 3, __LINE__);
+  ExpectEq(v++, 3, __LINE__);
+  ExpectEq(v, 4, __LINE__);
+}
+
 int main(int argc, char** argv) {
+  TestInc();
+
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
 
