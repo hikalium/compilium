@@ -1,4 +1,4 @@
-default : hello.bin gameoflife.bin
+default : hello.bin gameoflife.bin calc.bin
 
 .FORCE : 
 
@@ -31,7 +31,7 @@ debug_% : ../compilium_dbg %.c
 		-- ../compilium_dbg --target-os `uname`
 
 %.S : %.c Makefile ../compilium .FORCE
-	../compilium --target-os `uname` < $*.c > $*.S
+	../compilium --target-os `uname` -I ./ < $*.c > $*.S
 
 format:
 	clang-format -i *.c
