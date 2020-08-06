@@ -70,6 +70,22 @@ static void EmitSubFromMemory(struct Node *op, int dst, int src, int size) {
   ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
 }
 
+static void EmitDecMemory(struct Node *op, int dst, int size) {
+  if (size == 8) {
+    printf("dec qword ptr [%s]\n", reg_names_64[dst]);
+    return;
+  }
+  if (size == 4) {
+    printf("dec dword ptr [%s]\n", reg_names_64[dst]);
+    return;
+  }
+  if (size == 1) {
+    printf("dec byte ptr [%s]\n", reg_names_64[dst]);
+    return;
+  }
+  ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
+}
+
 static void EmitIncMemory(struct Node *op, int dst, int size) {
   if (size == 8) {
     printf("inc qword ptr [%s]\n", reg_names_64[dst]);
@@ -321,6 +337,15 @@ static void GenerateForNode(struct Node *node) {
         printf("mov %s, [%s]\n", reg_names_64[node->reg],
                reg_names_64[node->reg]);
         printf("sub %s, 1\n", reg_names_64[node->reg]);
+        return;
+      }
+      if (IsEqualTokenWithCStr(node->op, "--")) {
+        // Postfix --
+        GenerateForNode(node->left);
+        EmitDecMemory(node->op, node->reg, GetSizeOfType(node->expr_type));
+        printf("mov %s, [%s]\n", reg_names_64[node->reg],
+               reg_names_64[node->reg]);
+        printf("add %s, 1\n", reg_names_64[node->reg]);
         return;
       }
       ErrorWithToken(node->op,

@@ -195,7 +195,9 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       node->expr_type = GetRValueType(node->right->expr_type);
       return;
     } else if (node->left && !node->right) {
-      if (IsEqualTokenWithCStr(node->op, "++")) {
+      // Postfix op
+      if (IsEqualTokenWithCStr(node->op, "++") ||
+          IsEqualTokenWithCStr(node->op, "--")) {
         AnalyzeNode(node->left, ctx);
         assert(IsLValueType(node->left->expr_type));
         node->reg = node->left->reg;

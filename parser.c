@@ -65,6 +65,10 @@ struct Node *ParsePostfixExpr() {
       n = CreateASTUnaryPostfixOp(n, t);
       continue;
     }
+    if ((t = ConsumePunctuator("--"))) {
+      n = CreateASTUnaryPostfixOp(n, t);
+      continue;
+    }
     break;
   }
   return n;

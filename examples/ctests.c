@@ -201,6 +201,14 @@ void TestInc() {
   ExpectEq(v, 4, __LINE__);
 }
 
+void TestDec() {
+  int v = 2;
+  ExpectEq(v--, 2, __LINE__);
+  ExpectEq(v, 1, __LINE__);
+  ExpectEq(v--, 1, __LINE__);
+  ExpectEq(v, 0, __LINE__);
+}
+
 int main(int argc, char** argv) {
   TestInc();
 
