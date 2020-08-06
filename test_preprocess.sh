@@ -159,10 +159,13 @@ test_stdout \
 "`cat << EOS
 #define hello printf("Hello, world!")
 hello;
+#define EOF (-1)
+EOF;
 EOS
 `" \
 "`cat << EOS
 printf("Hello, world!");
+(-1);
 EOS
 `" \
 'Simple macro replacement with multiple tokens'

@@ -26,6 +26,7 @@ int fflush(FILE *);
 int fgetc(FILE *);
 int fprintf(FILE *, const char *, ...);
 int fputc(int c, FILE *);
+int fputs(const char *, FILE *);
 int getchar(void);
 int printf(const char *, ...);
 int putchar(int c);

@@ -245,6 +245,35 @@ static void PreprocessRemoveBlock(void) {
   }
 }
 
+static struct Node *TryReadIdentListWrappedByParens(struct Node **tp) {
+  // If ( ident_list ) is read, this function returns cloned tokens of
+  // ident_list without commas and tp is advanced to next token.
+  // If not, this function returns NULL and tp is unchanged.
+  struct Node *t = *tp;
+  if (!IsEqualTokenWithCStr(t, "(")) {
+    return NULL;
+  }
+  struct Node *ident_list_head = NULL;
+  struct Node **ident_list_last_holder = &ident_list_head;
+  for (t = SkipDelimiterTokensInLogicalLine(t->next_token); t;
+       t = SkipDelimiterTokensInLogicalLine(t->next_token)) {
+    if (IsEqualTokenWithCStr(t, ")")) break;
+    *ident_list_last_holder = DuplicateToken(t);
+    ident_list_last_holder = &(*ident_list_last_holder)->next_token;
+    t = SkipDelimiterTokensInLogicalLine(t->next_token);
+    if (!IsEqualTokenWithCStr(t, ",")) break;
+  }
+  if (!IsEqualTokenWithCStr(t, ")")) {
+    return NULL;
+  }
+  // To distinguish function-like macro with zero args and
+  // token level replacement macro, add ) at the end of args
+  // to ensure args is not NULL
+  *ident_list_last_holder = DuplicateToken(t);
+  *tp = SkipDelimiterTokensInLogicalLine(t->next_token);
+  return ident_list_head;
+}
+
 static void PreprocessBlock(struct Node *replacement_list, int level) {
   struct Node *t;
   while (PeekToken()) {
@@ -274,28 +303,9 @@ static void PreprocessBlock(struct Node *replacement_list, int level) {
         assert(t);
         t = SkipDelimiterTokensInLogicalLine(t->next_token);
         struct Node *from = t;
-        t = SkipDelimiterTokensInLogicalLine(t->next_token);
-        assert(t);
-        struct Node *args_token_head = NULL;
-        if (IsEqualTokenWithCStr(t, "(")) {
-          struct Node **args_token_last_holder = &args_token_head;
-          for (t = SkipDelimiterTokensInLogicalLine(t->next_token); t;
-               t = SkipDelimiterTokensInLogicalLine(t->next_token)) {
-            if (IsEqualTokenWithCStr(t, ")")) break;
-            *args_token_last_holder = DuplicateToken(t);
-            args_token_last_holder = &(*args_token_last_holder)->next_token;
-            t = SkipDelimiterTokensInLogicalLine(t->next_token);
-            if (!IsEqualTokenWithCStr(t, ",")) break;
-          }
-          if (!IsEqualTokenWithCStr(t, ")"))
-            ErrorWithToken(t, "Expected ) here");
-          // To distinguish function-like macro with zero args and
-          // token level replacement macro, add ) at the end of args
-          // to ensure args is not NULL
-          *args_token_last_holder = DuplicateToken(t);
-          t = SkipDelimiterTokensInLogicalLine(t->next_token);
-        }
-        // Token level replace case
+        t = t->next_token;
+        struct Node *ident_list = TryReadIdentListWrappedByParens(&t);
+        t = SkipDelimiterTokensInLogicalLine(t);
         assert(t);
         struct Node *to_token_head = NULL;
         struct Node **to_token_last_holder = &to_token_head;
@@ -306,9 +316,8 @@ static void PreprocessBlock(struct Node *replacement_list, int level) {
         }
         assert(IsEqualTokenWithCStr(t, "\n"));
         RemoveTokensTo(t->next_token);
-        PushKeyValueToList(
-            replacement_list, CreateTokenStr(from),
-            CreateMacroReplacement(args_token_head, to_token_head));
+        PushKeyValueToList(replacement_list, CreateTokenStr(from),
+                           CreateMacroReplacement(ident_list, to_token_head));
         continue;
       }
       if (IsEqualTokenWithCStr(t, "include")) {
@@ -432,12 +441,14 @@ int main(int argc, char *argv[]) {
 
   struct Node *tokens = Tokenize(input);
 
+  fputs("Preprocess begin\n", stderr);
   Preprocess(&tokens);
   if (is_preprocess_only) {
     OutputTokenSequenceAsCSource(tokens);
     return 0;
   }
 
+  fputs("Parse begin\n", stderr);
   struct Node *ast = Parse(&tokens);
   PrintASTNode(ast);
   fputc('\n', stderr);
