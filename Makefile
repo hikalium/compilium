@@ -23,7 +23,7 @@ test_preprocess : compilium
 	./test_preprocess.sh
 
 test : compilium
-	./test.sh
+	time ./test.sh
 
 ctest : compilium
 	make -C examples run_ctests

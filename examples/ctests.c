@@ -111,11 +111,6 @@ int TestCompAssignRShift(int vL, int vR) {
   return vL;
 }
 
-void TestSizeOfPointerOfIncompleteStruct() {
-  struct IncompleteStruct* incomplete_struct;
-  ExpectEq(sizeof(incomplete_struct), 8, __LINE__);
-}
-
 struct Point3D {
   int x;
   int y;
@@ -127,17 +122,25 @@ struct Point2D {
   int y;
 };
 
-struct Line2D {
-  struct Point2D p;
-  struct Point2D q;
-};
-
-void TestSizeOfStruct() {
+void TestSizeof() {
+  char c;
+  ExpectEq(sizeof(c), 1, __LINE__);
+  int a;
+  ExpectEq(sizeof(a), 4, __LINE__);
+  int* p;
+  ExpectEq(sizeof(p), 8, __LINE__);
+  struct IncompleteStruct* incomplete_struct;
+  ExpectEq(sizeof(incomplete_struct), 8, __LINE__);
   struct Point2D p2d;
   ExpectEq(sizeof(p2d), 8, __LINE__);
   struct Point3D p3d;
   ExpectEq(sizeof(p3d), 12, __LINE__);
 }
+
+struct Line2D {
+  struct Point2D p;
+  struct Point2D q;
+};
 
 void TestStructVecSum(int x0, int y0, int x1, int y1, int x_expected,
                       int y_expected) {
@@ -209,8 +212,68 @@ void TestDec() {
   ExpectEq(v, 0, __LINE__);
 }
 
+int TestCharLiteralAccess() {
+  ExpectEq(*"compilium", 'c', __LINE__);
+  ExpectEq(*("compilium" + 0), 'c', __LINE__);
+  ExpectEq(*("compilium" + 1), 'o', __LINE__);
+  ExpectEq(*("compilium" + 2), 'm', __LINE__);
+  ExpectEq(*("compilium" + 3), 'p', __LINE__);
+  ExpectEq(*("compilium" + 4), 'i', __LINE__);
+  ExpectEq(*("compilium" + 5), 'l', __LINE__);
+  ExpectEq(*("compilium" + 6), 'i', __LINE__);
+  ExpectEq(*("compilium" + 7), 'u', __LINE__);
+  ExpectEq(*("compilium" + 8), 'm', __LINE__);
+  ExpectEq(*("compilium" + 9), 0, __LINE__);
+}
+
+void TestReassign() {
+  char c = 2;
+  c = c + 1;
+  ExpectEq(c, 3, __LINE__);
+  c = 0;
+  ExpectEq(c, 0, __LINE__);
+  c = 2;
+  ExpectEq(c, 2, __LINE__);
+  c = 0;
+  ExpectEq(c, 0, __LINE__);
+  c = 2 + 3;
+  ExpectEq(c, 5, __LINE__);
+  ExpectEq(c + 2, 7, __LINE__);
+}
+
+int UnreachableReturn() {
+  ;
+  return 2;
+  return 0;
+}
+
+void TestPtrOfVar() {
+  int a;
+  int* p;
+  a = 1;
+  p = &a;
+  *p = 5;
+  ExpectEq(a, 5, __LINE__);
+  a = 1;
+  p = &a;
+  a = 3;
+  ExpectEq(*p, 3, __LINE__);
+  p = &a;
+  ExpectEq(p ? 1 : 0, 1, __LINE__);
+}
+
 int main(int argc, char** argv) {
+  TestPtrOfVar();
+  TestReassign();
+  TestCharLiteralAccess();
   TestInc();
+
+  ExpectEq('C', 67, __LINE__);
+
+  ExpectEq(UnreachableReturn(), 2, __LINE__);
+
+  ExpectEq(+0, 0, __LINE__);
+  ExpectEq(1 - -2, 3, __LINE__);
 
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
@@ -375,8 +438,7 @@ int main(int argc, char** argv) {
 
   ExpectEq(TestCompAssignModEq(13, 5), 3, __LINE__);
 
-  TestSizeOfPointerOfIncompleteStruct();
-  TestSizeOfStruct();
+  TestSizeof();
 
   TestStructVecSum(1, 2, 3, 4, 4, 6);
   TestStructVecSum(2, 3, 5, 7, 7, 10);

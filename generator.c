@@ -28,7 +28,8 @@ static void EmitMoveToMemory(struct Node *op, int dst, int src, int size) {
     return;
   }
   if (size == 4) {
-    printf("mov [%s], %s\n", reg_names_64[dst], reg_names_32[src]);
+    printf("mov [%s], %s # 4 byte store\n", reg_names_64[dst],
+           reg_names_32[src]);
     return;
   }
   if (size == 1) {
@@ -383,7 +384,7 @@ static void GenerateForNode(struct Node *node) {
                  IsEqualTokenWithCStr(node->op, ">>=")) {
         GenerateForNode(node->left);
         GenerateForNodeRValue(node->right);
-        int size = GetSizeOfType(node->right->expr_type);
+        int size = GetSizeOfType(node->left->expr_type);
         if (IsEqualTokenWithCStr(node->op, "=")) {
           EmitMoveToMemory(node->op, node->left->reg, node->right->reg, size);
           return;

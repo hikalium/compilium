@@ -143,33 +143,13 @@ int main() {
 EOS
 `" 0 'C'
 
-test_stmt_result 'return *("compilium" + 1);' 111
-test_stmt_result 'return *"compilium";' 99
-test_stmt_result "return 'C';" 67
-test_stmt_result 'char c; c = 2; c = c + 1; return c;' 3
-test_stmt_result 'char c; return sizeof(c);' 1
-test_stmt_result 'int a; a = 1; int *p; p = &a; *p = 5; return a;' 5
-test_stmt_result 'int a; a = 1; int *p; p = &a; a = 3; return *p;' 3
-test_stmt_result 'int a; int *p; p = &a; return p ? 1 : 0;' 1
 test_stmt_result 'int a; int b; int c; a = 3; b = 5; c = 7; return a + b + c;' 15
-test_stmt_result 'int a; return sizeof(a);' 4
-test_stmt_result 'int *a; return sizeof(a);' 8
-test_stmt_result 'int *a; return 2;' 2
-test_stmt_result 'int a; a = 0; a = 2; return a;' 2
-test_stmt_result 'int a; a = 2; a = 0; return a;' 0
-test_stmt_result 'int a; a = 2 + 3; return a;' 5
-test_stmt_result 'int a; a = 2 + 3; return a + 2;' 7
 
 # Non-printable
 test_expr_result ' 0 ' 0
 
 # Unary Prefix
-test_expr_result '+0' 0
 test_expr_result '+ +1' 1
 test_expr_result '- -17' 17
-test_expr_result '1 - -2' 3
-
-test_stmt_result '; ; return 0;' 0
-test_stmt_result '; return 2; return 0;' 2
 
 echo "All tests passed."

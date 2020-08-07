@@ -71,6 +71,9 @@ int GetSizeOfType(struct Node *t) {
   } else if (t->type == kTypePointer) {
     return 8;
   } else if (t->type == kTypeStruct) {
+    if (!t->type_struct_spec) {
+      ErrorWithToken(t->tag, "Cannot take sizeof incomplete struct");
+    }
     return CalcStructSize(t->type_struct_spec);
   } else if (t->type == kTypeArray) {
     return GetSizeOfType(t->type_array_type_of) *
@@ -207,9 +210,11 @@ _Noreturn void TestType() {
   assert(!IsSameTypeExceptAttr(int_type, pointer_of_int_type));
   assert(
       IsSameTypeExceptAttr(pointer_of_int_type, another_pointer_of_int_type));
-
   assert(GetSizeOfType(int_type) == 4);
   assert(GetSizeOfType(pointer_of_int_type) == 8);
+
+  struct Node *char_type = CreateTypeBase(CreateToken("char"));
+  assert(GetSizeOfType(char_type) == 1);
 
   struct Node *ppi_type = CreateTypePointer(pointer_of_int_type);
 
