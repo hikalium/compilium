@@ -453,6 +453,7 @@ int main(int argc, char *argv[]) {
   PrintASTNode(ast);
   fputc('\n', stderr);
 
+  fputs("Analyze begin\n", stderr);
   Analyze(ast);
   PrintASTNode(ast);
   fputc('\n', stderr);

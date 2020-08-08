@@ -54,9 +54,12 @@ enum TokenType {
   kTokenKwFor,
   kTokenKwIf,
   kTokenKwInt,
+  kTokenKwLong,
   kTokenKwReturn,
   kTokenKwSizeof,
   kTokenKwStruct,
+  kTokenKwTypedef,
+  kTokenKwUnsigned,
   kTokenKwVoid,
   kTokenKwWhile,
   kTokenCharLiteral,
@@ -168,6 +171,7 @@ void Analyze(struct Node *node);
 bool IsToken(struct Node *n);
 bool IsTokenWithType(struct Node *n, enum TokenType type);
 bool IsASTList(struct Node *);
+bool IsASTDeclOfTypedef(struct Node *n);
 struct Node *AllocNode(enum NodeType type);
 struct Node *CreateASTBinOp(struct Node *t, struct Node *left,
                             struct Node *right);

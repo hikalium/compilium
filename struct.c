@@ -57,6 +57,10 @@ struct Node *FindStructMember(struct Node *struct_type,
 }
 
 void ResolveTypesOfMembersOfStruct(struct SymbolEntry *ctx, struct Node *spec) {
+  if (!spec) {
+    // Skip resolving members since it is incomplete.
+    return;
+  }
   struct Node *dict = spec->struct_member_dict;
   fprintf(stderr, "Resolving types of struct...\n");
   struct Node *resolved_dict = AllocList();

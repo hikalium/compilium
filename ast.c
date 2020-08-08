@@ -1,6 +1,10 @@
 #include "compilium.h"
 
 bool IsASTList(struct Node *n) { return n && n->type == kASTList; }
+bool IsASTDeclOfTypedef(struct Node *n) {
+  return (n && n->type == kASTDecl &&
+          IsTokenWithType(GetNodeAt(n->op, 0), kTokenKwTypedef));
+}
 
 struct Node *AllocNode(enum NodeType type) {
   struct Node *node = calloc(1, sizeof(struct Node));

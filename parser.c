@@ -1,5 +1,8 @@
 #include "compilium.h"
 
+// 6.2.3 Name spaces of identifiers
+static struct Node *ord_idents;  // ordinary identifiers
+
 struct Node *ParseStmt();
 struct Node *ParseCompStmt();
 struct Node *ParseDeclBody();
@@ -336,6 +339,11 @@ struct Node *ParseDeclSpecs() {
   struct Node *decl_specs = AllocList();
   for (;;) {
     struct Node *decl_spec;
+    if ((decl_spec = ConsumeToken(kTokenKwTypedef))) {
+      // storage-class-specifier
+      PushToList(decl_specs, decl_spec);
+      continue;
+    }
     if ((decl_spec = ConsumeToken(kTokenKwConst))) {
       // type-qualifier
       PushToList(decl_specs, decl_spec);
@@ -343,9 +351,21 @@ struct Node *ParseDeclSpecs() {
     }
     if ((decl_spec = ConsumeToken(kTokenKwVoid)) ||
         (decl_spec = ConsumeToken(kTokenKwChar)) ||
-        (decl_spec = ConsumeToken(kTokenKwInt))) {
+        (decl_spec = ConsumeToken(kTokenKwInt)) ||
+        (decl_spec = ConsumeToken(kTokenKwLong)) ||
+        (decl_spec = ConsumeToken(kTokenKwUnsigned))) {
       // type-specifier
       PushToList(decl_specs, decl_spec);
+      continue;
+    }
+    if ((decl_spec = ConsumeTokenStr("__builtin_va_list"))) {
+      PushToList(decl_specs, decl_spec);
+      continue;
+    }
+    struct Node *typedef_type = GetNodeByTokenKey(ord_idents, PeekToken());
+    if (typedef_type) {
+      PushToList(decl_specs, typedef_type);
+      NextToken();
       continue;
     }
     if (ConsumeToken(kTokenKwStruct)) {
@@ -390,18 +410,25 @@ struct Node *ParseDirectDecltor() {
   }
   while (true) {
     if ((t = ConsumePunctuator("("))) {
+      struct Node *op = t;
       struct Node *args = AllocList();
       if (!ConsumePunctuator(")")) {
         while (1) {
-          struct Node *arg = ParseParamDecl();
-          if (!arg) ErrorWithToken(NextToken(), "Expected ParamDecl here");
-          PushToList(args, arg);
+          if ((t = ConsumePunctuator("..."))) {
+            PushToList(args, t);
+          } else {
+            struct Node *arg = ParseParamDecl();
+            if (!arg) {
+              ErrorWithToken(NextToken(), "Expected ParamDecl here");
+            }
+            PushToList(args, arg);
+          }
           if (!ConsumePunctuator(",")) break;
         }
         ExpectPunctuator(")");
       }
       struct Node *nn = AllocNode(kASTDirectDecltor);
-      nn->op = t;
+      nn->op = op;
       nn->right = args;
       nn->left = n;
       n = nn;
@@ -489,6 +516,7 @@ struct Node *ParseFuncDef(struct Node *decl_body) {
 
 void InitParser(struct Node **head_token) {
   InitTokenStream(RemoveDelimiterTokens(head_token));
+  ord_idents = AllocList();
 }
 
 struct Node *Parse(struct Node **head_token) {
@@ -498,6 +526,16 @@ struct Node *Parse(struct Node **head_token) {
   while ((decl_body = ParseDeclBody())) {
     if (ConsumePunctuator(";")) {
       PushToList(list, decl_body);
+      assert(IsASTList(decl_body->op));
+      if (IsASTDeclOfTypedef(decl_body)) {
+        // typedef case
+        struct Node *typedef_type = CreateTypeFromDecl(decl_body);
+        struct Node *typedef_name =
+            GetIdentifierTokenFromTypeAttr(typedef_type);
+        PrintASTNode(typedef_name);
+        PushKeyValueToList(ord_idents, CreateTokenStr(typedef_name),
+                           GetTypeWithoutAttr(typedef_type));
+      }
       continue;
     }
     struct Node *func_def = ParseFuncDef(decl_body);

@@ -234,6 +234,9 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     *ctx = saved_ctx;
     return;
   } else if (node->type == kASTDecl) {
+    if (IsASTDeclOfTypedef(node)) {
+      return;
+    }
     struct Node *raw_type = CreateTypeInContext(*ctx, node->op, node->right);
     PrintASTNode(raw_type);
     assert(raw_type);

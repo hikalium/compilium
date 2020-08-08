@@ -2,6 +2,7 @@ CFLAGS=-Wall -Wpedantic -Wextra -Werror -Wconditional-uninitialized -std=c11
 SRCS=analyzer.c ast.c compilium.c generator.c parser.c struct.c symbol.c token.c tokenizer.c type.c
 HEADERS=compilium.h
 CC=clang
+FAILCASE_FILE:=failcase.c
 LLDB_ARGS = -o 'settings set interpreter.prompt-on-quit false' \
 			-o 'b __assert' \
 			-o 'process launch'
@@ -14,8 +15,8 @@ compilium_dbg : $(SRCS) $(HEADERS) Makefile
 
 debug : compilium_dbg failcase.c
 	lldb \
-		-o 'settings set target.input-path failcase.c' $(LLDB_ARGS) \
-		-- ./compilium_dbg --target-os `uname`
+		-o 'settings set target.input-path ${FAILCASE_FILE}' $(LLDB_ARGS) \
+		-- ./compilium_dbg -I include/ --target-os `uname`
 
 testall : unittest ctest test
 

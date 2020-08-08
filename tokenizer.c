@@ -41,9 +41,12 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
     if (IsEqualTokenWithCStr(t, "for")) t->token_type = kTokenKwFor;
     if (IsEqualTokenWithCStr(t, "if")) t->token_type = kTokenKwIf;
     if (IsEqualTokenWithCStr(t, "int")) t->token_type = kTokenKwInt;
+    if (IsEqualTokenWithCStr(t, "long")) t->token_type = kTokenKwLong;
     if (IsEqualTokenWithCStr(t, "return")) t->token_type = kTokenKwReturn;
     if (IsEqualTokenWithCStr(t, "sizeof")) t->token_type = kTokenKwSizeof;
     if (IsEqualTokenWithCStr(t, "struct")) t->token_type = kTokenKwStruct;
+    if (IsEqualTokenWithCStr(t, "typedef")) t->token_type = kTokenKwTypedef;
+    if (IsEqualTokenWithCStr(t, "unsigned")) t->token_type = kTokenKwUnsigned;
     if (IsEqualTokenWithCStr(t, "void")) t->token_type = kTokenKwVoid;
     if (IsEqualTokenWithCStr(t, "while")) t->token_type = kTokenKwWhile;
     return t;
@@ -176,6 +179,9 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
   } else if (')' == *p) {
     return AllocToken(src, *line, p, 1, kTokenPunctuator);
   } else if ('.' == *p) {
+    if (p[1] == '.' && p[2] == '.') {
+      return AllocToken(src, *line, p, 3, kTokenPunctuator);
+    }
     return AllocToken(src, *line, p, 1, kTokenPunctuator);
   } else if ('[' == *p) {
     return AllocToken(src, *line, p, 1, kTokenPunctuator);

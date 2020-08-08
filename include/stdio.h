@@ -1,3 +1,5 @@
+#include <stdarg.h>
+
 #define NULL 0
 #define EOF (-1)
 
@@ -26,6 +28,7 @@ int fflush(FILE *);
 int fgetc(FILE *);
 int fprintf(FILE *, const char *, ...);
 int fputc(int c, FILE *);
+int puts(char *s);
 int fputs(const char *, FILE *);
 int getchar(void);
 int printf(const char *, ...);

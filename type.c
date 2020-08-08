@@ -62,6 +62,7 @@ int GetSizeOfType(struct Node *t) {
     assert(IsToken(t->op));
     switch (t->op->token_type) {
       case kTokenKwInt:
+      case kTokenKwLong:
         return 4;
       case kTokenKwChar:
         return 1;
@@ -121,19 +122,31 @@ struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
   for (struct Node *dd = decltor->right; dd; dd = dd->left) {
     assert(dd->type == kASTDirectDecltor);
     if (dd->left) {
+      assert(dd->op);
       if (IsEqualTokenWithCStr(dd->op, "(")) {
+        // direct-declarator ( parameter-type-list | identifier-list_opt )
         struct Node *arg_type_list = AllocList();
         for (int i = 0; i < GetSizeOfList(dd->right); i++) {
-          PushToList(arg_type_list,
-                     CreateTypeFromDecl(GetNodeAt(dd->right, i)));
+          struct Node *arg = GetNodeAt(dd->right, i);
+          if (IsEqualTokenWithCStr(arg, "...")) {
+            if (i != GetSizeOfList(dd->right) - 1) {
+              ErrorWithToken(arg,
+                             "va arg is only allowed at the end of params.");
+            }
+            PushToList(arg_type_list, arg);
+            break;
+          }
+          PushToList(arg_type_list, CreateTypeFromDecl(arg));
         }
         type = CreateTypeFunction(type, arg_type_list);
         continue;
       }
       if (IsEqualTokenWithCStr(dd->op, "[")) {
+        // direct-declarator [ list ]
         type = CreateTypeArray(type, dd->right);
         continue;
       }
+      assert(false);
     }
     assert(!dd->left);
     if (IsEqualTokenWithCStr(dd->op, "(")) {
@@ -155,6 +168,10 @@ static struct Node *CreateBaseTypeFromDeclSpecs(struct SymbolEntry *ctx,
   struct Node *type_spec = NULL;
   for (int i = 0; i < GetSizeOfList(decl_specs); i++) {
     struct Node *t = GetNodeAt(decl_specs, i);
+    if (IsTokenWithType(t, kTokenKwTypedef) ||
+        IsTokenWithType(t, kTokenKwUnsigned)) {
+      continue;
+    }
     if (IsTokenWithType(t, kTokenKwConst)) {
       assert(!type_qual);
       type_qual = t;
@@ -174,6 +191,11 @@ static struct Node *CreateBaseTypeFromDeclSpecs(struct SymbolEntry *ctx,
     }
     return CreateTypeStruct(type_spec->tag, type_spec);
   }
+  if (type_spec->type == kTypeStruct) {
+    // typedef_type
+    return type_spec;
+  }
+  PrintASTNode(decl_specs);
   assert(false);
 }
 

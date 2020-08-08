@@ -502,6 +502,9 @@ static void GenerateForNode(struct Node *node) {
     }
     return;
   } else if (node->type == kASTDecl) {
+    if (IsASTDeclOfTypedef(node)) {
+      return;
+    }
     assert(node->right && node->right->type == kASTDecltor);
     if (!node->right->decltor_init_expr) return;
     GenerateForNode(node->right->decltor_init_expr);
