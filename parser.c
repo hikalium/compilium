@@ -346,13 +346,16 @@ struct Node *ParseDeclSpecs() {
   struct Node *decl_specs = AllocList();
   for (;;) {
     struct Node *decl_spec;
+    // storage-class-specifier
     if ((decl_spec = ConsumeToken(kTokenKwTypedef))) {
-      // storage-class-specifier
       PushToList(decl_specs, decl_spec);
       continue;
     }
+    if ((decl_spec = ConsumeToken(kTokenKwStatic))) {
+      continue;
+    }
+    // type-qualifier
     if ((decl_spec = ConsumeToken(kTokenKwConst))) {
-      // type-qualifier
       PushToList(decl_specs, decl_spec);
       continue;
     }
@@ -361,22 +364,23 @@ struct Node *ParseDeclSpecs() {
         (decl_spec = ConsumeToken(kTokenKwInt)) ||
         (decl_spec = ConsumeToken(kTokenKwLong)) ||
         (decl_spec = ConsumeToken(kTokenKwUnsigned))) {
-      // type-specifier
       PushToList(decl_specs, decl_spec);
       continue;
     }
+    // builtin type name
     if ((decl_spec = ConsumeTokenStr("__builtin_va_list"))) {
       PushToList(decl_specs, decl_spec);
       continue;
     }
+    // typedef name
     struct Node *typedef_type = GetNodeByTokenKey(ord_idents, PeekToken());
     if (typedef_type) {
       PushToList(decl_specs, typedef_type);
       NextToken();
       continue;
     }
+    // struct-or-union-specifier
     if (ConsumeToken(kTokenKwStruct)) {
-      // type-specifier > struct-or-union-specifier
       struct Node *struct_spec = AllocNode(kASTStructSpec);
       struct_spec->tag = ConsumeToken(kTokenIdent);
       assert(struct_spec->tag);

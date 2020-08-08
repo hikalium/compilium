@@ -58,6 +58,7 @@ enum TokenType {
   kTokenKwLong,
   kTokenKwReturn,
   kTokenKwSizeof,
+  kTokenKwStatic,
   kTokenKwStruct,
   kTokenKwTypedef,
   kTokenKwUnsigned,
@@ -192,6 +193,7 @@ struct Node *CreateTypeLValue(struct Node *type);
 struct Node *CreateTypePointer(struct Node *type);
 struct Node *CreateTypeFunction(struct Node *return_type,
                                 struct Node *arg_type_list);
+struct Node *GetReturnTypeOfFunction(struct Node *);
 struct Node *GetArgTypeList(struct Node *func_type);
 struct Node *CreateTypeStruct(struct Node *tag_token, struct Node *struct_spec);
 struct Node *CreateTypeAttrIdent(struct Node *ident_token, struct Node *type);

@@ -69,7 +69,10 @@ int GetSizeOfType(struct Node *t) {
         return 4;
       case kTokenKwChar:
         return 1;
+      case kTokenKwVoid:
+        return 0;
       default:
+        PrintASTNode(t->op);
         assert(false);
     }
   } else if (t->type == kTypePointer) {
@@ -194,7 +197,7 @@ static struct Node *CreateBaseTypeFromDeclSpecs(struct SymbolEntry *ctx,
     }
     return CreateTypeStruct(type_spec->tag, type_spec);
   }
-  if (type_spec->type == kTypeStruct) {
+  if (type_spec->type == kTypeStruct || type_spec->type == kTypeBase) {
     // typedef_type
     return type_spec;
   }
@@ -256,6 +259,9 @@ _Noreturn void TestType() {
   struct Node *char_type = CreateTypeBase(CreateToken("char"));
   assert(GetSizeOfType(char_type) == 1);
 
+  struct Node *long_type = CreateTypeBase(CreateToken("long"));
+  assert(GetSizeOfType(long_type) == 4);
+
   struct Node *ppi_type = CreateTypePointer(pointer_of_int_type);
 
   struct Node *args_i = AllocList();
@@ -269,6 +275,16 @@ _Noreturn void TestType() {
   struct Node *ppif_pi_type = CreateTypeFunction(ppi_type, args_pi);
 
   struct Node *type;
+
+  type = CreateTypeFromInput("void* (*f)(int size);");
+  PrintASTNode(type);
+  type = GetTypeWithoutAttr(type);
+  assert(type->type == kTypePointer);
+  type = type->right;
+  assert(type->type == kTypeFunction);
+  type = GetReturnTypeOfFunction(type);
+  assert(type->type == kTypePointer);
+  assert(GetSizeOfType(type) == 8);
 
   type = CreateTypeFromInput("int v;");
   PrintASTNode(type);

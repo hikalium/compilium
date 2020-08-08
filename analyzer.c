@@ -44,10 +44,10 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
   if (node->type == kASTExprFuncCall) {
     node->stack_size_needed = (GetLastLocalVarOffset(*ctx) + 0xF) & ~0xF;
     AllocReg(node);
-    // TODO: support expe_type other than int
-    node->expr_type = CreateTypeBase(CreateToken("int"));
     AnalyzeNode(node->func_expr, ctx);
     FreeReg(node->func_expr->reg);
+    node->expr_type =
+        GetReturnTypeOfFunction(GetTypeWithoutAttr(node->func_expr->expr_type));
     for (int i = 0; i < GetSizeOfList(node->arg_expr_list); i++) {
       struct Node *n = GetNodeAt(node->arg_expr_list, i);
       AnalyzeNode(n, ctx);
@@ -100,8 +100,15 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       AnalyzeNode(node->right, ctx);
       node->reg = node->left->reg;
       FreeReg(node->right->reg);
-      node->expr_type = CreateTypeLValue(
-          GetTypeWithoutAttr(node->left->expr_type)->type_array_type_of);
+      assert(node->left->expr_type);
+      struct Node *left_type = GetTypeWithoutAttr(node->left->expr_type);
+      if (left_type->type == kTypeArray) {
+        node->expr_type = CreateTypeLValue(left_type->type_array_type_of);
+      } else if (left_type->type == kTypePointer) {
+        node->expr_type = CreateTypeLValue(left_type->right);
+      } else {
+        assert(false);
+      }
       return;
     } else if (IsEqualTokenWithCStr(node->op, ".") ||
                IsEqualTokenWithCStr(node->op, "->")) {

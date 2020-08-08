@@ -45,6 +45,7 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
     if (IsEqualTokenWithCStr(t, "long")) t->token_type = kTokenKwLong;
     if (IsEqualTokenWithCStr(t, "return")) t->token_type = kTokenKwReturn;
     if (IsEqualTokenWithCStr(t, "sizeof")) t->token_type = kTokenKwSizeof;
+    if (IsEqualTokenWithCStr(t, "static")) t->token_type = kTokenKwStatic;
     if (IsEqualTokenWithCStr(t, "struct")) t->token_type = kTokenKwStruct;
     if (IsEqualTokenWithCStr(t, "typedef")) t->token_type = kTokenKwTypedef;
     if (IsEqualTokenWithCStr(t, "unsigned")) t->token_type = kTokenKwUnsigned;

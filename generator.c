@@ -40,6 +40,22 @@ static void EmitMoveToMemory(struct Node *op, int dst, int src, int size) {
   ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
 }
 
+static void EmitMoveFromMemory(struct Node *op, int dst, int src, int size) {
+  if (size == 8) {
+    printf("mov %s, [%s]\n", reg_names_64[dst], reg_names_64[src]);
+    return;
+  }
+  if (size == 4) {
+    printf("movsxd %s, dword ptr [%s]\n", reg_names_64[dst], reg_names_64[src]);
+    return;
+  }
+  if (size == 1) {
+    printf("movsxb %s, byte ptr [%s]\n", reg_names_64[dst], reg_names_64[src]);
+    return;
+  }
+  ErrorWithToken(op, "Assigning %d bytes is not implemented.", size);
+}
+
 static void EmitAddToMemory(struct Node *op, int dst, int src, int size) {
   if (size == 8) {
     printf("add qword ptr [%s], %s\n", reg_names_64[dst], reg_names_64[src]);
@@ -177,10 +193,13 @@ static void GenerateForNode(struct Node *node) {
     return;
   }
   if (node->type == kASTExprFuncCall) {
-    GenerateForNodeRValue(node->func_expr);
-    printf("sub rsp, %d\n", node->stack_size_needed);
-    printf("push %s\n", reg_names_64[node->func_expr->reg]);
+    printf("sub rsp, %d # alloc stack frame\n", node->stack_size_needed);
     int i;
+    for (i = 1; i <= NUM_OF_SCRATCH_REGS; i++) {
+      printf("push %s # save scratch regs\n", reg_names_64[i]);
+    }
+    GenerateForNodeRValue(node->func_expr);
+    printf("push %s\n", reg_names_64[node->func_expr->reg]);
     assert(GetSizeOfList(node->arg_expr_list) <= NUM_OF_PARAM_REGISTERS);
     for (i = 0; i < GetSizeOfList(node->arg_expr_list); i++) {
       struct Node *n = GetNodeAt(node->arg_expr_list, i);
@@ -191,15 +210,21 @@ static void GenerateForNode(struct Node *node) {
       printf("pop %s\n", param_reg_names_64[i]);
     }
     printf("pop rax\n");
-    for (i = 1; i <= NUM_OF_SCRATCH_REGS; i++) {
-      printf("push %s\n", reg_names_64[i]);
-    }
     printf("call rax\n");
     for (i = NUM_OF_SCRATCH_REGS; i >= 1; i--) {
-      printf("pop %s\n", reg_names_64[i]);
+      printf("pop %s # restore scratch regs\n", reg_names_64[i]);
     }
-    printf("movsxd %s, eax\n", reg_names_64[node->reg]);
-    printf("add rsp, %d\n", node->stack_size_needed);
+    int ret_type_size = GetSizeOfType(node->expr_type);
+    if (ret_type_size == 4) {
+      printf("movsxd %s, eax\n", reg_names_64[node->reg]);
+    } else if (ret_type_size == 8) {
+      printf("mov %s, rax\n", reg_names_64[node->reg]);
+    } else if (ret_type_size == 0) {
+      // Return type is "void". Do nothing.
+    } else {
+      assert(false);
+    }
+    printf("add rsp, %d # restore stack frame\n", node->stack_size_needed);
     return;
   } else if (node->type == kASTFuncDef) {
     const char *func_name = CreateTokenStr(node->func_name_token);
@@ -258,11 +283,9 @@ static void GenerateForNode(struct Node *node) {
     } else if (IsEqualTokenWithCStr(node->op, "[")) {
       GenerateForNodeRValue(node->left);
       GenerateForNodeRValue(node->right);
-      struct Node *left_type = GetTypeWithoutAttr(node->left->expr_type);
-      assert(left_type->type == kTypeArray);
+      int elem_size = GetSizeOfType(node->expr_type);
       printf("imul %s, %s, %d\n", reg_names_64[node->right->reg],
-             reg_names_64[node->right->reg],
-             GetSizeOfType(left_type->type_array_type_of));
+             reg_names_64[node->right->reg], elem_size);
       printf("add %s, %s\n", reg_names_64[node->left->reg],
              reg_names_64[node->right->reg]);
       return;
@@ -334,19 +357,19 @@ static void GenerateForNode(struct Node *node) {
     } else if (node->left && !node->right) {
       if (IsEqualTokenWithCStr(node->op, "++")) {
         // Postfix ++
+        int size = GetSizeOfType(node->expr_type);
         GenerateForNode(node->left);
-        EmitIncMemory(node->op, node->reg, GetSizeOfType(node->expr_type));
-        printf("mov %s, [%s]\n", reg_names_64[node->reg],
-               reg_names_64[node->reg]);
+        EmitIncMemory(node->op, node->reg, size);
+        EmitMoveFromMemory(node->op, node->reg, node->reg, size);
         printf("sub %s, 1\n", reg_names_64[node->reg]);
         return;
       }
       if (IsEqualTokenWithCStr(node->op, "--")) {
         // Postfix --
+        int size = GetSizeOfType(node->expr_type);
         GenerateForNode(node->left);
         EmitDecMemory(node->op, node->reg, GetSizeOfType(node->expr_type));
-        printf("mov %s, [%s]\n", reg_names_64[node->reg],
-               reg_names_64[node->reg]);
+        EmitMoveFromMemory(node->op, node->reg, node->reg, size);
         printf("add %s, 1\n", reg_names_64[node->reg]);
         return;
       }

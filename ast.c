@@ -101,6 +101,11 @@ struct Node *CreateTypeFunction(struct Node *return_type,
   return n;
 }
 
+struct Node *GetReturnTypeOfFunction(struct Node *func_type) {
+  assert(func_type && func_type->type == kTypeFunction);
+  return func_type->left;
+}
+
 struct Node *GetArgTypeList(struct Node *func_type) {
   assert(func_type && func_type->type == kTypeFunction);
   return func_type->right;

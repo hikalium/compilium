@@ -30,6 +30,12 @@ circleci config validate
 circleci local execute
 ```
 
+## Debug Tips
+```
+make debug FAILCASE_FILE=examples/calc.c
+
+```
+
 ## License
 MIT
 
