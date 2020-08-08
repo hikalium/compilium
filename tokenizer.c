@@ -19,13 +19,24 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
     while ('0' <= p[length] && p[length] <= '9') {
       length++;
     }
-    return AllocToken(src, *line, p, length, kTokenDecimalNumber);
+    return AllocToken(src, *line, p, length, kTokenIntegerConstant);
   } else if ('0' == *p) {
     int length = 0;
-    while ('0' <= p[length] && p[length] <= '7') {
-      length++;
+    if (p[1] == 'x') {
+      // Hexadecimal
+      length += 2;
+      while (('0' <= p[length] && p[length] <= '9') ||
+             ('A' <= p[length] && p[length] <= 'F') ||
+             ('a' <= p[length] && p[length] <= 'f')) {
+        length++;
+      }
+    } else {
+      // Octal
+      while ('0' <= p[length] && p[length] <= '7') {
+        length++;
+      }
     }
-    return AllocToken(src, *line, p, length, kTokenOctalNumber);
+    return AllocToken(src, *line, p, length, kTokenIntegerConstant);
   } else if (('A' <= *p && *p <= 'Z') || ('a' <= *p && *p <= 'z') ||
              *p == '_') {
     int length = 0;

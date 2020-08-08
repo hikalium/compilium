@@ -11,8 +11,7 @@ struct Node *ParseExpr(void);
 
 struct Node *ParsePrimaryExpr() {
   struct Node *t;
-  if ((t = ConsumeToken(kTokenDecimalNumber)) ||
-      (t = ConsumeToken(kTokenOctalNumber)) ||
+  if ((t = ConsumeToken(kTokenIntegerConstant)) ||
       (t = ConsumeToken(kTokenIdent)) ||
       (t = ConsumeToken(kTokenCharLiteral)) ||
       (t = ConsumeToken(kTokenStringLiteral))) {

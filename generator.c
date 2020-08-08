@@ -250,8 +250,7 @@ static void GenerateForNode(struct Node *node) {
   }
   assert(node && node->op);
   if (node->type == kASTExpr) {
-    if (IsTokenWithType(node->op, kTokenDecimalNumber) ||
-        IsTokenWithType(node->op, kTokenOctalNumber)) {
+    if (IsTokenWithType(node->op, kTokenIntegerConstant)) {
       printf("mov %s, %ld\n", reg_names_64[node->reg],
              strtol(node->op->begin, NULL, 0));
       return;

@@ -309,6 +309,11 @@ int main(int argc, char** argv) {
   ExpectEq(0, 0, __LINE__);
   ExpectEq(1, 1, __LINE__);
 
+  ExpectEq(0xF, 15, __LINE__);
+  ExpectEq(0xFF, 255, __LINE__);
+  ExpectEq(0x010, 16, __LINE__);
+  ExpectEq(0x100, 256, __LINE__);
+
   ExpectEq(17, 17, __LINE__);
   ExpectEq(017, 15, __LINE__);
 

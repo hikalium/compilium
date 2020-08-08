@@ -280,7 +280,7 @@ static void PreprocessBlock(struct Node *replacement_list, int level) {
     if ((t = ConsumeTokenStr("__LINE__"))) {
       char s[32];
       snprintf(s, sizeof(s), "%d", t->line);
-      t->token_type = kTokenDecimalNumber;
+      t->token_type = kTokenIntegerConstant;
       t->begin = t->src_str = strdup(s);
       t->length = strlen(t->begin);
       continue;

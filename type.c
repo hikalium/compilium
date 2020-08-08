@@ -49,7 +49,7 @@ int IsAssignable(struct Node *dst, struct Node *src) {
 
 int EvalExprAsInt(struct Node *n) {
   assert(n);
-  if (IsTokenWithType(n->op, kTokenDecimalNumber)) {
+  if (IsTokenWithType(n->op, kTokenIntegerConstant)) {
     return strtol(n->op->begin, NULL, 0);
   }
   if (n->type == kASTExpr && IsEqualTokenWithCStr(n->op, "+")) {

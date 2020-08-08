@@ -45,8 +45,7 @@ enum NodeType {
 enum TokenType {
   kTokenDelimiter,
   kTokenZeroWidthNoBreakSpace,
-  kTokenDecimalNumber,
-  kTokenOctalNumber,
+  kTokenIntegerConstant,
   kTokenIdent,
   kTokenKwBreak,
   kTokenKwChar,

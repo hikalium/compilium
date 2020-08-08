@@ -80,8 +80,7 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
   }
   assert(node->op);
   if (node->type == kASTExpr) {
-    if (IsTokenWithType(node->op, kTokenDecimalNumber) ||
-        IsTokenWithType(node->op, kTokenOctalNumber) ||
+    if (IsTokenWithType(node->op, kTokenIntegerConstant) ||
         IsTokenWithType(node->op, kTokenCharLiteral)) {
       AllocReg(node);
       node->expr_type = CreateTypeBase(CreateToken("int"));
