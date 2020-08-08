@@ -266,7 +266,33 @@ void TestPtrOfVar() {
 
 void TestConstTypeSpec() { const int a = 0; }
 
+void TestBreak() {
+  int v;
+  v = 1;
+  for (;;) {
+    for (;;) {
+      v *= 2;
+      break;
+    }
+    v *= 3;
+    break;
+  }
+  ExpectEq(v, 6, __LINE__);
+
+  v = 1;
+  while (1) {
+    while (1) {
+      v *= 3;
+      break;
+    }
+    v *= 5;
+    break;
+  }
+  ExpectEq(v, 15, __LINE__);
+}
+
 int main(int argc, char** argv) {
+  TestBreak();
   TestConstTypeSpec();
   TestPtrOfVar();
   TestReassign();

@@ -270,6 +270,9 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     }
     return;
   } else if (node->type == kASTJumpStmt) {
+    if (IsTokenWithType(node->op, kTokenKwBreak)) {
+      return;
+    }
     if (IsTokenWithType(node->op, kTokenKwReturn)) {
       if (!node->right) return;
       AnalyzeNode(node->right, ctx);
@@ -287,12 +290,18 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
       return;
     }
   } else if (node->type == kASTForStmt) {
-    AnalyzeNode(node->init, ctx);
-    if (node->init->reg) FreeReg(node->init->reg);
-    AnalyzeNode(node->cond, ctx);
-    FreeReg(node->cond->reg);
-    AnalyzeNode(node->updt, ctx);
-    FreeReg(node->updt->reg);
+    if (node->init) {
+      AnalyzeNode(node->init, ctx);
+      if (node->init->reg) FreeReg(node->init->reg);
+    }
+    if (node->cond) {
+      AnalyzeNode(node->cond, ctx);
+      FreeReg(node->cond->reg);
+    }
+    if (node->updt) {
+      AnalyzeNode(node->updt, ctx);
+      FreeReg(node->updt->reg);
+    }
     AnalyzeNode(node->body, ctx);
     return;
   } else if (node->type == kASTWhileStmt) {

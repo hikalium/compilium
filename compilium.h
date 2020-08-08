@@ -48,6 +48,7 @@ enum TokenType {
   kTokenDecimalNumber,
   kTokenOctalNumber,
   kTokenIdent,
+  kTokenKwBreak,
   kTokenKwChar,
   kTokenKwConst,
   kTokenKwElse,

@@ -7,7 +7,7 @@ int main() {
   s[0] = 0;
   for (int i = 0; i < MAX_INPUT_SIZE; i++) {
     int c = getchar();
-    // if(c == EOF || c == '\n') break;
+    if (c == EOF || c == '\n') break;
     s[i] = c;
     s[i + 1] = 0;
   }

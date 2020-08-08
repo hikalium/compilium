@@ -273,7 +273,14 @@ struct Node *ParseSelectionStmt() {
 }
 
 struct Node *ParseJumpStmt() {
+  // jump-statement
   struct Node *t;
+  if ((t = ConsumeToken(kTokenKwBreak))) {
+    ExpectPunctuator(";");
+    struct Node *stmt = AllocNode(kASTJumpStmt);
+    stmt->op = t;
+    return stmt;
+  }
   if ((t = ConsumeToken(kTokenKwReturn))) {
     struct Node *expr = ParseExpr();
     ExpectPunctuator(";");
