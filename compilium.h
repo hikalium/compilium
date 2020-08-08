@@ -49,6 +49,7 @@ enum TokenType {
   kTokenOctalNumber,
   kTokenIdent,
   kTokenKwChar,
+  kTokenKwConst,
   kTokenKwElse,
   kTokenKwFor,
   kTokenKwIf,
@@ -166,6 +167,7 @@ void Analyze(struct Node *node);
 // @ast.c
 bool IsToken(struct Node *n);
 bool IsTokenWithType(struct Node *n, enum TokenType type);
+bool IsASTList(struct Node *);
 struct Node *AllocNode(enum NodeType type);
 struct Node *CreateASTBinOp(struct Node *t, struct Node *left,
                             struct Node *right);

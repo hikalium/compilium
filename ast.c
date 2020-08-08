@@ -1,5 +1,7 @@
 #include "compilium.h"
 
+bool IsASTList(struct Node *n) { return n && n->type == kASTList; }
+
 struct Node *AllocNode(enum NodeType type) {
   struct Node *node = calloc(1, sizeof(struct Node));
   node->type = type;
@@ -42,7 +44,7 @@ struct Node *CreateASTExprStmt(struct Node *t, struct Node *left) {
 
 struct Node *CreateASTFuncDef(struct Node *func_decl, struct Node *func_body) {
   assert(func_decl && func_decl->type == kASTDecl);
-  assert(func_body && func_body->type == kASTList);
+  assert(IsASTList(func_body));
   struct Node *n = AllocNode(kASTFuncDef);
   n->func_body = func_body;
   struct Node *type = CreateTypeFromDecl(func_decl);
@@ -88,7 +90,7 @@ struct Node *CreateTypePointer(struct Node *type) {
 
 struct Node *CreateTypeFunction(struct Node *return_type,
                                 struct Node *arg_type_list) {
-  assert(arg_type_list && arg_type_list->type == kASTList);
+  assert(IsASTList(arg_type_list));
   struct Node *n = AllocNode(kTypeFunction);
   n->left = return_type;
   n->right = arg_type_list;

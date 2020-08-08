@@ -262,7 +262,10 @@ void TestPtrOfVar() {
   ExpectEq(p ? 1 : 0, 1, __LINE__);
 }
 
+void TestConstTypeSpec() { const int a = 0; }
+
 int main(int argc, char** argv) {
+  TestConstTypeSpec();
   TestPtrOfVar();
   TestReassign();
   TestCharLiteralAccess();

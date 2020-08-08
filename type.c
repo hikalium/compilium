@@ -147,25 +147,40 @@ struct Node *CreateTypeFromDecltor(struct Node *decltor, struct Node *type) {
   return type;
 }
 
-static struct Node *CreateBaseTypeFromDeclSpec(struct SymbolEntry *ctx,
-                                               struct Node *decl_spec) {
-  assert(decl_spec);
-  if (IsToken(decl_spec)) return CreateTypeBase(decl_spec);
-  if (decl_spec->type == kASTStructSpec) {
-    if (!decl_spec->struct_member_dict) {
-      assert(decl_spec->tag);
-      struct Node *resolved_type = FindStructType(ctx, decl_spec->tag);
-      if (resolved_type) return resolved_type;
-      return CreateTypeStruct(decl_spec->tag, NULL);
+static struct Node *CreateBaseTypeFromDeclSpecs(struct SymbolEntry *ctx,
+                                                struct Node *decl_specs) {
+  // 6.2.5 Types
+  assert(IsASTList(decl_specs));
+  struct Node *type_qual = NULL;
+  struct Node *type_spec = NULL;
+  for (int i = 0; i < GetSizeOfList(decl_specs); i++) {
+    struct Node *t = GetNodeAt(decl_specs, i);
+    if (IsTokenWithType(t, kTokenKwConst)) {
+      assert(!type_qual);
+      type_qual = t;
+      continue;
     }
-    return CreateTypeStruct(decl_spec->tag, decl_spec);
+    assert(!type_spec);
+    type_spec = t;
+  }
+  assert(type_spec);
+  if (IsToken(type_spec)) return CreateTypeBase(type_spec);
+  if (type_spec->type == kASTStructSpec) {
+    if (!type_spec->struct_member_dict) {
+      assert(type_spec->tag);
+      struct Node *resolved_type = FindStructType(ctx, type_spec->tag);
+      if (resolved_type) return resolved_type;
+      return CreateTypeStruct(type_spec->tag, NULL);
+    }
+    return CreateTypeStruct(type_spec->tag, type_spec);
   }
   assert(false);
 }
 
 struct Node *CreateTypeInContext(struct SymbolEntry *ctx,
-                                 struct Node *decl_spec, struct Node *decltor) {
-  struct Node *type = CreateBaseTypeFromDeclSpec(ctx, decl_spec);
+                                 struct Node *decl_specs,
+                                 struct Node *decltor) {
+  struct Node *type = CreateBaseTypeFromDeclSpecs(ctx, decl_specs);
   if (!decltor) return type;
   return CreateTypeFromDecltor(decltor, type);
 }

@@ -332,26 +332,44 @@ struct Node *ParseStmt() {
 
 struct Node *ParseDecl();
 struct Node *ParseDeclSpecs() {
-  struct Node *decl_spec;
-  (decl_spec = ConsumeToken(kTokenKwInt)) ||
-      (decl_spec = ConsumeToken(kTokenKwChar)) ||
-      (decl_spec = ConsumeToken(kTokenKwVoid));
-  if (decl_spec) return decl_spec;
-  if (ConsumeToken(kTokenKwStruct)) {
-    struct Node *struct_spec = AllocNode(kASTStructSpec);
-    struct_spec->tag = ConsumeToken(kTokenIdent);
-    assert(struct_spec->tag);
-    if (ConsumePunctuator("{")) {
-      struct_spec->struct_member_dict = AllocList();
-      struct Node *decl;
-      while ((decl = ParseDecl())) {
-        AddMemberOfStructFromDecl(struct_spec, decl);
-      }
-      ExpectPunctuator("}");
+  // returns Node<kASTList> or NULL
+  struct Node *decl_specs = AllocList();
+  for (;;) {
+    struct Node *decl_spec;
+    if ((decl_spec = ConsumeToken(kTokenKwConst))) {
+      // type-qualifier
+      PushToList(decl_specs, decl_spec);
+      continue;
     }
-    return struct_spec;
+    if ((decl_spec = ConsumeToken(kTokenKwVoid)) ||
+        (decl_spec = ConsumeToken(kTokenKwChar)) ||
+        (decl_spec = ConsumeToken(kTokenKwInt))) {
+      // type-specifier
+      PushToList(decl_specs, decl_spec);
+      continue;
+    }
+    if (ConsumeToken(kTokenKwStruct)) {
+      // type-specifier > struct-or-union-specifier
+      struct Node *struct_spec = AllocNode(kASTStructSpec);
+      struct_spec->tag = ConsumeToken(kTokenIdent);
+      assert(struct_spec->tag);
+      if (ConsumePunctuator("{")) {
+        struct_spec->struct_member_dict = AllocList();
+        struct Node *decl;
+        while ((decl = ParseDecl())) {
+          AddMemberOfStructFromDecl(struct_spec, decl);
+        }
+        ExpectPunctuator("}");
+      }
+      PushToList(decl_specs, struct_spec);
+      continue;
+    }
+    break;
+  };
+  if (GetSizeOfList(decl_specs) == 0) {
+    return NULL;
   }
-  return NULL;
+  return decl_specs;
 }
 
 struct Node *ParseParamDecl();
@@ -426,19 +444,19 @@ struct Node *ParseInitDecltor() {
 }
 
 struct Node *ParseParamDecl() {
-  struct Node *decl_spec = ParseDeclSpecs();
-  if (!decl_spec) return NULL;
+  struct Node *decl_specs = ParseDeclSpecs();
+  if (!decl_specs) return NULL;
   struct Node *n = AllocNode(kASTDecl);
-  n->op = decl_spec;
+  n->op = decl_specs;
   n->right = ParseDecltor();
   return n;
 }
 
 struct Node *ParseDeclBody() {
-  struct Node *decl_spec = ParseDeclSpecs();
-  if (!decl_spec) return NULL;
+  struct Node *decl_specs = ParseDeclSpecs();
+  if (!decl_specs) return NULL;
   struct Node *n = AllocNode(kASTDecl);
-  n->op = decl_spec;
+  n->op = decl_specs;
   n->right = ParseInitDecltor();
   return n;
 }
