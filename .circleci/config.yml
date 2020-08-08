@@ -5,6 +5,7 @@ jobs:
             - image: hikalium/ubuntu-for-compilium:latest
         steps:
             - checkout
+            - run: apt install time
             - run:
                 name: Run test
                 command: make testall CC=clang
