@@ -135,6 +135,8 @@ void TestSizeof() {
   ExpectEq(sizeof(p2d), 8, __LINE__);
   struct Point3D p3d;
   ExpectEq(sizeof(p3d), 12, __LINE__);
+  char s[2 + 3 + 5];
+  ExpectEq(sizeof(s), 10, __LINE__);
 }
 
 struct Line2D {

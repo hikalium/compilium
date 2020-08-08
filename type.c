@@ -52,6 +52,9 @@ int EvalExprAsInt(struct Node *n) {
   if (IsTokenWithType(n->op, kTokenDecimalNumber)) {
     return strtol(n->op->begin, NULL, 0);
   }
+  if (n->type == kASTExpr && IsEqualTokenWithCStr(n->op, "+")) {
+    return EvalExprAsInt(n->left) + EvalExprAsInt(n->right);
+  }
   assert(false);
 }
 
