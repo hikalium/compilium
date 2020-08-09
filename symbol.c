@@ -1,12 +1,5 @@
 #include "compilium.h"
 
-struct SymbolEntry {
-  enum SymbolType type;
-  struct SymbolEntry *prev;
-  const char *key;
-  struct Node *value;
-};
-
 static void PushSymbol(struct SymbolEntry **prev, struct SymbolEntry *sym) {
   sym->prev = *prev;
   *prev = sym;
@@ -42,6 +35,26 @@ struct Node *AddLocalVar(struct SymbolEntry **ctx, const char *key,
   struct SymbolEntry *e = AllocSymbolEntry(kSymbolLocalVar, key, local_var);
   PushSymbol(ctx, e);
   return local_var;
+}
+
+void AddGlobalVar(struct SymbolEntry **ctx, const char *key,
+                  struct Node *var_type) {
+  fprintf(stderr, "%s: ", key);
+  PrintASTNode(var_type);
+  fprintf(stderr, "\n");
+  assert(ctx);
+  struct SymbolEntry *e = AllocSymbolEntry(kSymbolGlobalVar, key, var_type);
+  PushSymbol(ctx, e);
+}
+
+struct Node *FindGlobalVar(struct SymbolEntry *e, struct Node *key_token) {
+  // returns ASTNode which represents Type
+  for (; e; e = e->prev) {
+    if (e->type != kSymbolGlobalVar) continue;
+    if (!IsEqualTokenWithCStr(key_token, e->key)) continue;
+    return e->value;
+  }
+  return NULL;
 }
 
 struct Node *FindLocalVar(struct SymbolEntry *e, struct Node *key_token) {

@@ -1,5 +1,6 @@
 #include "compilium.h"
 
+static struct Node *in_function;  // ASTFuncDef
 static int reg_used_table[NUM_OF_SCRATCH_REGS];
 static struct Node *reg_node_table[NUM_OF_SCRATCH_REGS];
 
@@ -74,7 +75,10 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
           AddLocalVar(ctx, CreateTokenStr(arg_ident_token), arg_type);
       PushToList(node->arg_var_list, local_var);
     }
+    assert(!in_function);
+    in_function = node;
     AnalyzeNode(node->func_body, ctx);
+    in_function = NULL;
     *ctx = saved_ctx;
     return;
   }
@@ -152,6 +156,12 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
           return;
         }
         node->expr_type = CreateTypeLValue(ident_info->expr_type);
+        return;
+      }
+      struct Node *global_var_type = FindGlobalVar(*ctx, node->op);
+      if (global_var_type) {
+        AllocReg(node);
+        node->expr_type = CreateTypeLValue(global_var_type);
         return;
       }
       struct Node *func_def = FindFuncDef(*ctx, node->op);
@@ -240,9 +250,6 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     *ctx = saved_ctx;
     return;
   } else if (node->type == kASTDecl) {
-    if (IsASTDeclOfTypedef(node)) {
-      return;
-    }
     struct Node *raw_type = CreateTypeInContext(*ctx, node->op, node->right);
     PrintASTNode(raw_type);
     assert(raw_type);
@@ -253,18 +260,33 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     struct Node *type = GetTypeWithoutAttr(raw_type);
     assert(type);
 
-    if (type_ident && type->type == kTypeFunction) {
-      AddFuncDeclType(ctx, CreateTokenStr(type_ident), raw_type);
+    if (!in_function) {
+      // Top-level definitions
+      if (IsASTDeclOfTypedef(node)) {
+        return;
+      }
+      if (type_ident && type->type == kTypeFunction) {
+        AddFuncDeclType(ctx, CreateTokenStr(type_ident), raw_type);
+        return;
+      }
+      if (!type_ident && type->type == kTypeStruct) {
+        struct Node *spec = type->type_struct_spec;
+        ResolveTypesOfMembersOfStruct(*ctx, spec);
+        assert(type->tag);
+        AddStructType(ctx, CreateTokenStr(type->tag), type);
+        return;
+      }
+      // Global var definitions
+      assert(type_ident);
+      AddGlobalVar(ctx, CreateTokenStr(type_ident), type);
+      assert(node->right->type == kASTDecltor);
+      if (node->right->decltor_init_expr) {
+        assert(false);
+      }
       return;
     }
-    if (!type_ident && type->type == kTypeStruct) {
-      struct Node *spec = type->type_struct_spec;
-      ResolveTypesOfMembersOfStruct(*ctx, spec);
-      assert(type->tag);
-      AddStructType(ctx, CreateTokenStr(type->tag), type);
-      return;
-    }
-    assert(type && type_ident);
+    // Local definitions
+    assert(type_ident);
     AddLocalVar(ctx, CreateTokenStr(type_ident), type);
     assert(node->right->type == kASTDecltor);
     if (node->right->decltor_init_expr) {
@@ -319,7 +341,10 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
   ErrorWithToken(node->op, "AnalyzeNode: Not implemented");
 }
 
-void Analyze(struct Node *ast) {
+struct SymbolEntry *Analyze(struct Node *ast) {
+  // Returns root context of symbols (including global vars)
   struct SymbolEntry *root_ctx = NULL;
+  in_function = NULL;
   AnalyzeNode(ast, &root_ctx);
+  return root_ctx;
 }

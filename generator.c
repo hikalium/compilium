@@ -296,6 +296,14 @@ static void GenerateForNode(struct Node *node) {
                symbol_prefix, label_name);
         return;
       }
+      if (!node->byte_offset) {
+        // global var
+        const char *label_name = CreateTokenStr(node->op);
+        printf(".global %s%s\n", symbol_prefix, label_name);
+        printf("lea %s, [rip + %s%s]\n", reg_names_64[node->reg], symbol_prefix,
+               label_name);
+        return;
+      }
       printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg],
              node->byte_offset);
       return;
@@ -631,13 +639,7 @@ static void GenerateForNodeRValue(struct Node *node) {
   ErrorWithToken(node->op, "Dereferencing %d bytes is not implemented.", size);
 }
 
-void Generate(struct Node *ast) {
-  label_to_break = 0;
-  str_list = AllocList();
-  printf(".intel_syntax noprefix\n");
-  printf(".text\n");
-  GenerateForNode(ast);
-
+static void GenerateDataSection(struct SymbolEntry *toplevel_names) {
   printf(".data\n");
   for (int i = 0; i < GetSizeOfList(str_list); i++) {
     struct Node *n = GetNodeAt(str_list, i);
@@ -646,4 +648,24 @@ void Generate(struct Node *ast) {
     PrintTokenStrToFile(n->op, stdout);
     putchar('\n');
   }
+  struct SymbolEntry *e = toplevel_names;
+  for (; e; e = e->prev) {
+    if (e->type != kSymbolGlobalVar) continue;
+    int size = GetSizeOfType(e->value);
+    fprintf(stderr, "Global Var: %s = %d bytes\n", e->key, size);
+    printf("%s%s:\n", symbol_prefix, e->key);
+    printf(".byte ");
+    for (int i = 0; i < size; i++) {
+      printf("0%s", i == (size - 1) ? "\n" : ", ");
+    }
+  }
+}
+
+void Generate(struct Node *ast, struct SymbolEntry *toplevel_names) {
+  label_to_break = 0;
+  str_list = AllocList();
+  printf(".intel_syntax noprefix\n");
+  printf(".text\n");
+  GenerateForNode(ast);
+  GenerateDataSection(toplevel_names);
 }

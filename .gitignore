@@ -59,7 +59,6 @@ compilium_unittest
 failcase.c
 *.txt
 *.unittest
-*_test
 .DS_Store
 *.self.c
 *.S

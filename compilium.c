@@ -454,10 +454,10 @@ int main(int argc, char *argv[]) {
   fputc('\n', stderr);
 
   fputs("Analyze begin\n", stderr);
-  Analyze(ast);
+  struct SymbolEntry *ctx = Analyze(ast);
   PrintASTNode(ast);
   fputc('\n', stderr);
 
-  Generate(ast);
+  Generate(ast, ctx);
   return 0;
 }

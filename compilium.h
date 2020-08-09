@@ -166,7 +166,7 @@ extern const char *param_reg_names_32[NUM_OF_PARAM_REGISTERS];
 extern const char *param_reg_names_8[NUM_OF_PARAM_REGISTERS];
 
 // @analyzer.c
-void Analyze(struct Node *node);
+struct SymbolEntry *Analyze(struct Node *node);
 
 // @ast.c
 bool IsToken(struct Node *n);
@@ -203,7 +203,7 @@ struct Node *CreateMacroReplacement(struct Node *args_tokens,
 void PrintASTNode(struct Node *n);
 
 // @generate.c
-void Generate(struct Node *ast);
+void Generate(struct Node *ast, struct SymbolEntry *);
 
 // @parser.c
 extern struct Node *toplevel_names;
@@ -221,14 +221,23 @@ void ResolveTypesOfMembersOfStruct(struct SymbolEntry *ctx, struct Node *spec);
 // @symbol.c
 enum SymbolType {
   kSymbolLocalVar,
+  kSymbolGlobalVar,
   kSymbolFuncDef,
   kSymbolFuncDeclType,
   kSymbolStructType,
 };
-struct SymbolEntry;
+struct SymbolEntry {
+  enum SymbolType type;
+  struct SymbolEntry *prev;
+  const char *key;
+  struct Node *value;
+};
 int GetLastLocalVarOffset(struct SymbolEntry *);
 struct Node *AddLocalVar(struct SymbolEntry **ctx, const char *key,
                          struct Node *var_type);
+void AddGlobalVar(struct SymbolEntry **ctx, const char *key,
+                  struct Node *var_type);
+struct Node *FindGlobalVar(struct SymbolEntry *e, struct Node *key_token);
 struct Node *FindLocalVar(struct SymbolEntry *e, struct Node *key_token);
 void AddFuncDef(struct SymbolEntry **ctx, const char *key,
                 struct Node *func_def);
