@@ -6,6 +6,11 @@ bool IsASTDeclOfTypedef(struct Node *n) {
           IsTokenWithType(GetNodeAt(n->op, 0), kTokenKwTypedef));
 }
 
+bool IsASTDeclOfExtern(struct Node *n) {
+  return (n && n->type == kASTDecl &&
+          IsTokenWithType(GetNodeAt(n->op, 0), kTokenKwExtern));
+}
+
 struct Node *AllocNode(enum NodeType type) {
   struct Node *node = calloc(1, sizeof(struct Node));
   node->type = type;

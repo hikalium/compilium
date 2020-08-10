@@ -175,7 +175,8 @@ static struct Node *CreateBaseTypeFromDeclSpecs(struct SymbolEntry *ctx,
   for (int i = 0; i < GetSizeOfList(decl_specs); i++) {
     struct Node *t = GetNodeAt(decl_specs, i);
     if (IsTokenWithType(t, kTokenKwTypedef) ||
-        IsTokenWithType(t, kTokenKwUnsigned)) {
+        IsTokenWithType(t, kTokenKwUnsigned) ||
+        IsTokenWithType(t, kTokenKwExtern)) {
       continue;
     }
     if (IsTokenWithType(t, kTokenKwConst)) {
@@ -187,7 +188,16 @@ static struct Node *CreateBaseTypeFromDeclSpecs(struct SymbolEntry *ctx,
     type_spec = t;
   }
   assert(type_spec);
-  if (IsToken(type_spec)) return CreateTypeBase(type_spec);
+  if (IsToken(type_spec)) {
+    if (!IsTokenWithType(type_spec, kTokenKwInt) &&
+        !IsTokenWithType(type_spec, kTokenKwChar) &&
+        !IsTokenWithType(type_spec, kTokenKwLong) &&
+        !IsEqualTokenWithCStr(type_spec, "__builtin_va_list") &&
+        !IsTokenWithType(type_spec, kTokenKwVoid)) {
+      ErrorWithToken(type_spec, "Unexpected token for base type specifier");
+    }
+    return CreateTypeBase(type_spec);
+  }
   if (type_spec->type == kASTStructSpec) {
     if (!type_spec->struct_member_dict) {
       assert(type_spec->tag);

@@ -164,6 +164,12 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
         node->expr_type = CreateTypeLValue(global_var_type);
         return;
       }
+      struct Node *external_var_type = FindExternVar(*ctx, node->op);
+      if (external_var_type) {
+        AllocReg(node);
+        node->expr_type = CreateTypeLValue(external_var_type);
+        return;
+      }
       struct Node *func_def = FindFuncDef(*ctx, node->op);
       if (func_def) {
         AllocReg(node);
@@ -276,9 +282,12 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
         AddStructType(ctx, CreateTokenStr(type->tag), type);
         return;
       }
-      // Global var definitions
       assert(type_ident);
-      AddGlobalVar(ctx, CreateTokenStr(type_ident), type);
+      if (IsASTDeclOfExtern(node)) {
+        AddExternVar(ctx, CreateTokenStr(type_ident), type);
+      } else {
+        AddGlobalVar(ctx, CreateTokenStr(type_ident), type);
+      }
       assert(node->right->type == kASTDecltor);
       if (node->right->decltor_init_expr) {
         assert(false);

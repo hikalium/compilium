@@ -653,6 +653,7 @@ static void GenerateDataSection(struct SymbolEntry *toplevel_names) {
     if (e->type != kSymbolGlobalVar) continue;
     int size = GetSizeOfType(e->value);
     fprintf(stderr, "Global Var: %s = %d bytes\n", e->key, size);
+    printf(".global %s%s\n", symbol_prefix, e->key);
     printf("%s%s:\n", symbol_prefix, e->key);
     printf(".byte ");
     for (int i = 0; i < size; i++) {

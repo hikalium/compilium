@@ -3,6 +3,7 @@ int printf(const char*, ...);
 void exit(int);
 
 int global_val;
+extern int ext_val;
 
 void ExpectEq(int actual, int expected, int line) {
   printf("Line %3d: ", line);
@@ -33,7 +34,28 @@ void TestGlobal() {
   ExpectEq(global_val, 2, __LINE__);
 }
 
+void ef1() {
+  ExpectEq(ext_val, 0, __LINE__);
+  ext_val++;  
+  ExpectEq(ext_val, 1, __LINE__);
+}
+void ef2();
+void ef3() {
+  ExpectEq(ext_val, 2, __LINE__);
+  ext_val++;  
+  ExpectEq(ext_val, 3, __LINE__);
+}
+void TestExternal() {
+  ext_val = 0;  
+  ExpectEq(ext_val, 0, __LINE__);
+  ef1();
+  ef2();
+  ef3();
+  ExpectEq(ext_val, 3, __LINE__);
+}
+
 int main() {
+  TestExternal();
   TestGlobal();
   return 0;
 }

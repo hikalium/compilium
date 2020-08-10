@@ -51,6 +51,7 @@ enum TokenType {
   kTokenKwChar,
   kTokenKwConst,
   kTokenKwElse,
+  kTokenKwExtern,
   kTokenKwFor,
   kTokenKwIf,
   kTokenKwInt,
@@ -173,6 +174,7 @@ bool IsToken(struct Node *n);
 bool IsTokenWithType(struct Node *n, enum TokenType type);
 bool IsASTList(struct Node *);
 bool IsASTDeclOfTypedef(struct Node *n);
+bool IsASTDeclOfExtern(struct Node *n);
 struct Node *AllocNode(enum NodeType type);
 struct Node *CreateASTBinOp(struct Node *t, struct Node *left,
                             struct Node *right);
@@ -222,6 +224,7 @@ void ResolveTypesOfMembersOfStruct(struct SymbolEntry *ctx, struct Node *spec);
 enum SymbolType {
   kSymbolLocalVar,
   kSymbolGlobalVar,
+  kSymbolExternVar,
   kSymbolFuncDef,
   kSymbolFuncDeclType,
   kSymbolStructType,
@@ -235,8 +238,11 @@ struct SymbolEntry {
 int GetLastLocalVarOffset(struct SymbolEntry *);
 struct Node *AddLocalVar(struct SymbolEntry **ctx, const char *key,
                          struct Node *var_type);
+void AddExternVar(struct SymbolEntry **ctx, const char *key,
+                  struct Node *var_type);
 void AddGlobalVar(struct SymbolEntry **ctx, const char *key,
                   struct Node *var_type);
+struct Node *FindExternVar(struct SymbolEntry *e, struct Node *key_token);
 struct Node *FindGlobalVar(struct SymbolEntry *e, struct Node *key_token);
 struct Node *FindLocalVar(struct SymbolEntry *e, struct Node *key_token);
 void AddFuncDef(struct SymbolEntry **ctx, const char *key,

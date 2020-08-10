@@ -346,7 +346,8 @@ struct Node *ParseDeclSpecs() {
   for (;;) {
     struct Node *decl_spec;
     // storage-class-specifier
-    if ((decl_spec = ConsumeToken(kTokenKwTypedef))) {
+    if ((decl_spec = ConsumeToken(kTokenKwTypedef)) ||
+        (decl_spec = ConsumeToken(kTokenKwExtern))) {
       PushToList(decl_specs, decl_spec);
       continue;
     }

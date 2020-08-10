@@ -39,12 +39,31 @@ struct Node *AddLocalVar(struct SymbolEntry **ctx, const char *key,
 
 void AddGlobalVar(struct SymbolEntry **ctx, const char *key,
                   struct Node *var_type) {
-  fprintf(stderr, "%s: ", key);
+  fprintf(stderr, "Gvar: %s: ", key);
   PrintASTNode(var_type);
   fprintf(stderr, "\n");
   assert(ctx);
   struct SymbolEntry *e = AllocSymbolEntry(kSymbolGlobalVar, key, var_type);
   PushSymbol(ctx, e);
+}
+void AddExternVar(struct SymbolEntry **ctx, const char *key,
+                  struct Node *var_type) {
+  fprintf(stderr, "Evar: %s: ", key);
+  PrintASTNode(var_type);
+  fprintf(stderr, "\n");
+  assert(ctx);
+  struct SymbolEntry *e = AllocSymbolEntry(kSymbolExternVar, key, var_type);
+  PushSymbol(ctx, e);
+}
+
+struct Node *FindExternVar(struct SymbolEntry *e, struct Node *key_token) {
+  // returns ASTNode which represents Type
+  for (; e; e = e->prev) {
+    if (e->type != kSymbolExternVar) continue;
+    if (!IsEqualTokenWithCStr(key_token, e->key)) continue;
+    return e->value;
+  }
+  return NULL;
 }
 
 struct Node *FindGlobalVar(struct SymbolEntry *e, struct Node *key_token) {
