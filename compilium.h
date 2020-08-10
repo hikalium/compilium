@@ -204,6 +204,9 @@ struct Node *CreateMacroReplacement(struct Node *args_tokens,
                                     struct Node *to_tokens);
 void PrintASTNode(struct Node *n);
 
+// @compilium.c
+const char *ReadFile(FILE *fp);
+
 // @generate.c
 void Generate(struct Node *ast, struct SymbolEntry *);
 
@@ -211,6 +214,9 @@ void Generate(struct Node *ast, struct SymbolEntry *);
 extern struct Node *toplevel_names;
 void InitParser(struct Node **);
 struct Node *Parse(struct Node **passed_tokens);
+
+// @preprocessor.c
+void Preprocess(struct Node **head_holder);
 
 // @struct.c
 struct SymbolEntry;

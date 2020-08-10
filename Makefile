@@ -1,5 +1,6 @@
 CFLAGS=-Wall -Wpedantic -Wextra -Werror -Wconditional-uninitialized -std=c11
-SRCS=analyzer.c ast.c compilium.c generator.c parser.c struct.c symbol.c token.c tokenizer.c type.c
+SRCS=analyzer.c ast.c compilium.c generator.c \
+		 parser.c preprocessor.c struct.c symbol.c token.c tokenizer.c type.c
 HEADERS=compilium.h
 CC=clang
 FAILCASE_FILE:=failcase.c
