@@ -19,6 +19,35 @@ test_stdout \
 "`cat << EOS
 #define MACRO_DEFINED
 #ifdef MACRO_DEFINED
+int this_should_be_visible_1;
+#else
+int this_should_not_be_visible_1;
+#endif
+#ifdef MACRO_NOT_DEFINED
+int this_should_not_be_visible_2;
+#else
+int this_should_be_visible_2;
+#endif
+int always_visible;
+EOS
+`" \
+"`cat << EOS
+
+int this_should_be_visible_1;
+
+
+int this_should_be_visible_2;
+
+int always_visible;
+
+EOS
+`" \
+'ifdef nested case'
+
+test_stdout \
+"`cat << EOS
+#define MACRO_DEFINED
+#ifdef MACRO_DEFINED
 int this_should_be_visible;
 #ifdef MACRO_DEFINED
 #ifdef MACRO_NOT_DEFINED

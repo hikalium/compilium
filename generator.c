@@ -300,8 +300,8 @@ static void GenerateForNode(struct Node *node) {
         // global var
         const char *label_name = CreateTokenStr(node->op);
         printf(".global %s%s\n", symbol_prefix, label_name);
-        printf("lea %s, [rip + %s%s]\n", reg_names_64[node->reg], symbol_prefix,
-               label_name);
+        printf("mov %s, [rip + %s%s@GOTPCREL]\n", reg_names_64[node->reg],
+               symbol_prefix, label_name);
         return;
       }
       printf("lea %s, [rbp - %d]\n", reg_names_64[node->reg],

@@ -23,7 +23,7 @@ static void PreprocessRemoveBlock(void) {
       continue;
     }
     t = SkipDelimiterTokensInLogicalLine(t->next_token);
-    if (!IsEqualTokenWithCStr(t, "endif")) {
+    if (!IsEqualTokenWithCStr(t, "endif") && !IsEqualTokenWithCStr(t, "else")) {
       continue;
     }
     RemoveTokensTo(t);
@@ -153,8 +153,16 @@ static void PreprocessBlock(struct Node *replacement_list, int level) {
         RemoveTokensTo(t);
         if (cond) {
           PreprocessBlock(replacement_list, level + 1);
+          if (IsEqualTokenWithCStr(PeekToken(), "else")) {
+            RemoveCurrentToken();
+            PreprocessRemoveBlock();
+          }
         } else {
           PreprocessRemoveBlock();
+          if (IsEqualTokenWithCStr(PeekToken(), "else")) {
+            RemoveCurrentToken();
+            PreprocessBlock(replacement_list, level + 1);
+          }
         }
         t = PeekToken();
         if (!IsEqualTokenWithCStr(t, "endif")) {
@@ -168,6 +176,13 @@ static void PreprocessBlock(struct Node *replacement_list, int level) {
       if (IsEqualTokenWithCStr(t, "endif")) {
         if (level == 0) {
           ErrorWithToken(t, "Unexpected endif here");
+        }
+        RemoveTokensTo(t);
+        return;
+      }
+      if (IsEqualTokenWithCStr(t, "else")) {
+        if (level == 0) {
+          ErrorWithToken(t, "Unexpected else here");
         }
         RemoveTokensTo(t);
         return;
@@ -216,7 +231,7 @@ static void PreprocessBlock(struct Node *replacement_list, int level) {
   }
 }
 
-void Preprocess(struct Node **head_holder) {
+void Preprocess(struct Node **head_holder, struct Node *replacement_list) {
   InitTokenStream(head_holder);
-  PreprocessBlock(AllocList(), 0);
+  PreprocessBlock(replacement_list, 0);
 }

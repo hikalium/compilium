@@ -216,7 +216,7 @@ void InitParser(struct Node **);
 struct Node *Parse(struct Node **passed_tokens);
 
 // @preprocessor.c
-void Preprocess(struct Node **head_holder);
+void Preprocess(struct Node **head_holder, struct Node *replacement_list);
 
 // @struct.c
 struct SymbolEntry;

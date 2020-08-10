@@ -8,7 +8,7 @@ void assert(int v) {
   printf("Assertion failed!");
 }
 
-void PrintPtr(void *p) {
+void PrintPtr(int p) {
   for (int i = 15; i >= 0; i--) {
     int v = (p >> (i * 4)) & 15;
     if (v < 10)
@@ -45,6 +45,7 @@ static const char *ReadLine(void) {
 }
 
 int main() {
+  fputs("Hello stderr!\n", stderr);
   const char *input = ReadLine();
   PrintPtr(input);
   for (int i = 0; input[i]; i++) {

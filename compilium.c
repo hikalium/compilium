@@ -21,13 +21,18 @@ _Noreturn void __assert(const char *expr_str, const char *file, int line) {
 
 void TestList(void);
 void TestType(void);
-void ParseCompilerArgs(int argc, char **argv) {
+static struct Node *ParseCompilerArgs(int argc, char **argv) {
+  // returns replacement_list: ASTList which contains macro replacement
+  struct Node *replacement_list = AllocList();
   symbol_prefix = "_";
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "--target-os") == 0) {
       i++;
       if (strcmp(argv[i], "Darwin") == 0) {
         symbol_prefix = "_";
+        // Define __APPLE__ macro
+        PushKeyValueToList(replacement_list, "__APPLE__",
+                           CreateMacroReplacement(NULL, NULL));
       } else if (strcmp(argv[i], "Linux") == 0) {
         symbol_prefix = "";
       } else {
@@ -51,6 +56,7 @@ void ParseCompilerArgs(int argc, char **argv) {
       Error("Unknown argument: %s", argv[i]);
     }
   }
+  return replacement_list;
 }
 
 void PrintTokenLine(struct Node *t) {
@@ -215,13 +221,13 @@ const char *ReadFile(FILE *fp) {
 }
 
 int main(int argc, char *argv[]) {
-  ParseCompilerArgs(argc, argv);
+  struct Node *replacement_list = ParseCompilerArgs(argc, argv);
   const char *input = ReadFile(stdin);
 
   struct Node *tokens = Tokenize(input);
 
   fputs("Preprocess begin\n", stderr);
-  Preprocess(&tokens);
+  Preprocess(&tokens, replacement_list);
   if (is_preprocess_only) {
     OutputTokenSequenceAsCSource(tokens);
     return 0;

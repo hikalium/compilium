@@ -30,6 +30,9 @@ debug_% : ../compilium_dbg %.c
 		-o 'settings set target.input-path $*.c' $(LLDB_ARGS) \
 		-- ../compilium_dbg --target-os `uname`
 
+%.host.S : %.c Makefile ../compilium .FORCE
+	$(CC) -S -o $@ $*.c
+
 %.S : %.c Makefile ../compilium .FORCE
 	../compilium --target-os `uname` -I ../include/ < $*.c > $*.S
 
