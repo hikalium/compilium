@@ -264,6 +264,10 @@ static void GenerateForNode(struct Node *node) {
           printf("mov %s, %d\n", reg_names_64[node->reg], '\n');
           return;
         }
+        if (node->op->begin[2] == '\\') {
+          printf("mov %s, %d\n", reg_names_64[node->reg], '\\');
+          return;
+        }
       }
       ErrorWithToken(node->op, "Not implemented char literal");
     } else if (IsEqualTokenWithCStr(node->op, "(")) {

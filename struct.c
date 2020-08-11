@@ -52,6 +52,9 @@ struct Node *FindStructMember(struct Node *struct_type,
   assert(key_token->type == kNodeToken);
   struct_type = GetTypeWithoutAttr(struct_type);
   assert(struct_type && struct_type->type == kTypeStruct);
+  assert(struct_type->type_struct_spec);
+  assert(struct_type->type_struct_spec->struct_member_dict);
+  assert(struct_type->type_struct_spec->struct_member_dict->type == kASTList);
   return GetNodeByTokenKey(struct_type->type_struct_spec->struct_member_dict,
                            key_token);
 }
