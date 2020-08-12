@@ -307,7 +307,8 @@ static void AnalyzeNode(struct Node *node, struct SymbolEntry **ctx) {
     }
     return;
   } else if (node->type == kASTJumpStmt) {
-    if (IsTokenWithType(node->op, kTokenKwBreak)) {
+    if (IsTokenWithType(node->op, kTokenKwBreak) ||
+        IsTokenWithType(node->op, kTokenKwContinue)) {
       return;
     }
     if (IsTokenWithType(node->op, kTokenKwReturn)) {

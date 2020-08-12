@@ -50,6 +50,7 @@ enum TokenType {
   kTokenKwBreak,
   kTokenKwChar,
   kTokenKwConst,
+  kTokenKwContinue,
   kTokenKwElse,
   kTokenKwExtern,
   kTokenKwFor,

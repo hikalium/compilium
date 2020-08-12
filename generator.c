@@ -4,6 +4,7 @@ static void GenerateForNodeRValue(struct Node *node);
 
 static struct Node *str_list;
 static int label_to_break;
+static int label_to_continue;
 
 static int GetLabelNumber() {
   static int label_number;
@@ -552,6 +553,13 @@ static void GenerateForNode(struct Node *node) {
       printf("jmp L%d\n", label_to_break);
       return;
     }
+    if (IsTokenWithType(node->op, kTokenKwContinue)) {
+      if (!label_to_continue) {
+        ErrorWithToken(node->op, "continue is not allowed here");
+      }
+      printf("jmp L%d\n", label_to_continue);
+      return;
+    }
     if (IsTokenWithType(node->op, kTokenKwReturn)) {
       if (node->right) {
         GenerateForNodeRValue(node->right);
@@ -585,6 +593,8 @@ static void GenerateForNode(struct Node *node) {
     int end_label = GetLabelNumber();
     int old_label_to_break = label_to_break;
     label_to_break = end_label;
+    int old_label_to_continue = label_to_break;
+    label_to_continue = loop_label;
     if (node->init) {
       GenerateForNode(node->init);
     }
@@ -600,6 +610,7 @@ static void GenerateForNode(struct Node *node) {
     }
     printf("jmp L%d\n", loop_label);
     printf("L%d:\n", end_label);
+    label_to_continue = old_label_to_continue;
     label_to_break = old_label_to_break;
     return;
   } else if (node->type == kASTWhileStmt) {
@@ -607,6 +618,8 @@ static void GenerateForNode(struct Node *node) {
     int end_label = GetLabelNumber();
     int old_label_to_break = label_to_break;
     label_to_break = end_label;
+    int old_label_to_continue = label_to_break;
+    label_to_continue = loop_label;
     printf("L%d:\n", loop_label);
     GenerateForNodeRValue(node->cond);
     EmitConvertToBool(node->cond->reg, node->cond->reg);
@@ -614,6 +627,7 @@ static void GenerateForNode(struct Node *node) {
     GenerateForNode(node->body);
     printf("jmp L%d\n", loop_label);
     printf("L%d:\n", end_label);
+    label_to_continue = old_label_to_continue;
     label_to_break = old_label_to_break;
     return;
   }
@@ -668,6 +682,7 @@ static void GenerateDataSection(struct SymbolEntry *toplevel_names) {
 
 void Generate(struct Node *ast, struct SymbolEntry *toplevel_names) {
   label_to_break = 0;
+  label_to_continue = 0;
   str_list = AllocList();
   printf(".intel_syntax noprefix\n");
   printf(".text\n");

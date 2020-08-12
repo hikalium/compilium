@@ -291,7 +291,17 @@ void TestBreak() {
   ExpectEq(v, 15, __LINE__);
 }
 
+void TestShortCircuitEval() {
+  int v = 1;
+  v++ && 0 && v++;
+  ExpectEq(v, 2, __LINE__);
+  v = 1;
+  1 || v++;
+  ExpectEq(v, 1, __LINE__);
+}
+
 int main(int argc, char** argv) {
+  TestShortCircuitEval();
   TestBreak();
   TestConstTypeSpec();
   TestPtrOfVar();

@@ -49,6 +49,7 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
     if (IsEqualTokenWithCStr(t, "break")) t->token_type = kTokenKwBreak;
     if (IsEqualTokenWithCStr(t, "char")) t->token_type = kTokenKwChar;
     if (IsEqualTokenWithCStr(t, "const")) t->token_type = kTokenKwConst;
+    if (IsEqualTokenWithCStr(t, "continue")) t->token_type = kTokenKwContinue;
     if (IsEqualTokenWithCStr(t, "else")) t->token_type = kTokenKwElse;
     if (IsEqualTokenWithCStr(t, "extern")) t->token_type = kTokenKwExtern;
     if (IsEqualTokenWithCStr(t, "for")) t->token_type = kTokenKwFor;
