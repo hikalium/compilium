@@ -82,7 +82,8 @@ struct Node *ParseUnaryExpr() {
       (t = ConsumePunctuator("~")) || (t = ConsumePunctuator("!")) ||
       (t = ConsumePunctuator("&")) || (t = ConsumePunctuator("*"))) {
     return CreateASTUnaryPrefixOp(t, ParseCastExpr());
-  } else if ((t = ConsumeToken(kTokenKwSizeof))) {
+  } else if ((t = ConsumePunctuator("--")) ||
+             (t = ConsumeToken(kTokenKwSizeof))) {
     return CreateASTUnaryPrefixOp(t, ParseUnaryExpr());
   }
   return ParsePostfixExpr();

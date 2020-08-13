@@ -212,6 +212,11 @@ void TestDec() {
   ExpectEq(v, 1, __LINE__);
   ExpectEq(v--, 1, __LINE__);
   ExpectEq(v, 0, __LINE__);
+  v = 2;
+  ExpectEq(v, 2, __LINE__);
+  ExpectEq(--v, 1, __LINE__);
+  ExpectEq(v, 1, __LINE__);
+  ExpectEq(--v, 0, __LINE__);
 }
 
 int TestCharLiteralAccess() {

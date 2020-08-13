@@ -1,0 +1,3 @@
+```
+rlwrap ./jsondump.bin
+```
