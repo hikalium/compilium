@@ -343,6 +343,14 @@ static void GenerateForNode(struct Node *node) {
         EmitMoveFromMemory(node->op, node->reg, node->reg, size);
         return;
       }
+      if (IsEqualTokenWithCStr(node->op, "++")) {
+        // Prefix ++
+        int size = GetSizeOfType(node->expr_type);
+        GenerateForNode(node->right);
+        EmitIncMemory(node->op, node->reg, GetSizeOfType(node->expr_type));
+        EmitMoveFromMemory(node->op, node->reg, node->reg, size);
+        return;
+      }
       if (IsTokenWithType(node->op, kTokenKwSizeof)) {
         printf("mov %s, %d\n", reg_names_64[node->reg],
                GetSizeOfType(node->right->expr_type));

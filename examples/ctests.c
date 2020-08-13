@@ -204,6 +204,11 @@ void TestInc() {
   ExpectEq(v, 3, __LINE__);
   ExpectEq(v++, 3, __LINE__);
   ExpectEq(v, 4, __LINE__);
+  v = 2;
+  ExpectEq(v, 2, __LINE__);
+  ExpectEq(++v, 3, __LINE__);
+  ExpectEq(v, 3, __LINE__);
+  ExpectEq(++v, 4, __LINE__);
 }
 
 void TestDec() {
