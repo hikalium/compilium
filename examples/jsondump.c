@@ -119,7 +119,8 @@ int ReadElement(int c) {
 int main() {
   int c;
   ParseValue(getchar());
-  if ((c = getchar()) != '\n') {
+  c = getchar();
+  if (c != '\n' && c != EOF) {
     printf("Unexpected char %c (%d)\n", c, c);
   }
   return 0;
