@@ -8,6 +8,12 @@ LLDB_ARGS = -o 'settings set interpreter.prompt-on-quit false' \
 			-o 'b __assert' \
 			-o 'process launch'
 
+.FORCE :
+
+%.compilium.S : compilium %.c .FORCE
+	cat $*.c | \
+		./compilium -I include/ --target-os `uname` > $*.compilium.S
+
 compilium : $(SRCS) $(HEADERS) Makefile
 	$(CC) $(CFLAGS) -o $@ $(SRCS) 
 

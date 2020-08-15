@@ -36,7 +36,7 @@ struct Node *DuplicateTokenSequence(struct Node *base_head) {
   return dup_head;
 }
 
-const char *CreateTokenStr(struct Node *t) {
+char *CreateTokenStr(struct Node *t) {
   assert(IsToken(t));
   return strndup(t->begin, t->length);
 }

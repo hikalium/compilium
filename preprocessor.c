@@ -60,6 +60,15 @@ static struct Node *TryReadIdentListWrappedByParens(struct Node **tp) {
   return ident_list_head;
 }
 
+static char *CreateJoinedString(const char *s1, const char *s2) {
+  assert(s1 && s2);
+  char *s = malloc(strlen(s1) + strlen(s2) + 1);
+  assert(s);
+  strcpy(s, s1);
+  strcat(s, s2);
+  return s;
+}
+
 static void PreprocessBlock(struct Node *replacement_list, int level) {
   struct Node *t;
   while (PeekToken()) {
@@ -107,36 +116,45 @@ static void PreprocessBlock(struct Node *replacement_list, int level) {
         continue;
       }
       if (IsEqualTokenWithCStr(t, "include")) {
+        struct Node *token_include = t;
+        const char *fname = NULL;
+        const char *path = NULL;
         t = SkipDelimiterTokensInLogicalLine(t->next_token);
-        if (!IsEqualTokenWithCStr(t, "<")) {
-          ErrorWithToken(t, "Expected < here");
-        }
-        struct Node *markL = t;
-        t = t->next_token;
-        struct Node *begin = t;
-        while (t && !IsEqualTokenWithCStr(t, ">")) {
+        if (IsTokenWithType(t, kTokenStringLiteral)) {
+          char *tmp_fname = CreateTokenStr(t);
+          tmp_fname++;  // Remove open "
+          tmp_fname[strlen(tmp_fname) - 1] = 0;  // Remove close "
+          fname = tmp_fname;
+          RemoveTokensTo(t->next_token);
+          path = CreateJoinedString(
+              "./", fname);  // TODO: Make this relative to source, not cwd.
+        } else if (IsEqualTokenWithCStr(t, "<")) {
+          struct Node *markL = t;
           t = t->next_token;
+          struct Node *begin = t;
+          while (t && !IsEqualTokenWithCStr(t, ">")) {
+            t = t->next_token;
+          }
+          if (!t) {
+            ErrorWithToken(markL,
+                           "Unexpected EOF. > is expected to match with this.");
+          }
+          struct Node *end = t;
+          fname = CreateStrFromTokenRange(begin, end);
+          RemoveTokensTo(end->next_token);
+          if (!include_path) {
+            ErrorWithToken(token_include,
+                           "Include path is not provided in compiler args");
+          }
+          path = CreateJoinedString(include_path, fname);
+        } else {
+          ErrorWithToken(t, "Expected < or \" here");
         }
-        if (!t) {
-          ErrorWithToken(markL,
-                         "Unexpected EOF. > is expected to match with this.");
-        }
-        struct Node *end = t;
-        const char *fname = CreateStrFromTokenRange(begin, end);
-        RemoveTokensTo(end->next_token);
-        if (!include_path) {
-          ErrorWithToken(markL,
-                         "Include path is not provided in compiler args");
-        }
-        char path[256];
-        if (sizeof(path) <= strlen(include_path) + strlen(fname)) {
-          ErrorWithToken(markL, "Include path is too long");
-        }
-        strcpy(path, include_path);
-        strcat(path, fname);
+        assert(path);
+        fprintf(stderr, "Include from: %s\n", path);
         FILE *fp = fopen(path, "rb");
         if (!fp) {
-          ErrorWithToken(markL, "File not found: %s", path);
+          ErrorWithToken(token_include, "File not found: %s", path);
         }
         const char *include_input = ReadFile(fp);
         InsertTokens(Tokenize(include_input));

@@ -203,7 +203,7 @@ static struct Node *CreateNextToken(const char *p, const char *src, int *line) {
   } else if (']' == *p) {
     return AllocToken(src, *line, p, 1, kTokenPunctuator);
   }
-  Error("Tokenizer: Unexpected char %c", *p);
+  return AllocToken(src, *line, p, 1, kTokenUnknownChar);
 }
 
 struct Node *CreateToken(const char *input) {

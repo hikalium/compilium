@@ -43,6 +43,7 @@ enum NodeType {
 };
 
 enum TokenType {
+  kTokenUnknownChar,
   kTokenDelimiter,
   kTokenZeroWidthNoBreakSpace,
   kTokenIntegerConstant,
@@ -267,7 +268,7 @@ struct Node *AllocToken(const char *src_str, int line, const char *begin,
                         int length, enum TokenType type);
 struct Node *DuplicateToken(struct Node *base_token);
 struct Node *DuplicateTokenSequence(struct Node *base_head);
-const char *CreateTokenStr(struct Node *t);
+char *CreateTokenStr(struct Node *t);
 int IsEqualTokenWithCStr(struct Node *t, const char *s);
 void PrintTokenSequence(struct Node *t);
 void OutputTokenSequenceAsCSource(struct Node *t);
