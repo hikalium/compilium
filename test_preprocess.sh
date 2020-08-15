@@ -4,8 +4,8 @@ function test_stdout {
   input="$1"
   expected_stdout="$2"
   testname="$3"
-  printf "$expected_stdout" > expected.stdout
-  printf "$input" > testinput.c
+  printf "%s" "$expected_stdout" > expected.stdout
+  printf "%s" "$input" > testinput.c
   cat testinput.c | ./compilium -E --target-os `uname` > out.stdout || { \
     echo "$input" > failcase.txt; \
     echo "Compilation failed."; \
@@ -228,3 +228,18 @@ printf("Two %d %d", 1 + 1, 3);
 EOS
 `" \
 'Function-like macros'
+
+test_stdout \
+"`cat << EOS
+#define f1(a) printf("One %s", #a)
+#define f2(a, b) printf("Two %s %d", #a, b)
+f1(1 + 1);
+f2(1 + 1, 3);
+EOS
+`" \
+"`cat << EOS
+printf("One %s", "1 + 1");
+printf("Two %s %d", "1 + 1", 3);
+EOS
+`" \
+'Function-like macros with #expr macro'

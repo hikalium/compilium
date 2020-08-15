@@ -179,6 +179,29 @@ void InsertTokens(struct Node *seq_first) {
   *next_token_holder = seq_first;
 }
 
+static struct Node *CreateStringLiteralOfTokens(struct Node *head) {
+  assert(IsToken(head));
+  int len = 0;
+  for (struct Node *t = head; t; t = t->next_token) {
+    len += t->length;
+  }
+  char *s = malloc(len + 1 + 2);
+  assert(s);
+  char *p = s;
+  *p = '"';
+  p++;
+  for (struct Node *t = head; t; t = t->next_token) {
+    for (int i = 0; i < t->length; i++) {
+      *p = t->begin[i];
+      p++;
+    }
+  }
+  *p = '"';
+  p++;
+  *p = 0;
+  return AllocToken(s, 0, s, len + 2, kTokenStringLiteral);
+}
+
 void InsertTokensWithIdentReplace(struct Node *seq, struct Node *rep_list) {
   // Insert token sequece (seq) at current cursor pos.
   // if seq contains token in rep_list, replace it with tokens rep_list[token];
@@ -187,20 +210,31 @@ void InsertTokensWithIdentReplace(struct Node *seq, struct Node *rep_list) {
   struct Node **next_holder = next_token_holder;
   while (seq) {
     struct Node *e;
+    if (IsEqualTokenWithCStr(seq, "#") && seq->next_token &&
+        (e = GetNodeByTokenKey(rep_list, seq->next_token))) {
+      struct Node *st = CreateStringLiteralOfTokens(e->value);
+      seq = seq->next_token->next_token;
+      //
+      st->next_token = *next_holder;
+      *next_holder = st;
+      next_holder = &st->next_token;
+      continue;
+    }
     if (!(e = GetNodeByTokenKey(rep_list, seq))) {
       // no replace
       struct Node *n = seq;
       seq = seq->next_token;
-
+      //
       n->next_token = *next_holder;
       *next_holder = n;
       next_holder = &(*next_holder)->next_token;
       continue;
     }
-    seq = seq->next_token;
     struct Node *n = DuplicateTokenSequence(e->value);
     struct Node *n_last = n;
     while (n_last->next_token) n_last = n_last->next_token;
+    seq = seq->next_token;
+    //
     n_last->next_token = *next_holder;
     *next_holder = n;
     next_holder = &n_last->next_token;
