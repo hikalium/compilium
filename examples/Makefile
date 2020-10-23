@@ -1,4 +1,4 @@
-default : calc.bin ctests.bin gameoflife.bin hello.bin pi.bin
+default : calc.bin ctests.bin gameoflife.bin hello.bin pi.bin fib.bin
 
 .FORCE : 
 
