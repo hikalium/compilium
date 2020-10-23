@@ -189,12 +189,59 @@ void TestList() {
   exit(EXIT_SUCCESS);
 }
 
-const char *reg_names_64[NUM_OF_SCRATCH_REGS + 1] = {NULL, "rdi", "rsi", "r8",
-                                                     "r9"};
-const char *reg_names_32[NUM_OF_SCRATCH_REGS + 1] = {NULL, "edi", "esi", "r8d",
-                                                     "r9d"};
-const char *reg_names_8[NUM_OF_SCRATCH_REGS + 1] = {NULL, "dil", "sil", "r8b",
-                                                    "r9b"};
+// System V AMD64 ABI:
+//  args:
+//    RDI, RSI, RDX, RCX, R8, R9
+//  callee-saved(should be kept on return):
+//    RBX, RBP, R12, R13, R14, R15
+//  caller-saved(can be destroyed):
+//    otherwise
+
+// Compilium register plan:
+//  RAX: reserved for return values
+//  RCX: reserved for shift ops
+//  RDX: 3rd parameter, reserved for div/mul ops
+//  RBX: reserved (callee-saved)
+//  RSP: reserved for stack pointer
+//  RBP: reserved for frame pointer
+//  RSI: 2nd parameter
+//  RDI: 1st parameter
+//  R8 : 5th parameter
+//  R9 : 6th parameter
+//  R10: scratch
+//  R11: scratch
+//  R12: reserved (callee-saved)
+//  R13: reserved (callee-saved)
+//  R14: reserved (callee-saved)
+//  R15: reserved (callee-saved)
+
+const char *reg_names_64[NUM_OF_SCRATCH_REGS + 1] = {
+    // padding
+    NULL,
+    // params
+    "rdi", "rsi", "r8", "r9",
+    // scratch
+    "r10", "r11",
+    // callee-saved
+    "r12", "r13", "r14", "r15"};
+const char *reg_names_32[NUM_OF_SCRATCH_REGS + 1] = {
+    // padding
+    NULL,
+    // params
+    "edi", "esi", "r8d", "r9d",
+    // scratch
+    "r10d", "r11d",
+    // callee-saved
+    "r12d", "r13d", "r14d", "r15d"};
+const char *reg_names_8[NUM_OF_SCRATCH_REGS + 1] = {
+    // padding
+    NULL,
+    // params
+    "dil", "sil", "r8b", "r9b",
+    // scratch
+    "r10b", "r11b",
+    // callee-saved
+    "r12b", "r13b", "r14b", "r15d"};
 const char *param_reg_names_64[NUM_OF_PARAM_REGISTERS] = {"rdi", "rsi", "rdx",
                                                           "rcx", "r8",  "r9"};
 const char *param_reg_names_32[NUM_OF_PARAM_REGISTERS] = {"edi", "esi", "edx",

@@ -233,6 +233,10 @@ static void GenerateForNode(struct Node *node) {
     printf("%s%s:\n", symbol_prefix, func_name);
     printf("push rbp\n");
     printf("mov rbp, rsp\n");
+    printf("push r12\n");
+    printf("push r13\n");
+    printf("push r14\n");
+    printf("push r15\n");
     struct Node *arg_var_list = node->arg_var_list;
     assert(arg_var_list);
     assert(GetSizeOfList(arg_var_list) <= NUM_OF_PARAM_REGISTERS);
@@ -244,6 +248,10 @@ static void GenerateForNode(struct Node *node) {
              param_reg_name, i);
     }
     GenerateForNode(node->func_body);
+    printf("pop r15\n");
+    printf("pop r14\n");
+    printf("pop r13\n");
+    printf("pop r12\n");
     printf("mov rsp, rbp\n");
     printf("pop rbp\n");
     printf("ret\n");
