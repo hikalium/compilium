@@ -20,6 +20,9 @@ validate : run_ctests_hostcc
 %.host.bin : %.c Makefile
 	$(CC) -o $*.host.bin $*.c
 
+%.host_o3.bin : %.c Makefile
+	$(CC) -O3 -o $*.host_o3.bin $*.c
+
 LLDB_ARGS = -o 'settings set interpreter.prompt-on-quit false' \
 			-o 'b __assert' \
 			-o 'b ErrorWithToken' \
