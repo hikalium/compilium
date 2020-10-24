@@ -17,6 +17,9 @@ validate : run_ctests_hostcc
 ../compilium_dbg : .FORCE
 	make -C .. compilium_dbg
 
+constsum.c : gen_constsum.js
+	node gen_constsum.js > $@
+
 %.host.bin : %.c Makefile
 	$(CC) -o $*.host.bin $*.c
 
